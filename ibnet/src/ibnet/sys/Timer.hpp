@@ -6,9 +6,19 @@
 namespace ibnet {
 namespace sys {
 
+/**
+ * Timer class to measure execution time
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
+ */
 class Timer
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param start True to start the timer immediately after construction
+     */
     Timer(bool start = false) :
         m_running(false),
         m_start(),
@@ -20,8 +30,15 @@ public:
         }
     };
 
+    /**
+     * Destructor
+     */
     ~Timer(void) {};
 
+    /**
+     * Start the timer. If the timer was already started, this causes a
+     * reset/restart
+     */
     void Start(void)
     {
         m_running = true;
@@ -29,6 +46,9 @@ public:
         m_accuNs = 0;
     }
 
+    /**
+     * Resume a timer after it was stopped
+     */
     void Resume(void)
     {
         if (!m_running) {
@@ -37,6 +57,9 @@ public:
         }
     }
 
+    /**
+     * Stop the timer after it was started
+     */
     void Stop(void)
     {
         if (m_running) {
@@ -46,11 +69,19 @@ public:
         }
     }
 
+    /**
+     * Check if the timer is "running"/was started
+     *
+     * @return True if running, false otherwise
+     */
     bool IsRunning(void) const
     {
         return m_running;
     }
 
+    /**
+     * Get the measured time in seconds
+     */
     double GetTimeSec(void)
     {
         if (m_running) {
@@ -62,6 +93,9 @@ public:
         }
     }
 
+    /**
+     * Get the measured time in milliseconds
+     */
     double GetTimeMs(void)
     {
         if (m_running) {
@@ -73,6 +107,9 @@ public:
         }
     }
 
+    /**
+     * Get the measured time in microseconds
+     */
     double GetTimeUs(void) {
         if (m_running) {
             return (m_accuNs + std::chrono::duration<uint64_t, std::nano>(
@@ -83,6 +120,9 @@ public:
         }
     }
 
+    /**
+     * Get the measured time in nanoseconds
+     */
     double GetTimeNs(void) {
         if (m_running) {
             return (m_accuNs + std::chrono::duration<uint64_t, std::nano>(

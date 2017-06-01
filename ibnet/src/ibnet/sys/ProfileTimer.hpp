@@ -8,9 +8,19 @@
 namespace ibnet {
 namespace sys {
 
+/**
+ * Timer class to acurately measure time for profiling code sections
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
+ */
 class ProfileTimer
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param name Name for this timer (to identify on debug output)
+     */
     ProfileTimer(const std::string& name = "") :
         m_name(name),
         m_counter(0),
@@ -20,8 +30,14 @@ public:
         m_best(std::chrono::hours(10000))
     {};
 
+    /**
+     * Destructor
+     */
     ~ProfileTimer(void) {};
 
+    /**
+     * Reset the timer (set to 0)
+     */
     void Reset(void)
     {
         m_counter = 0;
@@ -31,12 +47,20 @@ public:
         m_best = std::chrono::hours(10000);
     }
 
+    /**
+     * Enter a section to be profiled/measured. Call this once, requires a call
+     * to exit before calling again
+     */
     void Enter(void)
     {
         m_counter++;
         m_enter = std::chrono::high_resolution_clock::now();
     }
 
+    /**
+     * Requires a call to enter first. Finish measuring the section to be
+     * profiled
+     */
     void Exit(void)
     {
         std::chrono::duration<uint64_t, std::nano> delta(std::chrono::high_resolution_clock::now() - m_enter);
@@ -51,19 +75,41 @@ public:
         }
     }
 
+    /**
+     * Get number of times the seciton was profiled (enter was called)
+     */
     uint64_t GetCounter(void) const {
         return m_counter;
     }
 
+    /**
+     * Get the total execution time of the section(s) enclosed by enter and
+     * exit
+     *
+     * @return Total time in seconds
+     */
     double GetTotalTime(void) const {
         return std::chrono::duration<double>(m_total).count();
     }
 
+    /**
+     * Get the total execution time of the section(s) enclosed by enter and
+     * exit
+     *
+     * @tparam _Unit Time unit to return
+     * @return Total time
+     */
     template<typename _Unit>
     double GetTotalTime(void) const {
         return std::chrono::duration<double, _Unit>(m_total).count();
     }
 
+    /**
+     * Get the average execution time of the section(s) enclosed by enter and
+     * exit
+     *
+     * @return Average execution time in seconds
+     */
     double GetAvarageTime(void) const
     {
         if (m_counter == 0) {
@@ -73,6 +119,13 @@ public:
         }
     }
 
+    /**
+     * Get the average execution time of the section(s) enclosed by enter and
+     * exit
+     *
+     * @tparam _Unit Time unit to return
+     * @return Total time
+     */
     template<typename _Unit>
     double GetAvarageTime(void) const
     {
@@ -83,24 +136,53 @@ public:
         }
     }
 
+    /**
+     * Get the best execution time of the section(s) enclosed by enter and
+     * exit
+     *
+     * @return Best execution time in seconds
+     */
     double GetBestTime(void) const {
         return std::chrono::duration<double>(m_best).count();
     }
 
+    /**
+     * Get the best execution time of the section(s) enclosed by enter and
+     * exit
+     *
+     * @tparam _Unit Time unit to return
+     * @return Best time
+     */
     template<typename _Unit>
     double GetBestTime(void) const {
         return std::chrono::duration<double, _Unit>(m_best).count();
     }
 
+    /**
+     * Get the worst execution time of the section(s) enclosed by enter and
+     * exit
+     *
+     * @return Worst execution time in seconds
+     */
     double GetWorstTime(void) const {
         return std::chrono::duration<double>(m_worst).count();
     }
 
+    /**
+     * Get the worst execution time of the section(s) enclosed by enter and
+     * exit
+     *
+     * @tparam _Unit Time unit to return
+     * @return Worst time
+     */
     template<typename _Unit>
     double GetWorstTime(void) const {
         return std::chrono::duration<double, _Unit>(m_worst).count();
     }
 
+    /**
+     * Enable output to an out stream
+     */
     friend std::ostream &operator<<(std::ostream& os, const ProfileTimer& o) {
         return os <<
             o.m_name <<

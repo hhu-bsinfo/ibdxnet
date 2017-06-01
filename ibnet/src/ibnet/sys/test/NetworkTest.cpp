@@ -3,6 +3,9 @@
 #include "ibnet/sys/Logger.h"
 #include "ibnet/sys/Network.h"
 
+/**
+ * Test network utility class
+ */
 int main(int argc, char** argv)
 {
     ibnet::sys::Logger::Setup();

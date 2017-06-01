@@ -6,9 +6,21 @@
 namespace ibnet {
 namespace sys {
 
+/**
+ * Measure the throughput of data processing, e.g. incoming/outgoing
+ * network packages.
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
+ */
 class ProfileThroughput
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param resSec Resolution in seconds for throughput
+     * @param name Name to identify this meter (for debug output)
+     */
     ProfileThroughput(uint32_t resSec = 1, const std::string& name = "") :
         m_resSec(resSec),
         m_name(name),
@@ -25,18 +37,33 @@ public:
 
     }
 
+    /**
+     * Destructor
+     */
     ~ProfileThroughput(void) {};
 
+    /**
+     * Start measuring throughput. Call this once before you want to start
+     * updating this meter.
+     */
     void Start(void)
     {
         m_totalTimer.Enter();
         m_sliceTimer.Enter();
     }
 
+    /**
+     * Check if this meter is already started
+     */
     bool IsStarted(void) const {
         return m_totalTimer.GetCounter() > 0;
     }
 
+    /**
+     * Update the meter with data
+     *
+     * @param bytes Number of bytes moved, copied, processed etc
+     */
     void Update(uint32_t bytes)
     {
         m_totalData += bytes;
@@ -57,14 +84,31 @@ public:
         m_sliceTimer.Enter();
     }
 
+    /**
+     * Get the throughput of the last slice based on the values provided
+     * by calling udpate()
+     *
+     * @return Throughput of bytes of last slice
+     */
     uint64_t GetLastThroughput(void) const {
         return m_lastThroughput;
     }
 
+    /**
+     * Get the current peak throughput measured so far (on a time slice basis)
+     *
+     * @return Peak throughput in bytes
+     */
     uint64_t GetCurrentPeak(void) const {
         return m_peakThroughput;
     }
 
+    /**
+     * Get the current average throughput. Based on the total number of bytes
+     * updated so far.
+     *
+     * @return Avarage throughput in bytes
+     */
     uint64_t GetCurrentAvg(void) const {
         if (m_avgCounter == 0) {
             return 0;
@@ -73,16 +117,26 @@ public:
         return m_avgThroughputSum / m_avgCounter;
     }
 
+    /**
+     * Get the number of times the update function was called so far
+     */
     uint64_t GetUpdateCount(void) const {
         return m_updateCounter;
     }
 
+    /**
+     * Stop the meter. Call this when you stopped processing data to also stop
+     * the total timer of the meter
+     */
     void Stop(void)
     {
         m_sliceTimer.Exit();
         m_totalTimer.Exit();
     }
 
+    /**
+     * Enable output to an out stream
+     */
     friend std::ostream &operator<<(std::ostream& os,
             const ProfileThroughput& o) {
         return os << o.m_name <<

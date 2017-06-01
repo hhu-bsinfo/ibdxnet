@@ -27,6 +27,9 @@ static bool ParseOptions(
     return true;
 }
 
+/**
+ * Test UDP socket
+ */
 int main(int argc, char** argv)
 {
     if (!ParseOptions(argc, argv)) {

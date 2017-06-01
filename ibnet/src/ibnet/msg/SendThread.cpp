@@ -129,13 +129,8 @@ uint32_t SendThread::__ProcessFlowControl(
 
     m_timers[4].Enter();
 
-    if (!connection->GetQp(1)->GetSendQueue()->Send(m_flowControlBuffer,
-        numBytesToSend)) {
-        m_timers[4].Exit();
-        throw core::IbException("Unexpected queue full on flow control "
-            "data send");
-    }
-
+    connection->GetQp(1)->GetSendQueue()->Send(m_flowControlBuffer,
+        numBytesToSend);
     m_timers[4].Exit();
 
     m_timers[5].Enter();
@@ -202,12 +197,7 @@ uint32_t SendThread::__ProcessBuffers(uint16_t nodeId,
 
         m_timers[7].Enter();
 
-        if (!connection->GetQp(0)->GetSendQueue()->Send(m_buffer,
-                numBytesToSend)) {
-            m_timers[7].Exit();
-            throw core::IbException("Unexpected queue full on buffer "
-                "data send");
-        }
+        connection->GetQp(0)->GetSendQueue()->Send(m_buffer, numBytesToSend);
 
         m_timers[7].Exit();
 

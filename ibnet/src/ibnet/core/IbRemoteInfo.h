@@ -9,14 +9,32 @@
 namespace ibnet {
 namespace core {
 
+/**
+ * Information about a remote node which is required to setup a connection/
+ * queue pair
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
+ */
 class IbRemoteInfo
 {
 public:
+    /**
+     * Constructor
+     *
+     * Sets invalid node info
+     */
     IbRemoteInfo(void) :
             m_nodeId(IbNodeId::INVALID),
             m_lid((uint16_t) -1)
     {}
 
+    /**
+     * Constructor
+     *
+     * @param nodeId Node id of the remote node
+     * @param lid LID of the remote node
+     * @param physicalQpIds Physical QP ids of the remote QPs to connect to
+     */
     IbRemoteInfo(uint16_t nodeId, uint16_t lid,
             const std::vector<uint32_t>& physicalQpIds) :
         m_nodeId(nodeId),
@@ -24,25 +42,43 @@ public:
         m_physicalQpIds(physicalQpIds)
     {}
 
+    /**
+     * Destructor
+     */
     ~IbRemoteInfo(void)
     {}
 
+    /**
+     * Check if the remote info is valid
+     */
     bool IsValid(void) const {
         return m_nodeId != IbNodeId::INVALID;
     }
 
+    /**
+     * Get the node id of the remote node
+     */
     uint16_t GetNodeId(void) const {
         return m_nodeId;
     }
 
+    /**
+     * Get the LID of the remote node
+     */
     uint16_t GetLid(void) const {
         return m_lid;
     }
 
+    /**
+     * Get the list of physical QP ids of the remote node
+     */
     const std::vector<uint32_t>& GetPhysicalQpIds(void) const {
         return m_physicalQpIds;
     }
 
+    /**
+     * Enable usage with out streams
+     */
     friend std::ostream &operator<<(std::ostream& os, const IbRemoteInfo& o) {
         std::ostream& ret = os << "NodeId: 0x" << std::hex << o.m_nodeId <<
             ", Lid: 0x" << std::hex << o.m_lid;

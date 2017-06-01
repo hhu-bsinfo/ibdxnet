@@ -6,13 +6,31 @@
 namespace ibnet {
 namespace core {
 
+/**
+ * Implementation of a connection creator which creates a connection with
+ * a single queue pair
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
+ */
 class IbConnectionCreatorSimple : public IbConnectionCreator
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param qpMaxRecvReqs Size of the receive queue
+     * @param qpMaxSendReqs Size of the send queue
+     * @param sharedRecvQueue Shared receive queue to use (optional)
+     * @param sharedRecvCompQueue Shared receive completion queue to use
+     *          (optional)
+     */
     IbConnectionCreatorSimple(uint16_t qpMaxRecvReqs, uint16_t qpMaxSendReqs,
         std::shared_ptr<IbSharedRecvQueue> sharedRecvQueue,
         std::shared_ptr<IbCompQueue> sharedRecvCompQueue);
 
+    /**
+     * Destructor
+     */
     ~IbConnectionCreatorSimple(void);
 
     std::shared_ptr<IbConnection> CreateConnection(

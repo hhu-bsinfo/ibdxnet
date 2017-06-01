@@ -4,6 +4,12 @@
 namespace ibnet {
 namespace core {
 
+/**
+ * Abstract node id to identify nodes in an InfiniBand network
+ * (not part of ibverbs or InfiniBand hardware)
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
+ */
 class IbNodeId
 {
 public:

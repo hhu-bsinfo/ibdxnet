@@ -18,11 +18,26 @@ namespace core {
 // forward declaration
 class IbProtDom;
 
+/**
+ * A memory region that can be registered with a protection domain bound to
+ * a HCA
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
+ */
 class IbMemReg
 {
 public:
     friend class IbProtDom;
 
+    /**
+     * Constructor
+     *
+     * @param addr Address of an allocated memory region
+     * @param size Size of the allocated memory region
+     * @param freeOnCleanup True if the allocated memory should be free'd with
+     *          destruction of this object, false to leave management to the
+     *          caller.
+     */
     IbMemReg(void* addr, uint32_t size, bool freeOnCleanup = true) :
         m_addr(addr),
         m_size(size),
@@ -31,28 +46,52 @@ public:
         IBNET_ASSERT_PTR(addr);
     }
 
+    /**
+     * Destructor
+     */
     ~IbMemReg(void) {
         if (m_freeOnCleanup) {
             free(m_addr);
         }
     }
 
+    /**
+     * Get the local key assigned to the region when registered with a
+     * protection domain
+     */
     uint32_t GetLKey(void) const {
         return m_ibMemReg->lkey;
     }
 
+    /**
+     * Get the remote key assigned to the region when registered with a
+     * protection domain
+     */
     uint32_t GetRKey(void) const {
         return m_ibMemReg->rkey;
     }
 
+    /**
+     * Get the address/pointer of the allocated memory
+     */
     void* GetAddress(void) const {
         return m_addr;
     }
 
+    /**
+     * Get the size of the allocated memory region
+     */
     uint32_t GetSize(void) const {
         return m_size;
     }
 
+    /**
+     * Copy some data to the memory region
+     *
+     * @param data Pointer to data to copy
+     * @param offset Offset inside memory region to start copying to
+     * @param length Number of bytes to copy
+     */
     void Memcpy(void* data, uint32_t offset, uint32_t length) {
         if (offset > m_size) {
             throw IbException("Memcpy to IbMemReg failed: offset > m_size");
@@ -72,6 +111,9 @@ public:
         return str;
     }
 
+    /**
+     * Enable output to an out stream
+     */
     friend std::ostream &operator<<(std::ostream& os, const IbMemReg& o) {
         return os << "0x" << std::hex << o.m_ibMemReg->lkey
                   << "0x" << std::hex << o.m_ibMemReg->rkey

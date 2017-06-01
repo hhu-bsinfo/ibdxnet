@@ -8,9 +8,20 @@
 namespace ibnet {
 namespace core {
 
+/**
+ * Exception thrown on memory region related errors
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
+ */
 class IbMemoryException : public IbException
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param mem Affected memory region
+     * @param detail Error details
+     */
     IbMemoryException(const IbMemReg& mem, const std::string& detail) :
             IbException("[" + mem.ToString()
                      + ": " + detail)
@@ -18,6 +29,9 @@ public:
 
     }
 
+    /**
+     * Destructor
+     */
     ~IbTimeoutException(void) {};
 };
 

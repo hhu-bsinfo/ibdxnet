@@ -67,7 +67,7 @@ void IbSendQueue::Open(void)
     }
 }
 
-bool IbSendQueue::Send(const std::shared_ptr<IbMemReg>& memReg, uint32_t size, uint64_t workReqId)
+void IbSendQueue::Send(const std::shared_ptr<IbMemReg>& memReg, uint32_t size, uint64_t workReqId)
 {
     struct ibv_sge sge_list;
     struct ibv_send_wr wr;
@@ -106,8 +106,6 @@ bool IbSendQueue::Send(const std::shared_ptr<IbMemReg>& memReg, uint32_t size, u
                                   memReg->ToString());
         }
     }
-
-    return true;
 }
 
 uint32_t IbSendQueue::PollCompletion(bool blocking)

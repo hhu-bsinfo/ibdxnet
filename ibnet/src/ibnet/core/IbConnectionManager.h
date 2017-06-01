@@ -18,6 +18,13 @@
 namespace ibnet {
 namespace core {
 
+/**
+ * The connection manager is the core which manages automatic node discovery
+ * (using the DiscoveryManager), connection creation, setup, management as well
+ * as handling lost connections and cleanup.
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
+ */
 class IbConnectionManager : public ibnet::sys::ThreadLoop
 {
 public:
@@ -32,6 +39,19 @@ public:
         virtual void NodeDisconnected(uint16_t nodeId) = 0;
     };
 
+    /**
+     * Constructor
+     *
+     * @param ownNodeId Own node id
+     * @param socketPort Port for the (ethernet) socket for the discovery manager
+     * @param maxNumConnections Max number of simultanious connections to be
+     *          handled by the manager
+     * @param device An opened device
+     * @param protDom Protection domain bound to the device
+     * @param discoveryManager DiscoveryManager to use for connection creation
+     * @param connectionCreator ConnectionCreator implementation which
+     *          determines how to setup newly established connections
+     */
     IbConnectionManager(
             uint16_t ownNodeId,
             uint16_t socketPort,
@@ -40,12 +60,28 @@ public:
             std::shared_ptr<IbProtDom>& protDom,
             std::shared_ptr<IbDiscoveryManager>& discoveryManager,
             std::unique_ptr<IbConnectionCreator> connectionCreator);
+
+    /**
+     * Destructor
+     */
     ~IbConnectionManager(void);
 
+    /**
+     * Set a connection listener which listens to node connect/disconnect
+     * events
+     *
+     * @param listener Listener to set
+     */
     void SetNodeConnectedListener(Listener* listener) {
         m_listener = listener;
     }
 
+    /**
+     * Get the (remote) node id of a node with a physical QP num
+     *
+     * @param qpNum QP num of the node to get the node id of
+     * @return Node id of the node owning the QP with the physical QP id
+     */
     uint16_t GetNodeIdForPhysicalQPNum(uint32_t qpNum) {
         auto it = m_qpNumToNodeIdMappings.find(qpNum);
 
@@ -56,13 +92,39 @@ public:
         return IbNodeId::INVALID;
     }
 
-    // use the return shared pointer as a handle to determine
-    // who is still owning a reference to the connection
-    // do not keep/store the shared pointer here!
+    /**
+     * Get a connection
+     *
+     * If called for the first time with a node id, this might establish the
+     * connection to the specified node id but keeps it opened either until
+     * closed or the max number of connections is exceeded and the connection
+     * must be suppressed.
+     *
+     * Use the returned shared pointer as a handle to determine who is still
+     * owning a reference to the connection.
+     *
+     * Do not keep/store the shared pointer. If you want to operate on a
+     * connection, always call this function to get the connection.
+     *
+     * @param nodeId Get the connection of this node
+     * @return If successful, a valid pointer to the established connection.
+     *          Throws exceptions on errors.
+     */
     std::shared_ptr<IbConnection> GetConnection(uint16_t nodeId);
 
+    /**
+     * Explicitly close a connection
+     *
+     * @param nodeId Node id of the connection to close
+     * @param force True to force close (don't wait for queues to be emptied),
+     *          false to empty the queues and ensure everything queued is still
+     *          being processed/
+     */
     void CloseConnection(uint16_t nodeId, bool force);
 
+    /**
+     * Enable output to an out stream
+     */
     friend std::ostream &operator<<(std::ostream& os, const IbConnectionManager& o) {
         os << "Connections (" << o.m_openConnections << "):";
 

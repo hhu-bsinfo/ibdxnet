@@ -1,0 +1,4 @@
+ibstat -> list available infiniband devices and state
+ibstatus -> show ib device status
+ibnodes -> show available ib nodes in network
+iblinkinfo -> show switch layout with connected nodes, identifiers and total uplink

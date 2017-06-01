@@ -1,0 +1,254 @@
+#include "RecvThread.h"
+
+#include "MsgException.h"
+
+namespace ibnet {
+namespace msg {
+
+RecvThread::RecvThread(
+        std::shared_ptr<core::IbConnectionManager>& connectionManager,
+        std::shared_ptr<core::IbCompQueue>& sharedRecvCQ,
+        std::shared_ptr<core::IbCompQueue>& sharedFlowControlRecvCQ,
+        std::shared_ptr<BufferPool>& recvBufferPool,
+        std::shared_ptr<BufferPool>& recvFlowControlBufferPool,
+        std::shared_ptr<MessageHandler>& msgHandler,
+        std::shared_ptr<std::atomic<bool>> sharedQueueInitialFill) :
+    ThreadLoop("RecvThread"),
+    m_sharedRecvCQFilled(false),
+    m_nodeConnectedLock(),
+    m_connectionManager(connectionManager),
+    m_sharedRecvCQ(sharedRecvCQ),
+    m_sharedFlowControlRecvCQ(sharedFlowControlRecvCQ),
+    m_recvBufferPool(recvBufferPool),
+    m_recvFlowControlBufferPool(recvFlowControlBufferPool),
+    m_messageHandler(msgHandler),
+    m_sharedQueueInitialFill(sharedQueueInitialFill),
+    m_recvBytes(0),
+    m_recvFlowControlBytes(0)
+{
+    m_timers.push_back(sys::ProfileTimer("Total"));
+    m_timers.push_back(sys::ProfileTimer("FCPoll"));
+    m_timers.push_back(sys::ProfileTimer("FCGetNodeIdForQp"));
+    m_timers.push_back(sys::ProfileTimer("FCHandle"));
+    m_timers.push_back(sys::ProfileTimer("FCPostWRQ"));
+    m_timers.push_back(sys::ProfileTimer("BufferPoll"));
+    m_timers.push_back(sys::ProfileTimer("BufferGetNodeIdForQp"));
+    m_timers.push_back(sys::ProfileTimer("BufferHandle"));
+    m_timers.push_back(sys::ProfileTimer("BufferPostWRQ"));
+}
+
+RecvThread::~RecvThread(void)
+{
+
+}
+
+void RecvThread::NodeConnected(core::IbConnection& connection)
+{
+    // on the first connection, fill the shared recv queue
+    // doesn't matter which connection is used since the queue is shared
+
+    bool expected = false;
+    if (m_sharedQueueInitialFill->compare_exchange_strong(expected, true)) {
+        auto vec = m_recvBufferPool->GetEntries();
+        for (auto& it : vec) {
+            if (!connection.GetQp(0)->GetRecvQueue()->Reserve()) {
+                throw MsgException("Recv queue buffer outstanding overrun");
+            }
+
+            connection.GetQp(0)->GetRecvQueue()->Receive(it.m_mem, it.m_id);
+        }
+
+        vec = m_recvFlowControlBufferPool->GetEntries();
+        for (auto& it : vec) {
+            if (!connection.GetQp(1)->GetRecvQueue()->Reserve()) {
+                throw MsgException("Recv queue FC outstanding overrun");
+            }
+
+            connection.GetQp(1)->GetRecvQueue()->Receive(it.m_mem, it.m_id);
+        }
+    }
+}
+
+void RecvThread::PrintStatistics(void)
+{
+    std::cout << "ReceiveThread statistics:" <<
+    std::endl <<
+    "Throughput: " << m_recvBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
+    " MB/sec" << std::endl <<
+    "Recv data: " << m_recvBytes / 1024.0 / 1024.0 << " MB" << std::endl <<
+    "FC Throughput: " << m_recvFlowControlBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
+    " MB/sec" << std::endl <<
+    "FC Recv data: " << m_recvFlowControlBytes / 1024.0 / 1024.0 << " MB" << std::endl;
+
+    for (auto& it : m_timers) {
+        std::cout << it << std::endl;
+    }
+}
+
+void RecvThread::_BeforeRunLoop(void)
+{
+    m_timers[0].Enter();
+}
+
+void RecvThread::_RunLoop(void)
+{
+    // flow control has higher priority, always try this queue first
+    if (__ProcessFlowControl()) {
+        return;
+    }
+
+    __ProcessBuffers();
+}
+
+void RecvThread::_AfterRunLoop(void)
+{
+    m_timers[0].Exit();
+    PrintStatistics();
+}
+
+bool RecvThread::__ProcessFlowControl(void)
+{
+    uint32_t qpNum;
+    uint64_t workReqId = (uint64_t) -1;
+    uint32_t recvLength = 0;
+
+    m_timers[1].Enter();
+
+    try {
+        qpNum = m_sharedFlowControlRecvCQ->PollForCompletion(false, &workReqId,
+            &recvLength);
+    } catch (core::IbException& e) {
+        m_timers[1].Exit();
+        IBNET_LOG_ERROR("Polling for flow control completion failed: {}",
+            e.what());
+        return false;
+    }
+
+    m_timers[1].Exit();
+
+    // no flow control data available
+    if (qpNum == -1) {
+        return false;
+    }
+
+    m_timers[2].Enter();
+
+    uint16_t sourceNode = m_connectionManager->GetNodeIdForPhysicalQPNum(qpNum);
+    const BufferPool::Entry& poolEntry =
+        m_recvFlowControlBufferPool->Get((uint32_t) workReqId);
+    m_recvFlowControlBytes += recvLength;
+
+    m_timers[2].Exit();
+
+    if (sourceNode == core::IbNodeId::INVALID) {
+        if (!m_connectionManager->GetConnection(sourceNode)->GetQp(1)->
+                GetRecvQueue()->Reserve()) {
+            throw MsgException("Recv queue FC outstanding overrun");
+        }
+
+        // keep the recv queue filled, using a shared recv queue here
+        m_connectionManager->GetConnection(sourceNode)->GetQp(1)->
+            GetRecvQueue()->Receive(poolEntry.m_mem, poolEntry.m_id);
+
+        return false;
+    }
+
+    if (m_messageHandler) {
+        m_timers[3].Enter();
+
+        m_messageHandler->HandleFlowControlData(sourceNode,
+            *((uint32_t*) poolEntry.m_mem->GetAddress()));
+
+        m_timers[3].Exit();
+    }
+
+    m_timers[4].Enter();
+
+    if (!m_connectionManager->GetConnection(sourceNode)->GetQp(1)->
+        GetRecvQueue()->Reserve()) {
+        throw MsgException("Recv queue FC outstanding overrun");
+    }
+
+    // keep the recv queue filled, using a shared recv queue here
+    m_connectionManager->GetConnection(sourceNode)->GetQp(1)->
+        GetRecvQueue()->Receive(poolEntry.m_mem, poolEntry.m_id);
+
+    m_timers[4].Exit();
+
+    return true;
+}
+
+bool RecvThread::__ProcessBuffers(void)
+{
+    uint32_t qpNum;
+    uint64_t workReqId = (uint64_t) -1;
+    uint32_t recvLength = 0;
+
+    m_timers[5].Enter();
+
+    try {
+        qpNum = m_sharedRecvCQ->PollForCompletion(false, &workReqId,
+            &recvLength);
+    } catch (core::IbException& e) {
+        m_timers[5].Exit();
+        IBNET_LOG_ERROR("Polling for flow control completion failed: {}",
+            e.what());
+        return false;
+    }
+
+    m_timers[5].Exit();
+
+    // no data available
+    if (qpNum == -1) {
+        return false;
+    }
+
+    m_timers[6].Enter();
+
+    uint16_t sourceNode = m_connectionManager->GetNodeIdForPhysicalQPNum(qpNum);
+    const BufferPool::Entry& poolEntry =
+        m_recvBufferPool->Get((uint32_t) workReqId);
+    m_recvBytes += recvLength;
+
+    m_timers[6].Exit();
+
+    if (sourceNode == core::IbNodeId::INVALID) {
+        // keep the recv queue filled, using a shared recv queue here
+        if (!m_connectionManager->GetConnection(sourceNode)->GetQp(0)->
+            GetRecvQueue()->Reserve()) {
+            throw MsgException("Recv queue buffer outstanding overrun");
+        }
+
+        m_connectionManager->GetConnection(sourceNode)->GetQp(0)->
+            GetRecvQueue()->Receive(poolEntry.m_mem, poolEntry.m_id);
+
+        return false;
+    }
+
+    if (m_messageHandler) {
+        m_timers[7].Enter();
+
+        m_messageHandler->HandleMessage(sourceNode,
+            poolEntry.m_mem->GetAddress(), recvLength);
+
+        m_timers[7].Exit();
+    }
+
+    m_timers[8].Enter();
+
+    // keep the recv queue filled, using a shared recv queue here
+    if (!m_connectionManager->GetConnection(sourceNode)->GetQp(0)->
+        GetRecvQueue()->Reserve()) {
+        throw MsgException("Recv queue buffer outstanding overrun");
+    }
+
+    m_connectionManager->GetConnection(sourceNode)->GetQp(0)->
+        GetRecvQueue()->Receive(poolEntry.m_mem, poolEntry.m_id);
+
+    m_timers[8].Exit();
+
+    return true;
+}
+
+}
+}

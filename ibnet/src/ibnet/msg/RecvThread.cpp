@@ -47,6 +47,10 @@ void RecvThread::NodeConnected(core::IbConnection& connection)
     // on the first connection, fill the shared recv queue
     // doesn't matter which connection is used since the queue is shared
 
+    // TODO this won't work for multiple connections because it is set false
+    // on the first connection and further connections are never filled
+    // initially -> queues cannot receive data
+
     bool expected = false;
     if (m_sharedQueueInitialFill->compare_exchange_strong(expected, true)) {
         auto vec = m_recvBufferPool->GetEntries();

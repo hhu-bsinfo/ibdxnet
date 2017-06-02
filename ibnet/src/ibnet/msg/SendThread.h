@@ -15,15 +15,41 @@
 namespace ibnet {
 namespace msg {
 
+/**
+ * Dedicated thread for sending data.
+ *
+ * The thread is checking a job queue for new send jobs (SendData).
+ * If data is available, it tries to poll the job queue to get
+ * as many SendData objects as possible to fill up the send queue
+ * for optimal utilization. This is done on both the buffer queue
+ * as well as the flow control queue. However, handling flow control
+ * data is prioritzied.
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 02.06.2017
+ */
 class SendThread : public sys::ThreadLoop
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param buffer Registered memory region to use as send buffer
+     *          for buffer data
+     * @param flowControlBuffer Registered memory region to use as
+     *          send buffer for flow control data
+     * @param bufferSendQueues Shared data structure containing jobs
+     *          with data to send
+     * @param connectionManager Parent connection manager
+     */
     SendThread(const std::shared_ptr<core::IbMemReg>& buffer,
         const std::shared_ptr<core::IbMemReg>& flowControlBuffer,
         std::shared_ptr<SendQueues>& bufferSendQueues,
         std::shared_ptr<core::IbConnectionManager>& connectionManager);
     ~SendThread(void);
 
+    /**
+     * Print statistics/performance data
+     */
     void PrintStatistics(void);
 
 private:

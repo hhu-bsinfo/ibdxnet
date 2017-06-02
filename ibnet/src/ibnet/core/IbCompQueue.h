@@ -91,10 +91,10 @@ public:
     uint32_t PollForCompletion(bool blocking = true, uint64_t* workReqId = nullptr, uint32_t* recvLength = nullptr);
 
     /**
- * Blocking poll all remaining work requests until they completed
- *
- * @return Number of remaining work requests completed
- */
+     * Blocking poll all remaining work requests until they completed
+     *
+     * @return Number of remaining work requests completed
+     */
     uint32_t Flush(void);
 
 private:

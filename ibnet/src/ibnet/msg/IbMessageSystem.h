@@ -17,7 +17,6 @@
 
 #include "BufferPool.h"
 #include "Config.h"
-#include "EndpointOut.h"
 #include "MessageHandler.h"
 #include "RecvThread.h"
 #include "SendQueues.h"
@@ -26,29 +25,89 @@
 namespace ibnet {
 namespace msg {
 
+/**
+ * Message system to easily send/receive "messages"/buffers.
+ *
+ * The message system uses a configurable number of send and receive threads
+ * to provide high throughput for many send jobs optimizations for
+ * multithreaded access/buffer posting.
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 02.06.2017
+ */
 class IbMessageSystem : public core::IbConnectionManager::Listener, public core::IbDiscoveryManager::Listener
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param ownNodeId Node id of current node
+     * @param nodeConf Node configuration
+     * @param config Configuration for system
+     * @param messageHandler Optional message handler for incoming data
+     * @param connectionListener Optional connection listener
+     * @param discoveryListener Optional discovery listener
+     */
     IbMessageSystem(uint16_t ownNodeId, const ibnet::core::IbNodeConf& nodeConf,
         const Config& config, std::shared_ptr<MessageHandler> messageHandler,
         std::shared_ptr<core::IbConnectionManager::Listener> connectionListener,
         std::shared_ptr<core::IbDiscoveryManager::Listener> discoveryListener);
+
+    /**
+     * Destructor
+     */
     ~IbMessageSystem(void);
 
+    /**
+     * Add a new node to the configuration.
+     *
+     * Use this to add nodes during runtime.
+     *
+     * @param entry New node config entry to add
+     */
     void AddNode(const core::IbNodeConf::Entry& entry);
 
+    /**
+     * Send a message/buffer
+     *
+     * @param destination Node id of the destination
+     * @param buffer Allocated buffer of data to send
+     * @param length Number of bytes to send
+     * @return True if sending buffer successful, false otherwise
+     */
     bool SendMessage(uint16_t destination, void* buffer, uint32_t length);
 
+    /**
+     * Send flow control data
+     *
+     * @param destination Node id of the destination
+     * @param data Flow control data to send
+     * @return True if sending successful, false otherwise
+     */
     bool SendFlowControl(uint16_t destination, uint32_t data);
 
+    /**
+     * Print the current status of the message system
+     */
     void PrintStatus(void);
 
+    /**
+     * Callback override
+     */
     void NodeConnected(uint16_t nodeId, core::IbConnection& connection) override;
 
+    /**
+     * Callback override
+     */
     void NodeDisconnected(uint16_t nodeId) override;
 
+    /**
+     * Callback override
+     */
     void NodeDiscovered(uint16_t nodeId) override;
 
+    /**
+     * Callback override
+     */
     void NodeInvalidated(uint16_t nodeId) override;
 
 private:

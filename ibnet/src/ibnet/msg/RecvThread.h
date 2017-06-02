@@ -17,9 +17,35 @@
 namespace ibnet {
 namespace msg {
 
+/**
+ * Dedicated thread for receiving data.
+ *
+ * The thread is polling the buffer and flow control data receive
+ * queues. Furthermore, it tries to keep the queues busy by
+ * polling for multiple work requests (if available) and also
+ * adding new work requests once old ones are consumed
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 02.06.2017
+ */
 class RecvThread : public sys::ThreadLoop
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param connectionManager The parent connection manager
+     * @param sharedRecvCQ Shared receive buffer queue to use
+     * @param sharedFlowControlRecvCQ  Shared receive flow control
+     *          queue to use
+     * @param recvBufferPool Buffer pool to use to fill up the
+     *          queues with new work requests
+     * @param recvFlowControlBufferPool Buffer pool for flow control
+     *          data requests to fill the queues
+     * @param msgHandler Message handler to dispatch incoming data to
+     * @param sharedQueueInitialFill Shared atomic to detect if the
+     *          queues have already been filled initially to kick of
+     *          processing
+     */
     RecvThread(
         std::shared_ptr<core::IbConnectionManager>& connectionManager,
         std::shared_ptr<core::IbCompQueue>& sharedRecvCQ,
@@ -30,8 +56,16 @@ public:
         std::shared_ptr<std::atomic<bool>> sharedQueueInitialFill);
     ~RecvThread(void);
 
+    /**
+     * Notify the receiver thread about a new connection created
+     *
+     * @param connection New connection established
+     */
     void NodeConnected(core::IbConnection& connection);
 
+    /**
+     * Print statistics/performance data of the receiver thread
+     */
     void PrintStatistics(void);
 
 protected:

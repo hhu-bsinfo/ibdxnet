@@ -4,21 +4,63 @@
 namespace ibnet {
 namespace msg {
 
+/**
+ * Config for IbMessageSystem
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 02.06.2017
+ */
 struct Config
 {
+    /**
+     * Receive queue size for buffer data
+     */
     uint16_t m_maxRecvReqs;
+
+    /**
+     * Send queue size for buffer data
+     */
     uint16_t m_maxSendReqs;
+
+    /**
+     * Max size per buffer (in and out)
+     */
     uint32_t m_inOutBufferSize;
 
+    /**
+     * Receive queue size for flow control data
+     */
     uint16_t m_flowControlMaxRecvReqs;
+
+    /**
+     * Send queue size for flow control data
+     */
     uint16_t m_flowControlMaxSendReqs;
 
+    /**
+     * (Send) job pool size per connection
+     */
     uint32_t m_connectionJobPoolSize;
+
+    /**
+     * Number of send threads
+     */
     uint8_t m_sendThreads;
+
+    /**
+     * Number of receive threads
+     */
     uint8_t m_recvThreads;
 
+    /**
+     * Max number of open connections
+     */
     uint16_t m_maxNumConnections;
 
+    /**
+     * Constructor
+     *
+     * Sets default values only
+     */
     Config(void) :
         m_maxRecvReqs(10),
         m_maxSendReqs(10),

@@ -129,6 +129,9 @@ uint32_t SendThread::__ProcessFlowControl(
 
     m_timers[4].Enter();
 
+    // TODO using a single buffer is not possible for multiple elements
+    // without corrupting the data, use a buffer pool or a fixed number
+    // of buffers assigned to each thread (num buffers = queue size)
     connection->GetQp(1)->GetSendQueue()->Send(m_flowControlBuffer,
         numBytesToSend);
     m_timers[4].Exit();
@@ -197,6 +200,9 @@ uint32_t SendThread::__ProcessBuffers(uint16_t nodeId,
 
         m_timers[7].Enter();
 
+        // TODO using a single buffer is not possible for multiple elements
+        // without corrupting the data, use a buffer pool or a fixed number
+        // of buffers assigned to each thread (num buffers = queue size)
         connection->GetQp(0)->GetSendQueue()->Send(m_buffer, numBytesToSend);
 
         m_timers[7].Exit();

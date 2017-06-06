@@ -15,13 +15,13 @@ RecvThread::RecvThread(
         std::shared_ptr<MessageHandler>& msgHandler) :
     ThreadLoop("RecvThread"),
     m_primaryRecvThread(primaryRecvThread),
-    m_nodeConnectedLock(),
     m_connectionManager(connectionManager),
     m_sharedRecvCQ(sharedRecvCQ),
     m_sharedFlowControlRecvCQ(sharedFlowControlRecvCQ),
     m_recvBufferPool(recvBufferPool),
     m_recvFlowControlBufferPool(recvFlowControlBufferPool),
     m_messageHandler(msgHandler),
+    m_sharedQueueInitialFill(false),
     m_recvBytes(0),
     m_recvFlowControlBytes(0)
 {
@@ -47,6 +47,17 @@ void RecvThread::NodeConnected(core::IbConnection& connection)
     // primary recv thread only (on multiple recv threads)
 
     if (m_primaryRecvThread) {
+        bool expected = false;
+        if (!m_sharedQueueInitialFill.compare_exchange_strong(expected, true,
+                std::memory_order_relaxed)) {
+            return;
+        }
+
+        // sanity check
+        if (!connection.GetQp(0)->GetRecvQueue()->IsRecvQueueShared()) {
+            throw MsgException("Can't work with non shared recv queue(s)");
+        }
+
         auto vec = m_recvBufferPool->GetEntries();
         for (auto& it : vec) {
             if (!connection.GetQp(0)->GetRecvQueue()->Reserve()) {
@@ -54,6 +65,11 @@ void RecvThread::NodeConnected(core::IbConnection& connection)
             }
 
             connection.GetQp(0)->GetRecvQueue()->Receive(it.m_mem, it.m_id);
+        }
+
+        // sanity check
+        if (!connection.GetQp(1)->GetRecvQueue()->IsRecvQueueShared()) {
+            throw MsgException("Can't work with non shared FC recv queue(s)");
         }
 
         vec = m_recvFlowControlBufferPool->GetEntries();

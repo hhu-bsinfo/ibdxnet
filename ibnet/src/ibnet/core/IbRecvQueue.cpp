@@ -18,9 +18,16 @@ IbRecvQueue::IbRecvQueue(std::shared_ptr<IbDevice>& device,
     m_parentQp(parentQp),
     m_queueSize(queueSize),
     m_compQueueIsShared(true),
+    m_recvQueueIsShared(true),
     m_compQueue(sharedCompQueue),
     m_sharedRecvQueue(sharedRecvQueue)
 {
+    if (m_sharedRecvQueue == nullptr) {
+        m_recvQueueIsShared = false;
+    } else {
+        IBNET_LOG_DEBUG("Using shared recv queue");
+    }
+
     // create non shared/private comp queue, match size of max work requests
     if (m_compQueue == nullptr) {
         m_compQueue = std::make_shared<IbCompQueue>(device, queueSize);

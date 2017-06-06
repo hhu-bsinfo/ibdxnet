@@ -80,7 +80,6 @@ private:
 
 private:
     bool m_primaryRecvThread;
-    std::mutex m_nodeConnectedLock;
     std::shared_ptr<core::IbConnectionManager> m_connectionManager;
     std::shared_ptr<core::IbCompQueue> m_sharedRecvCQ;
     std::shared_ptr<core::IbCompQueue> m_sharedFlowControlRecvCQ;
@@ -89,6 +88,7 @@ private:
     std::shared_ptr<MessageHandler> m_messageHandler;
 
 private:
+    std::atomic<bool> m_sharedQueueInitialFill;
     uint64_t m_recvBytes;
     uint64_t m_recvFlowControlBytes;
     std::vector<sys::ProfileTimer> m_timers;

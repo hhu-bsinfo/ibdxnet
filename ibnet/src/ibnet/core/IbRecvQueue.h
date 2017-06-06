@@ -54,6 +54,14 @@ public:
     }
 
     /**
+     * Check if the recv queue is shared
+     * @return True if shared, false on dedicated recv queue
+     */
+    bool IsRecvQueueShared(void) const {
+        return m_recvQueueIsShared;
+    }
+
+    /**
      * Check if the completion queue is shared
      * @return True if shared, false on dedicated completion queue
      */
@@ -116,6 +124,7 @@ private:
     IbQueuePair& m_parentQp;
     uint16_t m_queueSize;
     bool m_compQueueIsShared;
+    bool m_recvQueueIsShared;
 
     std::shared_ptr<IbCompQueue> m_compQueue;
     std::shared_ptr<IbSharedRecvQueue> m_sharedRecvQueue;

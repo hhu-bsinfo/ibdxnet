@@ -48,6 +48,8 @@ std::shared_ptr<IbMemReg> IbProtDom::Register(void* addr, uint32_t size, bool fr
     IBNET_ASSERT_PTR(addr);
     IBNET_ASSERT(size != 0);
 
+    m_mutex.lock();
+
     IBNET_LOG_INFO("[{}] Registering memory region {:p}, size {}",
             m_name, addr, size);
 
@@ -64,6 +66,7 @@ std::shared_ptr<IbMemReg> IbProtDom::Register(void* addr, uint32_t size, bool fr
     if (memReg->m_ibMemReg == nullptr) {
         IBNET_LOG_ERROR("[{}] Registering memory region failed: {}",
                 m_name, strerror(errno));
+        m_mutex.unlock();
         throw IbException("Registering memory region failed");
     }
 
@@ -72,7 +75,11 @@ std::shared_ptr<IbMemReg> IbProtDom::Register(void* addr, uint32_t size, bool fr
     IBNET_LOG_DEBUG("[{}] Registering memory region successful, {}",
             m_name, *memReg);
 
-    return m_registeredRegions.back();
+    std::shared_ptr<IbMemReg> ret = m_registeredRegions.back();
+
+    m_mutex.unlock();
+
+    return ret;
 }
 
 }

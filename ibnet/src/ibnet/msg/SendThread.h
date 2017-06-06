@@ -23,7 +23,7 @@ namespace msg {
  * as many SendData objects as possible to fill up the send queue
  * for optimal utilization. This is done on both the buffer queue
  * as well as the flow control queue. However, handling flow control
- * data is prioritzied.
+ * data is prioritized.
  *
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 02.06.2017
  */
@@ -33,16 +33,15 @@ public:
     /**
      * Constructor
      *
-     * @param buffer Registered memory region to use as send buffer
-     *          for buffer data
-     * @param flowControlBuffer Registered memory region to use as
-     *          send buffer for flow control data
+     * @param protDom Protection domain to register buffers at
+     * @param outBufferSize Size of the buffer(s) for outgoing data
+     * @param bufferQueueSize Size of send queue
      * @param bufferSendQueues Shared data structure containing jobs
      *          with data to send
      * @param connectionManager Parent connection manager
      */
-    SendThread(const std::shared_ptr<core::IbMemReg>& buffer,
-        const std::shared_ptr<core::IbMemReg>& flowControlBuffer,
+    SendThread(std::shared_ptr<core::IbProtDom>& protDom,
+        uint32_t outBufferSize, uint32_t bufferQueueSize,
         std::shared_ptr<SendQueues>& bufferSendQueues,
         std::shared_ptr<core::IbConnectionManager>& connectionManager);
     ~SendThread(void);
@@ -63,13 +62,17 @@ private:
     uint32_t __ProcessFlowControl(uint16_t nodeId,
         std::shared_ptr<core::IbConnection>& connection,
         std::shared_ptr<std::atomic<uint32_t>>& flowControlData);
+
     uint32_t __ProcessBuffers(uint16_t nodeId,
         std::shared_ptr<core::IbConnection>& connection,
         std::shared_ptr<ibnet::sys::Queue<std::shared_ptr<SendData>>>& queue);
 
+    std::shared_ptr<core::IbMemReg> __AllocAndRegisterMem(
+        std::shared_ptr<core::IbProtDom>& protDom, uint32_t size);
+
 private:
-    const std::shared_ptr<core::IbMemReg> m_flowControlBuffer;
-    const std::shared_ptr<core::IbMemReg> m_buffer;
+    std::shared_ptr<core::IbMemReg> m_flowControlBuffer;
+    std::vector<std::shared_ptr<core::IbMemReg>> m_buffers;
     std::shared_ptr<SendQueues> m_bufferSendQueues;
     std::shared_ptr<core::IbConnectionManager> m_connectionManager;
 

@@ -2,6 +2,7 @@
 #define IBNET_CORE_IBPROTDOM_H
 
 #include <memory>
+#include <mutex>
 
 #include "IbDevice.h"
 #include "IbMemReg.h"
@@ -57,13 +58,27 @@ public:
     }
 
     /**
+     * Get the total ammount of memory registered (in bytes)
+     */
+    uint64_t GetTotalMemoryUsage(void) const {
+        uint64_t total = 0;
+
+        for (auto& it : m_registeredRegions) {
+            total += it->GetSize();
+        }
+
+        return total;
+    }
+
+    /**
      * Enable output to an out stream
      */
     friend std::ostream &operator<<(std::ostream& os, const IbProtDom& o) {
-        os << o.m_name << ":";
+        os << o.m_name << " (" << std::dec << o.GetTotalMemoryUsage() <<
+            " bytes):";
 
         for (auto& it : o.m_registeredRegions) {
-            os << "\n" << it;
+            os << "\n" << *it;
         }
 
         return os;
@@ -73,6 +88,7 @@ private:
     const std::string m_name;
     ibv_pd* m_ibProtDom;
 
+    std::mutex m_mutex;
     std::vector<std::shared_ptr<IbMemReg>> m_registeredRegions;
 };
 

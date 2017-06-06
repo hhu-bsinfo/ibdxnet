@@ -84,12 +84,14 @@ IbMessageSystem::IbMessageSystem(uint16_t ownNodeId,
     IBNET_LOG_INFO("Starting {} sender threads", m_config.m_sendThreads);
     for (uint8_t i = 0; i < m_config.m_sendThreads; i++) {
         auto thread = std::make_unique<SendThread>(
-            __AllocAndRegisterMem(m_config.m_inOutBufferSize),
-            __AllocAndRegisterMem(sizeof(uint32_t)),
+            m_protDom,
+            m_config.m_inOutBufferSize, m_config.m_maxSendReqs,
             m_bufferSendQueues, m_connectionManager);
         thread->Start();
         m_sendThreads.push_back(std::move(thread));
     }
+
+    IBNET_LOG_DEBUG("Protection domain:\n{}", *m_protDom);
 
     IBNET_LOG_INFO("Initializing message system done");
 }

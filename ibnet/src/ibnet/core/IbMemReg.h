@@ -116,9 +116,9 @@ public:
      */
     friend std::ostream &operator<<(std::ostream& os, const IbMemReg& o) {
         return os << "0x" << std::hex << o.m_ibMemReg->lkey
-                  << "0x" << std::hex << o.m_ibMemReg->rkey
+                  << ", 0x" << std::hex << o.m_ibMemReg->rkey
                   << ", 0x" << std::hex << (uintptr_t) o.m_addr
-                  << ", " <<  o.m_size
+                  << ", " <<  std::dec << o.m_size
                   << ", " << o.m_freeOnCleanup;
     }
 

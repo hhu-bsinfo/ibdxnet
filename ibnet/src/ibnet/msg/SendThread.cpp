@@ -5,18 +5,22 @@
 namespace ibnet {
 namespace msg {
 
-SendThread::SendThread(const std::shared_ptr<core::IbMemReg>& buffer,
-        const std::shared_ptr<core::IbMemReg>& flowControlBuffer,
+SendThread::SendThread(std::shared_ptr<core::IbProtDom>& protDom,
+        uint32_t outBufferSize, uint32_t bufferQueueSize,
         std::shared_ptr<SendQueues>& bufferSendQueues,
         std::shared_ptr<core::IbConnectionManager>& connectionManager) :
     ThreadLoop("SendThread"),
-    m_buffer(buffer),
-    m_flowControlBuffer(flowControlBuffer),
     m_bufferSendQueues(bufferSendQueues),
     m_connectionManager(connectionManager),
     m_sentBytes(0),
     m_sentFlowControlBytes(0)
 {
+    m_flowControlBuffer = __AllocAndRegisterMem(protDom, sizeof(uint32_t));
+
+    for (uint32_t i = 0; i < bufferQueueSize; i++) {
+        m_buffers.push_back(__AllocAndRegisterMem(protDom, outBufferSize));
+    }
+
     m_timers.push_back(sys::ProfileTimer("Total"));
     m_timers.push_back(sys::ProfileTimer("NextJob"));
     m_timers.push_back(sys::ProfileTimer("GetConnection"));
@@ -190,17 +194,14 @@ uint32_t SendThread::__ProcessBuffers(uint16_t nodeId,
         m_timers[6].Enter();
 
         numBytesToSend = data->m_size;
-        memcpy(m_buffer->GetAddress(), data->m_buffer, data->m_size);
+        memcpy(m_buffers[i]->GetAddress(), data->m_buffer, data->m_size);
         data.reset();
 
         m_timers[6].Exit();
 
         m_timers[7].Enter();
 
-        // TODO using a single buffer is not possible for multiple elements
-        // without corrupting the data, use a buffer pool or a fixed number
-        // of buffers assigned to each thread (num buffers = queue size)
-        connection->GetQp(0)->GetSendQueue()->Send(m_buffer, numBytesToSend);
+        connection->GetQp(0)->GetSendQueue()->Send(m_buffers[i], numBytesToSend);
 
         m_timers[7].Exit();
 
@@ -232,6 +233,15 @@ uint32_t SendThread::__ProcessBuffers(uint16_t nodeId,
     m_sentBytes += totalBytesSent;
 
     return elemsSent;
+}
+
+std::shared_ptr<core::IbMemReg> SendThread::__AllocAndRegisterMem(
+        std::shared_ptr<core::IbProtDom>& protDom, uint32_t size)
+{
+    void* buffer = malloc(size);
+    memset(buffer, 0, size);
+
+    return protDom->Register(buffer, size, true);
 }
 
 }

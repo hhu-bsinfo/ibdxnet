@@ -69,14 +69,11 @@ IbMessageSystem::IbMessageSystem(uint16_t ownNodeId,
 
     IBNET_LOG_INFO("Starting {} receiver threads", m_config.m_recvThreads);
 
-    std::shared_ptr<std::atomic<bool>> sharedQueueInitialFill =
-        std::make_shared<std::atomic<bool>>(false);
     for (uint8_t i = 0; i < m_config.m_recvThreads; i++) {
-        auto thread = std::make_unique<RecvThread>(
+        auto thread = std::make_unique<RecvThread>(i == 0,
             m_connectionManager, m_sharedRecvCompQueue,
             m_sharedFlowControlRecvCompQueue, m_recvBufferPool,
-            m_flowControlRecvBufferPool, m_messageHandler,
-            sharedQueueInitialFill);
+            m_flowControlRecvBufferPool, m_messageHandler);
         thread->Start();
         m_recvThreads.push_back(std::move(thread));
     }

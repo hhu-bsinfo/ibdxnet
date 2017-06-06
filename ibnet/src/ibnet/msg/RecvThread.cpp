@@ -6,15 +6,15 @@ namespace ibnet {
 namespace msg {
 
 RecvThread::RecvThread(
+        bool primaryRecvThread,
         std::shared_ptr<core::IbConnectionManager>& connectionManager,
         std::shared_ptr<core::IbCompQueue>& sharedRecvCQ,
         std::shared_ptr<core::IbCompQueue>& sharedFlowControlRecvCQ,
         std::shared_ptr<BufferPool>& recvBufferPool,
         std::shared_ptr<BufferPool>& recvFlowControlBufferPool,
-        std::shared_ptr<MessageHandler>& msgHandler,
-        std::shared_ptr<std::atomic<bool>> sharedQueueInitialFill) :
+        std::shared_ptr<MessageHandler>& msgHandler) :
     ThreadLoop("RecvThread"),
-    m_sharedRecvCQFilled(false),
+    m_primaryRecvThread(primaryRecvThread),
     m_nodeConnectedLock(),
     m_connectionManager(connectionManager),
     m_sharedRecvCQ(sharedRecvCQ),
@@ -22,7 +22,6 @@ RecvThread::RecvThread(
     m_recvBufferPool(recvBufferPool),
     m_recvFlowControlBufferPool(recvFlowControlBufferPool),
     m_messageHandler(msgHandler),
-    m_sharedQueueInitialFill(sharedQueueInitialFill),
     m_recvBytes(0),
     m_recvFlowControlBytes(0)
 {
@@ -45,14 +44,9 @@ RecvThread::~RecvThread(void)
 void RecvThread::NodeConnected(core::IbConnection& connection)
 {
     // on the first connection, fill the shared recv queue
-    // doesn't matter which connection is used since the queue is shared
+    // primary recv thread only (on multiple recv threads)
 
-    // TODO this won't work for multiple connections because it is set false
-    // on the first connection and further connections are never filled
-    // initially -> queues cannot receive data
-
-    bool expected = false;
-    if (m_sharedQueueInitialFill->compare_exchange_strong(expected, true)) {
+    if (m_primaryRecvThread) {
         auto vec = m_recvBufferPool->GetEntries();
         for (auto& it : vec) {
             if (!connection.GetQp(0)->GetRecvQueue()->Reserve()) {

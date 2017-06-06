@@ -33,6 +33,8 @@ public:
     /**
      * Constructor
      *
+     * @param primaryRecvThread True if primary recv thread (handles some
+     *          queue management on NodeConnect), false for all other threads
      * @param connectionManager The parent connection manager
      * @param sharedRecvCQ Shared receive buffer queue to use
      * @param sharedFlowControlRecvCQ  Shared receive flow control
@@ -42,18 +44,15 @@ public:
      * @param recvFlowControlBufferPool Buffer pool for flow control
      *          data requests to fill the queues
      * @param msgHandler Message handler to dispatch incoming data to
-     * @param sharedQueueInitialFill Shared atomic to detect if the
-     *          queues have already been filled initially to kick of
-     *          processing
      */
     RecvThread(
+        bool primaryRecvThread,
         std::shared_ptr<core::IbConnectionManager>& connectionManager,
         std::shared_ptr<core::IbCompQueue>& sharedRecvCQ,
         std::shared_ptr<core::IbCompQueue>& sharedFlowControlRecvCQ,
         std::shared_ptr<BufferPool>& recvBufferPool,
         std::shared_ptr<BufferPool>& recvFlowControlBufferPool,
-        std::shared_ptr<MessageHandler>& msgHandler,
-        std::shared_ptr<std::atomic<bool>> sharedQueueInitialFill);
+        std::shared_ptr<MessageHandler>& msgHandler);
     ~RecvThread(void);
 
     /**
@@ -80,7 +79,7 @@ private:
     bool __ProcessBuffers(void);
 
 private:
-    bool m_sharedRecvCQFilled;
+    bool m_primaryRecvThread;
     std::mutex m_nodeConnectedLock;
     std::shared_ptr<core::IbConnectionManager> m_connectionManager;
     std::shared_ptr<core::IbCompQueue> m_sharedRecvCQ;
@@ -88,7 +87,6 @@ private:
     std::shared_ptr<BufferPool> m_recvBufferPool;
     std::shared_ptr<BufferPool> m_recvFlowControlBufferPool;
     std::shared_ptr<MessageHandler> m_messageHandler;
-    std::shared_ptr<std::atomic<bool>> m_sharedQueueInitialFill;
 
 private:
     uint64_t m_recvBytes;

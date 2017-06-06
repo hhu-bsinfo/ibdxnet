@@ -68,17 +68,19 @@ bool SendQueues::Next(uint16_t& targetNodeId, uint16_t& connectionId,
         std::shared_ptr<std::atomic<uint32_t>>& flowControlData,
         std::shared_ptr<ibnet::sys::Queue<std::shared_ptr<SendData>>>& queue)
 {
-    bool expected = false;
-    if (!m_connections[connectionId].m_aquiredQueue.compare_exchange_strong(
-            expected, true, std::memory_order_acquire)) {
+    if (!m_writeInterests.PopFront(connectionId)) {
         return false;
     }
 
-    if (!m_writeInterests.PopFront(connectionId)) {
-        expected = true;
-        if (!m_connections[connectionId].m_aquiredQueue.compare_exchange_strong(
-                expected, false, std::memory_order_relaxed)) {
-            throw MsgException("Invalid aquire queue state");
+    bool expected = false;
+    if (!m_connections[connectionId].m_aquiredQueue.compare_exchange_strong(
+            expected, true, std::memory_order_acquire)) {
+
+        // got an interest token but the queue is already acquired
+        // put interest back
+        while (!m_writeInterests.PushBack(connectionId)) {
+            // force push back, don't lose interest
+            std::this_thread::yield();
         }
 
         return false;

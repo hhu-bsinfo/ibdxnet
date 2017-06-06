@@ -1,19 +1,8 @@
 #include "IbMessageSystemTest.h"
 
-#include <signal.h>
-
-#include <iostream>
-#include <chrono>
-#include <thread>
-
 #include <argagg/argagg.hpp>
-#include <backwards/backward.hpp>
 
-#include "ibnet/sys/Logger.h"
-#include "ibnet/sys/ProfileTimer.hpp"
-#include "ibnet/core/IbException.h"
 #include "ibnet/core/IbNodeConfArgListReader.h"
-#include "ibnet/msg/IbMessageSystem.h"
 
 static std::shared_ptr<IbMessageSystemTest> g_messageSystemTest;
 
@@ -234,6 +223,21 @@ void IbMessageSystemTest::HandleMessage(uint16_t source, void* buffer, uint32_t 
         // queue full, wait a moment
         std::this_thread::yield();
     }
+
+    // briefly check contents
+    for (uint32_t i = 0; i < length; i++) {
+        if (i > 10) {
+            break;
+        }
+
+        uint8_t* buf = static_cast<uint8_t*>(buffer);
+
+        if (buf[i] != i) {
+            std::cout << "Corrupted buffer detected, from node " << std::hex
+                << source << std::endl;
+            break;
+        }
+    }
 }
 
 void IbMessageSystemTest::HandleFlowControlData(uint16_t source, uint32_t data)
@@ -256,7 +260,10 @@ IbMessageSystemTest::ApplicationSendThread::ApplicationSendThread(
     m_timer(),
     m_throughput()
 {
-
+    for (uint32_t i = 0; i < msgBufferSize; i++) {
+        uint8_t* buffer = static_cast<uint8_t*>(m_buffer);
+        buffer[i] = (uint8_t) i;
+    }
 }
 
 IbMessageSystemTest::ApplicationSendThread::~ApplicationSendThread(void)

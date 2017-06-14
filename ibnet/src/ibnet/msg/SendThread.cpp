@@ -229,7 +229,6 @@ uint32_t SendThread::__ProcessBuffers(uint16_t nodeId,
         m_timers[8].Exit();
     }
 
-    m_bufferSendQueues->Finished(connection->GetConnectionId(), elemsSent);
     m_sentBytes += totalBytesSent;
 
     return elemsSent;

@@ -113,7 +113,10 @@ void SendQueues::Finished(uint16_t connectionId, uint32_t consumedInterests)
     if (m_connections[connectionId].m_writeInterestCount.fetch_sub(
             consumedInterests,
             std::memory_order_relaxed) - consumedInterests > 0) {
-        m_writeInterests.PushBack(connectionId);
+        while (!m_writeInterests.PushBack(connectionId)) {
+            // force push back, don't lose interest
+            std::this_thread::yield();
+        }
     }
 
     m_connections[connectionId].m_aquiredQueue.store(false,

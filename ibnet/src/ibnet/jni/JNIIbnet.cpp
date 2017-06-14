@@ -39,7 +39,7 @@ static std::shared_ptr<ibnet::jni::NodeConnectionListener> g_nodeConnectionListe
 static std::shared_ptr<ibnet::jni::NodeDiscoveryListener> g_nodeDiscoveryListener;
 static std::unique_ptr<ibnet::msg::IbMessageSystem> g_messageSystem;
 
-JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_JNIIbnet_init(JNIEnv* p_env,
+JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_init(JNIEnv* p_env,
         jclass p_class, jshort p_ownNodeId, jint p_maxRecvReqs,
         jint p_maxSendReqs, jint p_inOutBufferSize,
         jint p_flowControlMaxRecvReqs, jint p_flowControlMaxSendReqs,
@@ -101,7 +101,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_JNIIbnet_init(JNIEnv* p_env,
 	return (jboolean) 1;
 }
 
-JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_JNIIbnet_shutdown(JNIEnv* p_env, jclass p_class)
+JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_shutdown(JNIEnv* p_env, jclass p_class)
 {
     jboolean res = (jboolean) 1;
 
@@ -119,14 +119,14 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_JNIIbnet_shutdown(JNIEnv* p_en
     return res;
 }
 
-JNIEXPORT void JNICALL Java_de_hhu_bsinfo_net_JNIIbnet_addNode(JNIEnv* p_env,
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_addNode(JNIEnv* p_env,
         jclass p_class, jint p_ipv4)
 {
     ibnet::core::IbNodeConf::Entry entry(ibnet::sys::AddressIPV4((uint32_t) p_ipv4));
     g_messageSystem->AddNode(entry);
 }
 
-JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_JNIIbnet_postBuffer(
+JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_postBuffer(
         JNIEnv* p_env, jclass p_class, jshort p_nodeId, jobject p_buffer, jint p_length)
 {
     // note: all buffers _MUST_ be allocated as direct buffers
@@ -138,10 +138,11 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_JNIIbnet_postBuffer(
     // buffer is free'd by message system (TODO bad idea?)
     jboolean ret = (jboolean) g_messageSystem->SendMessage((uint16_t) p_nodeId,
         tmp, (uint32_t) p_length);
+
     return ret;
 }
 
-JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_JNIIbnet_postFlowControlData(
+JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_postFlowControlData(
     JNIEnv* p_env, jclass p_class, jshort p_nodeId, jint p_data)
 {
     return (jboolean) g_messageSystem->SendFlowControl((uint16_t) p_nodeId,

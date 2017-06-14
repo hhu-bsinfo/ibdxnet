@@ -21,6 +21,7 @@ RecvThread::RecvThread(
     m_recvBufferPool(recvBufferPool),
     m_recvFlowControlBufferPool(recvFlowControlBufferPool),
     m_messageHandler(msgHandler),
+    // TODO bug: share atomic with recv threads
     m_sharedQueueInitialFill(false),
     m_recvBytes(0),
     m_recvFlowControlBytes(0)
@@ -45,7 +46,6 @@ void RecvThread::NodeConnected(core::IbConnection& connection)
 {
     // on the first connection, fill the shared recv queue
     // primary recv thread only (on multiple recv threads)
-
     if (m_primaryRecvThread) {
         bool expected = false;
         if (!m_sharedQueueInitialFill.compare_exchange_strong(expected, true,

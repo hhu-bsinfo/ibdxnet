@@ -70,7 +70,7 @@ IbConnectionManager::~IbConnectionManager(void)
 
 std::shared_ptr<IbConnection> IbConnectionManager::GetConnection(uint16_t nodeId)
 {
-    //IBNET_LOG_TRACE_FUNC;
+    IBNET_LOG_TRACE("GetConnection: 0x{:x}", nodeId);
 
     if (nodeId == IbNodeId::INVALID) {
         throw IbException("Invalid node id provided");
@@ -78,10 +78,13 @@ std::shared_ptr<IbConnection> IbConnectionManager::GetConnection(uint16_t nodeId
 
     // connection already established?
     if (m_connections[nodeId]) {
+        IBNET_LOG_TRACE("GetConnection (available): 0x{:x}", nodeId);
         return m_connections[nodeId];
     }
 
     m_connectionMutex.lock();
+
+    IBNET_LOG_TRACE("GetConnection (active create): 0x{:x}", nodeId);
 
     std::shared_ptr<IbNodeConf::Entry> nodeInfo;
     try {
@@ -225,7 +228,7 @@ void IbConnectionManager::CloseConnection(uint16_t nodeId, bool force)
         m_listener->NodeDisconnected(nodeId);
     }
 
-    IBNET_LOG_DEBUG("Connection of of 0x{:x}, force {} closed", nodeId, force);
+    IBNET_LOG_DEBUG("Connection of 0x{:x}, force {} closed", nodeId, force);
 }
 
 void IbConnectionManager::_BeforeRunLoop(void)

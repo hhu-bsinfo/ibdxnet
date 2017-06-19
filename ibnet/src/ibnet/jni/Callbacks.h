@@ -7,6 +7,8 @@
 #include <cstdint>
 #include <stdexcept>
 
+#include "ibnet/sys/Logger.hpp"
+
 namespace ibnet {
 namespace jni {
 
@@ -18,34 +20,52 @@ public:
 
     inline void NodeDiscovered(uint16_t nodeId)
     {
+        IBNET_LOG_TRACE_FUNC;
+
         JNIEnv* env = __GetEnv();
         env->CallVoidMethod(m_callbacks, m_midNodeDiscovered, nodeId);
         __ReturnEnv(env);
+
+        IBNET_LOG_TRACE_FUNC_EXIT;
     }
 
     inline void NodeInvalidated(uint16_t nodeId)
     {
+        IBNET_LOG_TRACE_FUNC;
+
         JNIEnv* env = __GetEnv();
         env->CallVoidMethod(m_callbacks, m_midNodeInvalidated, nodeId);
         __ReturnEnv(env);
+
+        IBNET_LOG_TRACE_FUNC_EXIT;
     }
 
     inline void NodeConnected(uint16_t nodeId)
     {
+        IBNET_LOG_TRACE_FUNC;
+
         JNIEnv* env = __GetEnv();
         env->CallVoidMethod(m_callbacks, m_midNodeConnected, nodeId);
         __ReturnEnv(env);
+
+        IBNET_LOG_TRACE_FUNC_EXIT;
     }
 
     inline void NodeDisconnected(uint16_t nodeId)
     {
+        IBNET_LOG_TRACE_FUNC;
+
         JNIEnv* env = __GetEnv();
-        env->CallVoidMethod(m_callbacks, m_midNodeConnected, nodeId);
+        env->CallVoidMethod(m_callbacks, m_midNodeDisconnected, nodeId);
         __ReturnEnv(env);
+
+        IBNET_LOG_TRACE_FUNC_EXIT;
     }
 
     inline void HandleReceive(uint16_t source, void* buffer, uint32_t length)
     {
+        IBNET_LOG_TRACE_FUNC;
+
         JNIEnv* env = __GetEnv();
 
         jobject byteBuffer =
@@ -65,20 +85,25 @@ public:
             byteBuffer, length);
 
         __ReturnEnv(env);
+
+        IBNET_LOG_TRACE_FUNC_EXIT;
     }
 
     inline void HandleReceiveFlowControlData(uint16_t source, uint32_t data)
     {
+        IBNET_LOG_TRACE_FUNC;
+
         JNIEnv* env = __GetEnv();
         env->CallVoidMethod(m_callbacks, m_midReceivedFlowControlData, source,
             data);
         __ReturnEnv(env);
+
+        IBNET_LOG_TRACE_FUNC_EXIT;
     }
 
 private:
     JavaVM* m_vm;
     jobject m_callbacks;
-    jclass m_class;
     jmethodID m_midNodeDiscovered;
     jmethodID m_midNodeInvalidated;
     jmethodID m_midNodeConnected;
@@ -89,6 +114,8 @@ private:
 
     inline JNIEnv* __GetEnv(void)
     {
+        IBNET_LOG_TRACE_FUNC;
+
         JNIEnv* env;
 
         int envStat = m_vm->GetEnv((void **)&env, JNI_VERSION_1_8);
@@ -107,11 +134,13 @@ private:
 
     inline void __ReturnEnv(JNIEnv* env)
     {
-        if (env->ExceptionCheck()) {
-            env->ExceptionDescribe();
-        }
+        IBNET_LOG_TRACE_FUNC;
 
-        m_vm->DetachCurrentThread();
+//        if (env->ExceptionCheck()) {
+//            env->ExceptionDescribe();
+//        }
+
+        //m_vm->DetachCurrentThread();
     }
 };
 

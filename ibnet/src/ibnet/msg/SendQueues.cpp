@@ -57,7 +57,7 @@ bool SendQueues::PushBackFlowControl(uint16_t nodeId, uint16_t connectionId,
     m_connections[connectionId].m_nodeId = nodeId;
 
     if (m_connections[connectionId].m_writeInterestCount
-            .fetch_add(1, std::memory_order_relaxed) == 0) {
+            .load(std::memory_order_relaxed) == 0) {
         m_writeInterests.PushBack(connectionId);
     }
 

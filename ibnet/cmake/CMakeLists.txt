@@ -27,6 +27,9 @@ foreach (OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${IBNET_BIN_OUTPUT_PATH}/${OUTPUTCONFIG_PLATFORM}/${OUTPUTCONFIG} PARENT_SCOPE)
 endforeach (OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES)
 
+#set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined -fsanitize=null -fsanitize=return -fsanitize=bounds -lasan -lubsan")
+
+add_subdirectory(DebugTest)
 add_subdirectory(IbConnectionManagerTest)
 add_subdirectory(IbDeviceTest)
 add_subdirectory(IbDiscoveryManagerTest)

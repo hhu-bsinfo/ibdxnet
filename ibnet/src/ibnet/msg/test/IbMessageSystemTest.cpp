@@ -46,6 +46,10 @@ static ibnet::msg::Config GenerateConfig(argagg::parser_results& args)
         config.m_maxNumConnections = args["maxNumConnections"].as<uint16_t>();
     }
 
+    if (args["maxMessages"]) {
+        config.m_maxMessages = args["maxMessages"].as<uint32_t>();
+    }
+
     return config;
 }
 
@@ -87,7 +91,8 @@ int main(int argc, char** argv)
           { "connectionJobPoolSize", {"-f", "--connectionJobPoolSize"}, "", 1},
           { "sendThreads", {"-j", "--sendThreads"}, "", 1},
           { "recvThreads", {"-k", "--recvThreads"}, "", 1},
-          { "maxNumConnections", {"-l", "--maxNumConnections"}, "", 1}
+          { "maxNumConnections", {"-l", "--maxNumConnections"}, "", 1},
+          { "maxMessages", {"-o", "--maxMessages"}, "", 1},
      }};
 
     std::ostringstream usage;
@@ -186,7 +191,8 @@ void IbMessageSystemTest::Execute(uint16_t remoteNodeId, uint32_t msgSizeBytes,
 
         for (int i = 0; i < applicationThreadCount; i++) {
             auto t = std::make_unique<ApplicationSendThread>(remoteNodeId,
-                msgSizeBytes, m_system);
+                msgSizeBytes, m_config.m_maxMessages, m_system,
+                m_recvFcData[remoteNodeId]);
 
             t->Start();
             m_senders.push_back(std::move(t));
@@ -195,6 +201,7 @@ void IbMessageSystemTest::Execute(uint16_t remoteNodeId, uint32_t msgSizeBytes,
         while (!m_exit.load()) {
             __PrintReceiverStats();
             m_system->PrintStatus();
+            std::cout << "Application sender threads stats:" << std::endl;
             for (auto& it : m_senders) {
                 it->PrintStatistics();
             }
@@ -219,9 +226,16 @@ void IbMessageSystemTest::HandleMessage(uint16_t source, void* buffer, uint32_t 
 
     m_recvThroughput[source].Update(length);
 
-    while (!m_system->SendFlowControl(source, length)) {
-        // queue full, wait a moment
-        std::this_thread::yield();
+    if (m_config.m_maxMessages != -1) {
+        uint32_t msgCount = m_msgCounters[source].fetch_add(1,
+            std::memory_order_relaxed);
+        if (msgCount + 1 == m_config.m_maxMessages) {
+            std::cout << "!!! Received all messages of 0x" << std::hex << source
+                      << std::endl;
+        } else if (msgCount + 1 > m_config.m_maxMessages) {
+            std::cout << "!!! ERROR: Message overflow " << std::dec << msgCount
+                << " of 0x" << std::hex << source << std::endl;
+        }
     }
 
     // briefly check contents
@@ -238,6 +252,11 @@ void IbMessageSystemTest::HandleMessage(uint16_t source, void* buffer, uint32_t 
             break;
         }
     }
+
+    while (!m_system->SendFlowControl(source, length)) {
+        // queue full, wait a moment
+        std::this_thread::yield();
+    }
 }
 
 void IbMessageSystemTest::HandleFlowControlData(uint16_t source, uint32_t data)
@@ -246,19 +265,23 @@ void IbMessageSystemTest::HandleFlowControlData(uint16_t source, uint32_t data)
         m_recvFcThroughput[source].Start();
     }
 
-    m_recvFcData[source] += data;
+    m_recvFcData[source].fetch_sub(data, std::memory_order_relaxed);
     m_recvFcThroughput[source].Update(sizeof(uint32_t));
 }
 
 IbMessageSystemTest::ApplicationSendThread::ApplicationSendThread(
-        uint16_t remoteNodeId, uint32_t msgBufferSize,
-        std::shared_ptr<ibnet::msg::IbMessageSystem>& messageSystem) :
+        uint16_t remoteNodeId, uint32_t msgBufferSize, uint32_t maxMessages,
+        std::shared_ptr<ibnet::msg::IbMessageSystem>& messageSystem,
+        std::atomic<uint64_t>& recvFcData) :
     m_remoteNodeId(remoteNodeId),
     m_msgBufferSize(msgBufferSize),
+    m_maxMessages(maxMessages),
     m_messageSystem(messageSystem),
     m_buffer(malloc(msgBufferSize)),
+    m_msgCounter(0),
     m_timer(),
-    m_throughput()
+    m_throughput(),
+    m_recvFcData(recvFcData)
 {
     for (uint32_t i = 0; i < msgBufferSize; i++) {
         uint8_t* buffer = static_cast<uint8_t*>(m_buffer);
@@ -273,7 +296,7 @@ IbMessageSystemTest::ApplicationSendThread::~ApplicationSendThread(void)
 
 void IbMessageSystemTest::ApplicationSendThread::PrintStatistics(void)
 {
-    std::cout << m_throughput << std::endl;
+    std::cout << " " << m_throughput << std::endl;
 }
 
 void IbMessageSystemTest::ApplicationSendThread::_BeforeRunLoop(void)
@@ -283,6 +306,20 @@ void IbMessageSystemTest::ApplicationSendThread::_BeforeRunLoop(void)
 
 void IbMessageSystemTest::ApplicationSendThread::_RunLoop(void)
 {
+    if (m_maxMessages != -1) {
+        if (m_msgCounter >= m_maxMessages) {
+            std::cout << "Finished sending " << std::dec << m_msgCounter <<
+                " messages" << std::endl;
+            exitLoop();
+            return;
+        }
+    }
+
+    // wait until flow control data is confirmed
+    while (m_recvFcData.load(std::memory_order_relaxed) > 1024 * 1024) {
+        std::this_thread::yield();
+    }
+
     try {
         m_timer.Enter();
         if (!m_messageSystem->SendMessage(m_remoteNodeId, m_buffer,
@@ -290,7 +327,12 @@ void IbMessageSystemTest::ApplicationSendThread::_RunLoop(void)
             // queue full, wait a moment
             std::this_thread::yield();
         } else {
+            m_recvFcData.fetch_add(m_msgBufferSize, std::memory_order_relaxed);
             m_throughput.Update(m_msgBufferSize);
+
+            if (m_maxMessages != -1) {
+                m_msgCounter++;
+            }
         }
         m_timer.Exit();
     } catch (ibnet::core::IbException &e) {
@@ -310,12 +352,14 @@ void IbMessageSystemTest::ApplicationSendThread::_AfterRunLoop(void)
 
 void IbMessageSystemTest::__PrintReceiverStats(void)
 {
+    std::cout << "Receiver stats:" << std::endl;
+
     for (uint32_t i = 0; i < ibnet::core::IbNodeId::MAX_NUM_NODES; i++) {
         if (m_recvThroughput[i].IsStarted()) {
-            std::cout << "Node 0x" << std::hex << i << std::endl <<
-                m_recvThroughput[i] << std::endl << m_recvFcThroughput[i] <<
-                "recvFcData " << std::endl << std::dec << m_recvFcData[i] <<
-                std::endl;
+            std::cout << " Node 0x" << std::hex << i << std::endl <<
+                " " << m_recvThroughput[i] << std::endl << " " <<
+                m_recvFcThroughput[i] << std::endl << "  recvFcData " <<
+                std::dec << m_recvFcData[i] << std::endl;
         }
     }
 }

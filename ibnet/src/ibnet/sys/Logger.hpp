@@ -58,6 +58,8 @@
  * Macro to easily trace function calls. Just add this at the top of a
  * function's body.
  */
-#define IBNET_LOG_TRACE_FUNC IBNET_LOG_TRACE(__PRETTY_FUNCTION__)
+#define IBNET_LOG_TRACE_FUNC IBNET_LOG_TRACE("{} {}", "ENTER", __PRETTY_FUNCTION__)
+
+#define IBNET_LOG_TRACE_FUNC_EXIT IBNET_LOG_TRACE("{} {}", "EXIT", __PRETTY_FUNCTION__)
 
 #endif

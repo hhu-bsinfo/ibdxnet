@@ -59,7 +59,7 @@ private:
     void _AfterRunLoop(void) override;
 
 private:
-    uint32_t __ProcessFlowControl(uint16_t nodeId,
+    void __ProcessFlowControl(uint16_t nodeId,
         std::shared_ptr<core::IbConnection>& connection,
         std::shared_ptr<std::atomic<uint32_t>>& flowControlData);
 

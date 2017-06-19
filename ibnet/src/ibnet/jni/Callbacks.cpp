@@ -8,17 +8,16 @@ namespace jni {
 Callbacks::Callbacks(JNIEnv* env, jobject callbacks) :
     m_vm(nullptr),
     m_callbacks(env->NewGlobalRef(callbacks)),
-    m_class(env->GetObjectClass(callbacks)),
-    m_midNodeDiscovered(env->GetMethodID(m_class, "nodeDiscovered", "(S)V")),
-    m_midNodeInvalidated(env->GetMethodID(m_class, "nodeInvalidated", "(S)V")),
-    m_midNodeConnected(env->GetMethodID(m_class, "nodeConnected", "(S)V")),
+    m_midNodeDiscovered(env->GetMethodID(env->GetObjectClass(callbacks), "nodeDiscovered", "(S)V")),
+    m_midNodeInvalidated(env->GetMethodID(env->GetObjectClass(callbacks), "nodeInvalidated", "(S)V")),
+    m_midNodeConnected(env->GetMethodID(env->GetObjectClass(callbacks), "nodeConnected", "(S)V")),
     m_midNodeDisconnected(
-        env->GetMethodID(m_class, "nodeDisconnected", "(S)V")),
-    m_midGetReceiveBuffer(env->GetMethodID(m_class, "getReceiveBuffer",
+        env->GetMethodID(env->GetObjectClass(callbacks), "nodeDisconnected", "(S)V")),
+    m_midGetReceiveBuffer(env->GetMethodID(env->GetObjectClass(callbacks), "getReceiveBuffer",
         "(I)Ljava/nio/ByteBuffer;")),
-    m_midReceivedBuffer(env->GetMethodID(m_class, "receivedBuffer",
+    m_midReceivedBuffer(env->GetMethodID(env->GetObjectClass(callbacks), "receivedBuffer",
         "(SLjava/nio/ByteBuffer;I)V")),
-    m_midReceivedFlowControlData(env->GetMethodID(m_class,
+    m_midReceivedFlowControlData(env->GetMethodID(env->GetObjectClass(callbacks),
         "receivedFlowControlData", "(SI)V"))
 {
     env->GetJavaVM(&m_vm);

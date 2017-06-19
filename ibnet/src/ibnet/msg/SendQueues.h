@@ -103,7 +103,7 @@ public:
 
         for (size_t i = 0; i < o.m_connections.size(); i++) {
             if (o.m_connections[i].m_nodeId != core::IbNodeId::INVALID) {
-                os << std::endl << i << ": 0x" << std::hex <<
+                os << std::endl << " " << i << ": 0x" << std::hex <<
                    o.m_connections[i].m_nodeId <<
                    ", " << std::dec << o.m_connections[i].m_writeInterestCount
                    <<

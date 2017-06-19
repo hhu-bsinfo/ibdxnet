@@ -17,6 +17,7 @@
 
 #include <backwards/backward.hpp>
 
+#include "ibnet/sys/Debug.h"
 #include "ibnet/sys/Logger.h"
 #include "ibnet/sys/ProfileTimer.hpp"
 #include "ibnet/core/IbException.h"
@@ -38,6 +39,10 @@ static std::shared_ptr<ibnet::jni::MessageHandler> g_messageHandler;
 static std::shared_ptr<ibnet::jni::NodeConnectionListener> g_nodeConnectionListener;
 static std::shared_ptr<ibnet::jni::NodeDiscoveryListener> g_nodeDiscoveryListener;
 static std::unique_ptr<ibnet::msg::IbMessageSystem> g_messageSystem;
+
+const char *__asan_default_options() {
+    return "verbosity=1";
+}
 
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_init(JNIEnv* p_env,
         jclass p_class, jshort p_ownNodeId, jint p_maxRecvReqs,
@@ -103,6 +108,8 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_init(JNIEnv* p_env
 
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_shutdown(JNIEnv* p_env, jclass p_class)
 {
+    IBNET_LOG_TRACE_FUNC;
+
     jboolean res = (jboolean) 1;
 
     try {
@@ -122,6 +129,8 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_shutdown(JNIEnv* p
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_addNode(JNIEnv* p_env,
         jclass p_class, jint p_ipv4)
 {
+    IBNET_LOG_TRACE_FUNC;
+
     ibnet::core::IbNodeConf::Entry entry(ibnet::sys::AddressIPV4((uint32_t) p_ipv4));
     g_messageSystem->AddNode(entry);
 }
@@ -129,6 +138,8 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_addNode(JNIEnv* p_env,
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_postBuffer(
         JNIEnv* p_env, jclass p_class, jshort p_nodeId, jobject p_buffer, jint p_length)
 {
+    IBNET_LOG_TRACE_FUNC;
+
     // note: all buffers _MUST_ be allocated as direct buffers
     void* buf = p_env->GetDirectBufferAddress(p_buffer);
     // TODO copying is bad...but passing on the direct buffer is bad too =/
@@ -136,15 +147,30 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_postBuffer(
     memcpy(tmp, buf, (size_t) p_length);
 
     // buffer is free'd by message system (TODO bad idea?)
-    jboolean ret = (jboolean) g_messageSystem->SendMessage((uint16_t) p_nodeId,
-        tmp, (uint32_t) p_length);
 
-    return ret;
+    // keep pushing until we get it into the queue
+    while (true) {
+        try {
+            if (g_messageSystem->SendMessage((uint16_t) p_nodeId, tmp,
+                (uint32_t) p_length)) {
+                break;
+            }
+        } catch (...) {
+            return (jboolean) 0;
+        }
+
+        std::this_thread::yield();
+    }
+    IBNET_LOG_TRACE_FUNC_EXIT;
+
+    return (jboolean) 1;
 }
 
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_postFlowControlData(
     JNIEnv* p_env, jclass p_class, jshort p_nodeId, jint p_data)
 {
+    IBNET_LOG_TRACE_FUNC;
+
     return (jboolean) g_messageSystem->SendFlowControl((uint16_t) p_nodeId,
         (uint32_t) p_data);
 }

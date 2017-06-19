@@ -57,6 +57,11 @@ struct Config
     uint16_t m_maxNumConnections;
 
     /**
+     * Max number of messages to send or -1 for unlimited
+     */
+    uint32_t m_maxMessages;
+
+    /**
      * Constructor
      *
      * Sets default values only
@@ -70,7 +75,8 @@ struct Config
         m_connectionJobPoolSize(1000),
         m_sendThreads(1),
         m_recvThreads(1),
-        m_maxNumConnections(100)
+        m_maxNumConnections(100),
+        m_maxMessages(-1)
     {};
 
     ~Config(void) {};

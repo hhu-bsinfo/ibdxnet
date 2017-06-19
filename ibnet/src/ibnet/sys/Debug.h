@@ -9,4 +9,23 @@
  */
 #define DBGPRINT(str) std::cout << ">>>>>>>>>> " << str << std::endl
 
+namespace ibnet {
+namespace sys {
+
+class Debug
+{
+public:
+    static void WaitForDebuggerToAttach(void);
+
+    static void DebugBreak(void);
+
+private:
+    Debug(void) {};
+
+    ~Debug(void) {};
+};
+
+}
+}
+
 #endif //IBNET_SYS_DEBUG_H

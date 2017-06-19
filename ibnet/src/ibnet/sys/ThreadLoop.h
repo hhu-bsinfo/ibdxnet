@@ -59,6 +59,10 @@ protected:
      */
     virtual void _AfterRunLoop(void) {};
 
+    void exitLoop(void) {
+        m_run = false;
+    }
+
     void _Run(void) override
     {
         _BeforeRunLoop();

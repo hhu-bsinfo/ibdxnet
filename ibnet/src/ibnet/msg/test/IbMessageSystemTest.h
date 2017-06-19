@@ -32,7 +32,9 @@ private:
     {
     public:
         ApplicationSendThread(uint16_t remoteNodeId, uint32_t msgBufferSize,
-            std::shared_ptr<ibnet::msg::IbMessageSystem>& messageSystem);
+            uint32_t maxMessages,
+            std::shared_ptr<ibnet::msg::IbMessageSystem>& messageSystem,
+            std::atomic<uint64_t>& recvFcData);
 
         ~ApplicationSendThread(void);
 
@@ -48,11 +50,15 @@ private:
     private:
         uint16_t m_remoteNodeId;
         uint32_t m_msgBufferSize;
+        uint32_t m_maxMessages;
         std::shared_ptr<ibnet::msg::IbMessageSystem> m_messageSystem;
 
         void* m_buffer;
+        uint32_t m_msgCounter;
         ibnet::sys::ProfileTimer m_timer;
         ibnet::sys::ProfileThroughput m_throughput;
+
+        std::atomic<uint64_t>& m_recvFcData;
     };
 
 private:
@@ -62,10 +68,12 @@ private:
 
     std::atomic<bool> m_exit;
 
+    std::atomic<uint32_t> m_msgCounters[ibnet::core::IbNodeId::MAX_NUM_NODES];
+
     std::shared_ptr<ibnet::msg::IbMessageSystem> m_system;
     ibnet::sys::ProfileThroughput m_recvThroughput[ibnet::core::IbNodeId::MAX_NUM_NODES];
     ibnet::sys::ProfileThroughput m_recvFcThroughput[ibnet::core::IbNodeId::MAX_NUM_NODES];
-    uint64_t m_recvFcData[ibnet::core::IbNodeId::MAX_NUM_NODES];
+    std::atomic<uint64_t> m_recvFcData[ibnet::core::IbNodeId::MAX_NUM_NODES];
 
     void __PrintReceiverStats(void);
 };

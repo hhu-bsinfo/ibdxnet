@@ -85,7 +85,7 @@ void SendThread::_RunLoop(void)
 
     uint32_t consumedInterests = 0;
     try {
-        consumedInterests += __ProcessFlowControl(targetNodeId, connection, flowControlData);
+        __ProcessFlowControl(targetNodeId, connection, flowControlData);
         consumedInterests += __ProcessBuffers(targetNodeId, connection, queue);
     } catch (...) {
         m_bufferSendQueues->Finished(connection->GetConnectionId(), consumedInterests);
@@ -101,7 +101,7 @@ void SendThread::_AfterRunLoop(void)
     PrintStatistics();
 }
 
-uint32_t SendThread::__ProcessFlowControl(
+void SendThread::__ProcessFlowControl(
         uint16_t nodeId, std::shared_ptr<core::IbConnection>& connection,
         std::shared_ptr<std::atomic<uint32_t>>& flowControlData)
 {
@@ -111,21 +111,17 @@ uint32_t SendThread::__ProcessFlowControl(
     m_timers[3].Enter();
 
     if (!connection->GetQp(1)->GetSendQueue()->Reserve()) {
-        return 0;
+        return;
     }
 
     data = flowControlData->load(std::memory_order_relaxed);
 
-    while (data != 0) {
-        if (flowControlData->compare_exchange_weak(data, 0, std::memory_order_relaxed)) {
-            break;
-        }
-    }
-
     if (data == 0) {
         connection->GetQp(1)->GetSendQueue()->RevokeReservation();
-        return 0;
+        return;
     }
+
+    flowControlData->fetch_sub(data, std::memory_order_relaxed);
 
     memcpy(m_flowControlBuffer->GetAddress(), &data, numBytesToSend);
 
@@ -148,14 +144,12 @@ uint32_t SendThread::__ProcessFlowControl(
         m_connectionManager->CloseConnection(nodeId, true);
 
         m_bufferSendQueues->NodeDisconnected(connectionId);
-        return 0;
+        return;
     }
 
     m_timers[5].Exit();
 
     m_sentFlowControlBytes += numBytesToSend;
-
-    return 1;
 }
 
 uint32_t SendThread::__ProcessBuffers(uint16_t nodeId,

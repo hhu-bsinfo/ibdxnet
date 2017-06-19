@@ -72,7 +72,7 @@ public:
      * @param destination Node id of the destination
      * @param buffer Allocated buffer of data to send
      * @param length Number of bytes to send
-     * @return True if sending buffer successful, false otherwise
+     * @return True if sending buffer successful, false if queue full
      */
     bool SendMessage(uint16_t destination, void* buffer, uint32_t length);
 

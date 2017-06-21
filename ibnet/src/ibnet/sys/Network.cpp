@@ -3,7 +3,6 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <netdb.h>
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -14,17 +13,13 @@ namespace sys {
 
 const std::string Network::GetHostname(void)
 {
-    const size_t size = 1024;
-    char* buf;
+    char buf[1024];
 
-    buf = (char*) malloc(size);
-
-    if (gethostname(buf, size) < 0) {
+    if (gethostname(buf, sizeof(buf)) < 0) {
         throw SystemException("Buffer too small for getting own hostname");
     }
 
     std::string str(buf);
-    free(buf);
 
     return str;
 }

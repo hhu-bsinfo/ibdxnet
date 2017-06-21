@@ -12,6 +12,7 @@ IbSendQueue::IbSendQueue(std::shared_ptr<IbDevice>& device,
         IbQueuePair& parentQp, uint16_t queueSize) :
     m_parentQp(parentQp),
     m_queueSize(queueSize),
+    m_isClosed(false),
     // create non shared/private comp queue, match size of max work requests
     m_compQueue(std::make_unique<IbCompQueue>(device, queueSize))
 {
@@ -67,12 +68,28 @@ void IbSendQueue::Open(void)
     }
 }
 
+void IbSendQueue::Close(bool force)
+{
+    m_isClosed.store(true, std::memory_order_relaxed);
+
+    if (!force) {
+        // wait until outstanding completions are finished
+        while (m_compQueue->GetCurrentOutstandingCompletions() > 0) {
+            std::this_thread::yield();
+        }
+    }
+}
+
 void IbSendQueue::Send(const std::shared_ptr<IbMemReg>& memReg, uint32_t size, uint64_t workReqId)
 {
     struct ibv_sge sge_list;
     struct ibv_send_wr wr;
     // first failed work request
     struct ibv_send_wr *bad_wr;
+
+    if (m_isClosed.load(std::memory_order_relaxed)) {
+        throw IbQueueClosedException();
+    }
 
     // hook memory with message contents to send
     sge_list.addr      		= (uintptr_t) memReg->GetAddress();
@@ -110,11 +127,19 @@ void IbSendQueue::Send(const std::shared_ptr<IbMemReg>& memReg, uint32_t size, u
 
 uint32_t IbSendQueue::PollCompletion(bool blocking)
 {
+    if (m_isClosed.load(std::memory_order_relaxed)) {
+        throw IbQueueClosedException();
+    }
+
     return m_compQueue->PollForCompletion(blocking);
 }
 
 uint32_t IbSendQueue::Flush(void)
 {
+    if (m_isClosed.load(std::memory_order_relaxed)) {
+        throw IbQueueClosedException();
+    }
+
     return m_compQueue->Flush();
 }
 

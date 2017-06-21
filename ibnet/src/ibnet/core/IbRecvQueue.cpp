@@ -19,6 +19,7 @@ IbRecvQueue::IbRecvQueue(std::shared_ptr<IbDevice>& device,
     m_queueSize(queueSize),
     m_compQueueIsShared(true),
     m_recvQueueIsShared(true),
+    m_isClosed(false),
     m_compQueue(sharedCompQueue),
     m_sharedRecvQueue(sharedRecvQueue)
 {
@@ -97,6 +98,18 @@ void IbRecvQueue::Open(uint16_t remoteQpLid, uint32_t remoteQpPhysicalId)
     }
 }
 
+void IbRecvQueue::Close(bool force)
+{
+    m_isClosed.store(true, std::memory_order_relaxed);
+
+    if (!force) {
+        // wait until outstanding completions are finished
+        while (m_compQueue->GetCurrentOutstandingCompletions() > 0) {
+            std::this_thread::yield();
+        }
+    }
+}
+
 void IbRecvQueue::Receive(const std::shared_ptr<IbMemReg>& memReg,
         uint64_t workReqId)
 {
@@ -105,6 +118,10 @@ void IbRecvQueue::Receive(const std::shared_ptr<IbMemReg>& memReg,
     // first failed work request
     struct ibv_recv_wr *bad_wr;
     int ret;
+
+    if (m_isClosed.load(std::memory_order_relaxed)) {
+        throw IbQueueClosedException();
+    }
 
     // hook memory to write the received data to
     sge_list.addr      		= (uintptr_t) memReg->GetAddress();
@@ -138,11 +155,19 @@ void IbRecvQueue::Receive(const std::shared_ptr<IbMemReg>& memReg,
 
 uint32_t IbRecvQueue::PollCompletion(bool blocking)
 {
+    if (m_isClosed.load(std::memory_order_relaxed)) {
+        throw IbQueueClosedException();
+    }
+
     return m_compQueue->PollForCompletion(blocking);
 }
 
 uint32_t IbRecvQueue::Flush(void)
 {
+    if (m_isClosed.load(std::memory_order_relaxed)) {
+        throw IbQueueClosedException();
+    }
+
     return m_compQueue->Flush();
 }
 

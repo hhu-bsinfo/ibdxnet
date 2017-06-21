@@ -136,11 +136,11 @@ private:
     {
         IBNET_LOG_TRACE_FUNC;
 
-//        if (env->ExceptionCheck()) {
-//            env->ExceptionDescribe();
-//        }
+        if (env->ExceptionCheck()) {
+            env->ExceptionDescribe();
+        }
 
-        //m_vm->DetachCurrentThread();
+        m_vm->DetachCurrentThread();
     }
 };
 

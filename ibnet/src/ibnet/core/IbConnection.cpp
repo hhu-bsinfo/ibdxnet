@@ -60,7 +60,7 @@ void IbConnection::Close(bool force)
 {
     IBNET_LOG_TRACE_FUNC;
 
-    m_isConnected = false;
+    m_isConnected.store(false, std::memory_order_acquire);
 
     // flush outstanding sends on qps
     if (!force) {
@@ -70,6 +70,7 @@ void IbConnection::Close(bool force)
     }
 
     for (auto& it : m_qps) {
+        it->Close(force);
         it.reset();
     }
 

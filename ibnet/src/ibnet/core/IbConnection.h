@@ -68,7 +68,7 @@ public:
      * @return Pointer to the queue pair
      */
     std::shared_ptr<IbQueuePair>& GetQp(uint32_t idx) {
-        if (!m_isConnected) {
+        if (!m_isConnected.load(std::memory_order_relaxed)) {
             throw IbNodeNotAvailableException(m_remoteInfo.GetNodeId());
         }
 
@@ -86,7 +86,7 @@ public:
      * Check if the connection is up
      */
     bool IsConnected(void) const {
-        return m_isConnected;
+        return m_isConnected.load(std::memory_order_relaxed);
     }
 
     /**

@@ -5,6 +5,7 @@
 
 #include "IbCompQueue.h"
 #include "IbMemReg.h"
+#include "IbQueueClosedException.h"
 #include "IbQueueTracker.h"
 #include "IbSharedRecvQueue.h"
 
@@ -81,6 +82,13 @@ public:
     void Open(uint16_t remoteQpLid, uint32_t remoteQpPhysicalId);
 
     /**
+     * Close the queue. When closed, all calls to the queue throw IbQueueClosedExceptions
+     *
+     * @param force Force close, i.e. don't wait for tasks to finish processing
+     */
+    void Close(bool force);
+
+    /**
      * Reserve a single recv call to avoid overrunning the queue.
      *
      * Call this before calling Receive
@@ -90,6 +98,10 @@ public:
      *          emptying the queue
      */
     bool Reserve(void) {
+        if (m_isClosed.load(std::memory_order_relaxed)) {
+            throw IbQueueClosedException();
+        }
+
         // keep track of queue size limit
         return m_compQueue->AddOutstandingCompletion();
     }
@@ -125,6 +137,7 @@ private:
     uint16_t m_queueSize;
     bool m_compQueueIsShared;
     bool m_recvQueueIsShared;
+    std::atomic<bool> m_isClosed;
 
     std::shared_ptr<IbCompQueue> m_compQueue;
     std::shared_ptr<IbSharedRecvQueue> m_sharedRecvQueue;

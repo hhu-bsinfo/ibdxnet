@@ -40,6 +40,12 @@ IbQueuePair::~IbQueuePair(void)
     __Cleanup();
 }
 
+void IbQueuePair::Close(bool force)
+{
+    m_sendQueue->Close(force);
+    m_recvQueue->Close(force);
+}
+
 void IbQueuePair::__CreateQP(std::shared_ptr<IbProtDom>& protDom)
 {
     IBNET_LOG_TRACE_FUNC;

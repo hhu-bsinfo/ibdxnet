@@ -6,6 +6,7 @@
 #include "IbCompQueue.h"
 #include "IbException.h"
 #include "IbMemReg.h"
+#include "IbQueueClosedException.h"
 
 namespace ibnet {
 namespace core {
@@ -52,6 +53,13 @@ public:
     void Open(void);
 
     /**
+     * Close the queue. When closed, all calls to the queue throw IbQueueClosedExceptions
+     *
+     * @param force Force close, i.e. don't wait for tasks to finish processing
+     */
+    void Close(bool force);
+
+    /**
      * Reserve a single send call to avoid overrunning the queue.
      *
      * Call this before calling Send
@@ -61,6 +69,10 @@ public:
      *          the queue
      */
     inline bool Reserve(void) {
+        if (m_isClosed.load(std::memory_order_relaxed)) {
+            throw IbQueueClosedException();
+        }
+
         // keep track of queue size limit
         return m_compQueue->AddOutstandingCompletion();
     }
@@ -105,6 +117,7 @@ public:
 private:
     IbQueuePair& m_parentQp;
     uint16_t m_queueSize;
+    std::atomic<bool> m_isClosed;
 
     std::unique_ptr<IbCompQueue> m_compQueue;
 };

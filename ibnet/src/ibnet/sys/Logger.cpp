@@ -23,7 +23,7 @@ void Logger::Setup(void)
     m_logger = std::make_shared<spdlog::logger>("ibnet", begin(sinks), end(sinks));
     m_logger->set_pattern("[%L][%D][%T.%e][thread-%t]%v");
 
-    m_logger->set_level(spdlog::level::debug);
+    m_logger->set_level(spdlog::level::trace);
 
     m_logger->flush_on(spdlog::level::info);
 }

@@ -111,13 +111,7 @@ uint32_t IbCompQueue::Flush(void)
 
     // poll off outstanding completions
 
-    while (true) {
-        try {
-            m_outstandingComps.SubOutstanding();
-        } catch (IbException& e) {
-            break;
-        }
-
+    while (m_outstandingComps.SubOutstanding()) {
         PollForCompletion(true);
         count++;
     }

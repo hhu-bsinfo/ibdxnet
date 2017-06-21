@@ -316,6 +316,7 @@ void IbMessageSystemTest::ApplicationSendThread::_RunLoop(void)
     }
 
     // wait until flow control data is confirmed
+    // TODO have flow control window setable
     while (m_recvFcData.load(std::memory_order_relaxed) > 1024 * 1024) {
         std::this_thread::yield();
     }

@@ -48,6 +48,13 @@ public:
     ~IbQueuePair(void);
 
     /**
+     * Close the queue pair
+     *
+     * @param force Force close, i.e. don't wait for tasks to finish processing
+     */
+    void Close(bool force);
+
+    /**
      * Get the pyhsical queue pair number
      */
     uint32_t GetPhysicalQpNum(void) const {

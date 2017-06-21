@@ -77,9 +77,10 @@ std::shared_ptr<IbConnection> IbConnectionManager::GetConnection(uint16_t nodeId
     }
 
     // connection already established?
-    if (m_connections[nodeId]) {
+    std::shared_ptr<IbConnection> connection = m_connections[nodeId];
+    if (connection) {
         IBNET_LOG_TRACE("GetConnection (available): 0x{:x}", nodeId);
-        return m_connections[nodeId];
+        return connection;
     }
 
     m_connectionMutex.lock();
@@ -200,9 +201,9 @@ void IbConnectionManager::CloseConnection(uint16_t nodeId, bool force)
         return;
     }
 
-    // wait until we owe the only reference to the object
-    // let's hope nobody is caching/storing it =(
-    while (connection.use_count() > 1) {
+    // wait until we own the only reference to the object
+    // let's hope nobody is caching/storing one
+    while (!connection.unique()) {
         std::this_thread::yield();
     }
 

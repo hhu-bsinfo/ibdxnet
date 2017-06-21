@@ -112,6 +112,9 @@ public:
      */
     std::shared_ptr<IbConnection> GetConnection(uint16_t nodeId);
 
+    // TODO doc
+    void ReturnConnection(std::shared_ptr<IbConnection>& connection);
+
     /**
      * Explicitly close a connection
      *
@@ -149,6 +152,9 @@ private:
     static const uint32_t MAX_CONNECT_RETIRES = 10;
     static const uint32_t CONNECT_RETRY_WAIT_MS;
     static const uint32_t MAX_QPS_PER_CONNECTION = 32;
+    static const int32_t CONNECTION_NOT_AVAILABLE = INT32_MIN;
+    static const int32_t CONNECTION_AVAILABLE = 0;
+    static const int32_t CONNECTION_CLOSING = INT32_MIN / 2;
 
 private:
     sys::SocketUDP m_socket;
@@ -163,6 +169,7 @@ private:
     uint16_t m_ownNodeId;
 
     std::mutex m_connectionMutex;
+    std::atomic<int32_t> m_connectionAvailable[IbNodeId::MAX_NUM_NODES];
     std::shared_ptr<IbConnection> m_connections[IbNodeId::MAX_NUM_NODES];
     uint32_t m_openConnections;
     std::vector<uint16_t> m_availableConnectionIds;

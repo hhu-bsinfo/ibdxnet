@@ -27,6 +27,8 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    backward::SignalHandling sh;
+
     uint16_t ownNodeId = atoi(argv[1]);
     uint16_t remoteNodeId = atoi(argv[2]);
 
@@ -63,7 +65,7 @@ int main(int argc, char** argv)
         std::make_shared<ibnet::core::IbConnectionManager>(ownNodeId, 5731, 100,
         device, protDom, discMan,
         std::make_unique<ibnet::core::IbConnectionCreatorSimple>(10, 10,
-            std::shared_ptr<ibnet::core::IbSharedRecvQueue>(), compQueue));
+            nullptr, compQueue));
 
     std::cout << "Running loop..." << std::endl;
 
@@ -75,6 +77,10 @@ int main(int argc, char** argv)
         try {
             std::shared_ptr<ibnet::core::IbConnection> connection =
                 conMan->GetConnection(remoteNodeId);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+            conMan->ReturnConnection(connection);
         } catch (const ibnet::core::IbException& e) {
             std::cout << "!!!!!" << e.what() << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds(1));

@@ -98,7 +98,7 @@ public:
      *          emptying the queue
      */
     bool Reserve(void) {
-        if (m_isClosed.load(std::memory_order_relaxed)) {
+        if (m_isClosed) {
             throw IbQueueClosedException();
         }
 
@@ -137,7 +137,7 @@ private:
     uint16_t m_queueSize;
     bool m_compQueueIsShared;
     bool m_recvQueueIsShared;
-    std::atomic<bool> m_isClosed;
+    bool m_isClosed;
 
     std::shared_ptr<IbCompQueue> m_compQueue;
     std::shared_ptr<IbSharedRecvQueue> m_sharedRecvQueue;

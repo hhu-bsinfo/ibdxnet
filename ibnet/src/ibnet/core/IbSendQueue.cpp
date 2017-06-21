@@ -70,14 +70,14 @@ void IbSendQueue::Open(void)
 
 void IbSendQueue::Close(bool force)
 {
-    m_isClosed.store(true, std::memory_order_relaxed);
-
     if (!force) {
         // wait until outstanding completions are finished
         while (m_compQueue->GetCurrentOutstandingCompletions() > 0) {
             std::this_thread::yield();
         }
     }
+
+    m_isClosed = true;
 }
 
 void IbSendQueue::Send(const std::shared_ptr<IbMemReg>& memReg, uint32_t size, uint64_t workReqId)
@@ -87,7 +87,7 @@ void IbSendQueue::Send(const std::shared_ptr<IbMemReg>& memReg, uint32_t size, u
     // first failed work request
     struct ibv_send_wr *bad_wr;
 
-    if (m_isClosed.load(std::memory_order_relaxed)) {
+    if (m_isClosed) {
         throw IbQueueClosedException();
     }
 
@@ -127,7 +127,7 @@ void IbSendQueue::Send(const std::shared_ptr<IbMemReg>& memReg, uint32_t size, u
 
 uint32_t IbSendQueue::PollCompletion(bool blocking)
 {
-    if (m_isClosed.load(std::memory_order_relaxed)) {
+    if (m_isClosed) {
         throw IbQueueClosedException();
     }
 
@@ -136,7 +136,7 @@ uint32_t IbSendQueue::PollCompletion(bool blocking)
 
 uint32_t IbSendQueue::Flush(void)
 {
-    if (m_isClosed.load(std::memory_order_relaxed)) {
+    if (m_isClosed) {
         throw IbQueueClosedException();
     }
 

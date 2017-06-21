@@ -21,7 +21,6 @@ RecvThread::RecvThread(
     m_recvBufferPool(recvBufferPool),
     m_recvFlowControlBufferPool(recvFlowControlBufferPool),
     m_messageHandler(msgHandler),
-    // TODO bug: share atomic with recv threads
     m_sharedQueueInitialFill(false),
     m_recvBytes(0),
     m_recvFlowControlBytes(0)
@@ -155,14 +154,10 @@ bool RecvThread::__ProcessFlowControl(void)
     m_timers[2].Exit();
 
     if (sourceNode == core::IbNodeId::INVALID) {
-        if (!m_connectionManager->GetConnection(sourceNode)->GetQp(1)->
-                GetRecvQueue()->Reserve()) {
-            throw MsgException("Recv queue FC outstanding overrun");
-        }
+        IBNET_LOG_ERROR("No node id mapping for qpNum 0x{:x} on FC data recv",
+            qpNum);
 
-        // keep the recv queue filled, using a shared recv queue here
-        m_connectionManager->GetConnection(sourceNode)->GetQp(1)->
-            GetRecvQueue()->Receive(poolEntry.m_mem, poolEntry.m_id);
+        // TODO how to add missing receive entry back to connection/queue?
 
         return false;
     }
@@ -178,14 +173,19 @@ bool RecvThread::__ProcessFlowControl(void)
 
     m_timers[4].Enter();
 
-    if (!m_connectionManager->GetConnection(sourceNode)->GetQp(1)->
-        GetRecvQueue()->Reserve()) {
+    std::shared_ptr<core::IbConnection> connection =
+        m_connectionManager->GetConnection(sourceNode);
+
+    if (!connection->GetQp(1)->GetRecvQueue()->Reserve()) {
+        m_connectionManager->ReturnConnection(connection);
         throw MsgException("Recv queue FC outstanding overrun");
     }
 
     // keep the recv queue filled, using a shared recv queue here
-    m_connectionManager->GetConnection(sourceNode)->GetQp(1)->
-        GetRecvQueue()->Receive(poolEntry.m_mem, poolEntry.m_id);
+    connection->GetQp(1)->GetRecvQueue()->Receive(
+        poolEntry.m_mem, poolEntry.m_id);
+
+    m_connectionManager->ReturnConnection(connection);
 
     m_timers[4].Exit();
 
@@ -227,14 +227,10 @@ bool RecvThread::__ProcessBuffers(void)
     m_timers[6].Exit();
 
     if (sourceNode == core::IbNodeId::INVALID) {
-        // keep the recv queue filled, using a shared recv queue here
-        if (!m_connectionManager->GetConnection(sourceNode)->GetQp(0)->
-            GetRecvQueue()->Reserve()) {
-            throw MsgException("Recv queue buffer outstanding overrun");
-        }
+        IBNET_LOG_ERROR("No node id mapping for qpNum 0x{:x} on buffer recv",
+            qpNum);
 
-        m_connectionManager->GetConnection(sourceNode)->GetQp(0)->
-            GetRecvQueue()->Receive(poolEntry.m_mem, poolEntry.m_id);
+        // TODO how to add missing receive entry back to connection/queue?
 
         return false;
     }
@@ -250,14 +246,19 @@ bool RecvThread::__ProcessBuffers(void)
 
     m_timers[8].Enter();
 
-    // keep the recv queue filled, using a shared recv queue here
-    if (!m_connectionManager->GetConnection(sourceNode)->GetQp(0)->
-        GetRecvQueue()->Reserve()) {
-        throw MsgException("Recv queue buffer outstanding overrun");
+    std::shared_ptr<core::IbConnection> connection =
+        m_connectionManager->GetConnection(sourceNode);
+
+    if (!connection->GetQp(0)->GetRecvQueue()->Reserve()) {
+        m_connectionManager->ReturnConnection(connection);
+        throw MsgException("Recv queue FC outstanding overrun");
     }
 
-    m_connectionManager->GetConnection(sourceNode)->GetQp(0)->
-        GetRecvQueue()->Receive(poolEntry.m_mem, poolEntry.m_id);
+    // keep the recv queue filled, using a shared recv queue here
+    connection->GetQp(0)->GetRecvQueue()->Receive(
+        poolEntry.m_mem, poolEntry.m_id);
+
+    m_connectionManager->ReturnConnection(connection);
 
     m_timers[8].Exit();
 

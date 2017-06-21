@@ -48,6 +48,10 @@
  */
 #define IBNET_LOG_DEBUG(fmt, ...) ibnet::sys::Logger::GetLogger()->debug(("[{}] " + std::string(fmt)).c_str(), LOG_MODULE, ##__VA_ARGS__)
 
+
+#define IBNET_LOG_TRACE_STRIP
+#ifndef IBNET_LOG_TRACE_STRIP
+
 /**
  * Macro to log a message, level trace. Use this macro instead of directly
  * calling the logger class.
@@ -60,6 +64,15 @@
  */
 #define IBNET_LOG_TRACE_FUNC IBNET_LOG_TRACE("{} {}", "ENTER", __PRETTY_FUNCTION__)
 
+/**
+ * Macro to easily trace function calls. Just add this at the bottom of a
+ * function's body.
+ */
 #define IBNET_LOG_TRACE_FUNC_EXIT IBNET_LOG_TRACE("{} {}", "EXIT", __PRETTY_FUNCTION__)
+#else
+#define IBNET_LOG_TRACE(fmt, ...)
+#define IBNET_LOG_TRACE_FUNC
+#define IBNET_LOG_TRACE_FUNC_EXIT
+#endif
 
 #endif

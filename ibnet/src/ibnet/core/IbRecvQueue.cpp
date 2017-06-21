@@ -100,14 +100,14 @@ void IbRecvQueue::Open(uint16_t remoteQpLid, uint32_t remoteQpPhysicalId)
 
 void IbRecvQueue::Close(bool force)
 {
-    m_isClosed.store(true, std::memory_order_relaxed);
-
     if (!force) {
         // wait until outstanding completions are finished
         while (m_compQueue->GetCurrentOutstandingCompletions() > 0) {
             std::this_thread::yield();
         }
     }
+
+    m_isClosed = true;
 }
 
 void IbRecvQueue::Receive(const std::shared_ptr<IbMemReg>& memReg,
@@ -119,7 +119,7 @@ void IbRecvQueue::Receive(const std::shared_ptr<IbMemReg>& memReg,
     struct ibv_recv_wr *bad_wr;
     int ret;
 
-    if (m_isClosed.load(std::memory_order_relaxed)) {
+    if (m_isClosed) {
         throw IbQueueClosedException();
     }
 
@@ -155,7 +155,7 @@ void IbRecvQueue::Receive(const std::shared_ptr<IbMemReg>& memReg,
 
 uint32_t IbRecvQueue::PollCompletion(bool blocking)
 {
-    if (m_isClosed.load(std::memory_order_relaxed)) {
+    if (m_isClosed) {
         throw IbQueueClosedException();
     }
 
@@ -164,7 +164,7 @@ uint32_t IbRecvQueue::PollCompletion(bool blocking)
 
 uint32_t IbRecvQueue::Flush(void)
 {
-    if (m_isClosed.load(std::memory_order_relaxed)) {
+    if (m_isClosed) {
         throw IbQueueClosedException();
     }
 

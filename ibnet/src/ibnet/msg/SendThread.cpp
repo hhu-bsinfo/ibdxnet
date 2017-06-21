@@ -92,8 +92,16 @@ void SendThread::_RunLoop(void)
         if (__ProcessFlowControl(targetNodeId, connection, flowControlData)) {
             __ProcessBuffers(targetNodeId, connection, queue);
         }
+
+        m_connectionManager->ReturnConnection(connection);
     } catch (core::IbQueueClosedException& e) {
-        // ignore
+        m_connectionManager->ReturnConnection(connection);
+        // ignore ?
+        // TODO
+    } catch (core::IbDisconnectedException& e) {
+        m_connectionManager->ReturnConnection(connection);
+        m_connectionManager->CloseConnection(connection->GetRemoteNodeId(), true);
+        m_bufferSendQueues->NodeDisconnected(connection->GetConnectionId());
     }
 }
 
@@ -139,14 +147,9 @@ bool SendThread::__ProcessFlowControl(
 
     try {
         connection->GetQp(1)->GetSendQueue()->PollCompletion(true);
-    } catch (core::IbDisconnectedException& e) {
+    } catch (...) {
         m_timers[5].Exit();
-        uint16_t connectionId = connection->GetConnectionId();
-        connection.reset();
-
-        m_connectionManager->CloseConnection(nodeId, true);
-        m_bufferSendQueues->NodeDisconnected(connectionId);
-        return false;
+        throw;
     }
 
     m_timers[5].Exit();
@@ -213,14 +216,9 @@ bool SendThread::__ProcessBuffers(uint16_t nodeId,
 
         try {
             connection->GetQp(0)->GetSendQueue()->PollCompletion(true);
-        } catch (core::IbDisconnectedException& e) {
+        } catch (...) {
             m_timers[8].Exit();
-            uint16_t connectionId = connection->GetConnectionId();
-            connection.reset();
-
-            m_connectionManager->CloseConnection(nodeId, true);
-            m_bufferSendQueues->NodeDisconnected(connectionId);
-            return false;
+            throw;
         }
 
         m_timers[8].Exit();

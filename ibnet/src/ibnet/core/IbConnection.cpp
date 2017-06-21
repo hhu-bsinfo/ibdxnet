@@ -53,14 +53,12 @@ void IbConnection::Connect(const IbRemoteInfo& remoteInfo)
         m_qps[i]->GetSendQueue()->Open();
     }
 
-    m_isConnected = true;
+    m_isConnected.store(true, std::memory_order_relaxed);
 }
 
 void IbConnection::Close(bool force)
 {
     IBNET_LOG_TRACE_FUNC;
-
-    m_isConnected.store(false, std::memory_order_acquire);
 
     // flush outstanding sends on qps
     if (!force) {
@@ -75,6 +73,8 @@ void IbConnection::Close(bool force)
     }
 
     m_qps.clear();
+
+    m_isConnected.store(false, std::memory_order_relaxed);
 }
 
 }

@@ -146,7 +146,11 @@ bool IbMessageSystem::SendMessage(uint16_t destination, void* buffer,
     auto elem = std::make_shared<SendData>(destination,
         connection->GetConnectionId(), length, buffer);
 
-    return m_bufferSendQueues->PushBack(elem);
+    bool res = m_bufferSendQueues->PushBack(elem);
+
+    m_connectionManager->ReturnConnection(connection);
+
+    return res;
 }
 
 bool IbMessageSystem::SendFlowControl(uint16_t destination, uint32_t data)
@@ -155,8 +159,12 @@ bool IbMessageSystem::SendFlowControl(uint16_t destination, uint32_t data)
     std::shared_ptr<core::IbConnection> connection =
         m_connectionManager->GetConnection(destination);
 
-    return m_bufferSendQueues->PushBackFlowControl(
+    bool res = m_bufferSendQueues->PushBackFlowControl(
         destination, connection->GetConnectionId(), data);
+
+    m_connectionManager->ReturnConnection(connection);
+
+    return res;
 }
 
 void IbMessageSystem::PrintStatus(void)

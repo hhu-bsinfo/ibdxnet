@@ -38,6 +38,11 @@ IbConnectionManager::IbConnectionManager(
         throw IbException("Invalid node id provided");
     }
 
+    for (uint32_t i = 0; i < IbNodeId::MAX_NUM_NODES; i++) {
+        m_connectionAvailable[i].store(CONNECTION_NOT_AVAILABLE,
+            std::memory_order_relaxed);
+    }
+
     // fill array with 'unique' connection ids
     // ids are reused to ensure the max id is max_connections - 1
     for (int i = m_maxNumConnections - 1; i >= 0; i--) {
@@ -68,24 +73,39 @@ IbConnectionManager::~IbConnectionManager(void)
     IBNET_LOG_DEBUG("Shutting down connection manager done");
 }
 
-std::shared_ptr<IbConnection> IbConnectionManager::GetConnection(uint16_t nodeId)
+std::shared_ptr<IbConnection> IbConnectionManager::GetConnection(
+        uint16_t nodeId)
 {
-    IBNET_LOG_TRACE("GetConnection: 0x{:x}", nodeId);
-
     if (nodeId == IbNodeId::INVALID) {
         throw IbException("Invalid node id provided");
     }
 
-    // connection already established?
-    std::shared_ptr<IbConnection> connection = m_connections[nodeId];
-    if (connection) {
-        IBNET_LOG_TRACE("GetConnection (available): 0x{:x}", nodeId);
-        return connection;
+    int32_t available = m_connectionAvailable[nodeId].fetch_add(1,
+        std::memory_order_relaxed);
+
+    IBNET_LOG_TRACE("GetConnection: 0x{:x}, avail: {}", nodeId, available + 1);
+
+    if (available >= CONNECTION_AVAILABLE) {
+        return m_connections[nodeId];
     }
 
     m_connectionMutex.lock();
 
     IBNET_LOG_TRACE("GetConnection (active create): 0x{:x}", nodeId);
+
+    // check if another thread was faster and created a connection while
+    // we tried to but got blocked by the lock
+    available += 1;
+    if (!m_connectionAvailable[nodeId].compare_exchange_strong(available,
+            CONNECTION_NOT_AVAILABLE, std::memory_order_relaxed)) {
+        if (available >= CONNECTION_AVAILABLE) {
+            m_connectionAvailable[nodeId].fetch_add(1,
+                std::memory_order_relaxed);
+
+            m_connectionMutex.unlock();
+            return m_connections[nodeId];
+        }
+    }
 
     std::shared_ptr<IbNodeConf::Entry> nodeInfo;
     try {
@@ -146,11 +166,12 @@ std::shared_ptr<IbConnection> IbConnectionManager::GetConnection(uint16_t nodeId
                         nodeId);
             }
             if (tryCounter > MAX_CONNECT_RETIRES) {
-
                 m_connectionMutex.lock();
 
                 // one last check
                 if (m_connections[nodeId]->IsConnected()) {
+                    m_connectionAvailable[nodeId].store(
+                        CONNECTION_AVAILABLE + 1, std::memory_order_relaxed);
                     m_connectionMutex.unlock();
                     // last minute success
                     return m_connections[nodeId];
@@ -167,13 +188,21 @@ std::shared_ptr<IbConnection> IbConnectionManager::GetConnection(uint16_t nodeId
 
                 m_discoveryManager->InvalidateNodeInfo(nodeId);
 
-                throw IbTimeoutException(nodeId, "Connection retry count exceeded");
+                throw IbTimeoutException(nodeId,
+                    "Connection retry count exceeded");
             }
 
             tryCounter++;
-            std::this_thread::sleep_for(std::chrono::milliseconds(CONNECT_RETRY_WAIT_MS));
+            std::this_thread::sleep_for(
+                std::chrono::milliseconds(CONNECT_RETRY_WAIT_MS));
         }
+
+        m_connectionAvailable[nodeId].store(CONNECTION_AVAILABLE + 1,
+            std::memory_order_relaxed);
     } else {
+        m_connectionAvailable[nodeId].store(CONNECTION_AVAILABLE + 1,
+            std::memory_order_relaxed);
+
         m_connectionMutex.unlock();
 
         // wait until we received the remote info and established the connection
@@ -185,11 +214,38 @@ std::shared_ptr<IbConnection> IbConnectionManager::GetConnection(uint16_t nodeId
     return m_connections[nodeId];
 }
 
+void IbConnectionManager::ReturnConnection(
+        std::shared_ptr<IbConnection>& connection)
+{
+    int32_t tmp = m_connectionAvailable[connection->GetRemoteNodeId()]
+        .fetch_sub(1, std::memory_order_relaxed);
+
+    IBNET_LOG_TRACE("ReturnConnection: 0x{:x}, avail {}",
+        connection->GetRemoteNodeId(), tmp - 1);
+}
+
 void IbConnectionManager::CloseConnection(uint16_t nodeId, bool force)
 {
     IBNET_LOG_INFO("Closing connection of 0x{:x}, force {}", nodeId, force);
 
     m_connectionMutex.lock();
+
+    int32_t counter = m_connectionAvailable[nodeId].exchange(CONNECTION_CLOSING,
+        std::memory_order_relaxed);
+
+    if (!force) {
+        // wait until remaining threads returned the connection
+        while (true) {
+            int32_t tmp = m_connectionAvailable[nodeId].load(
+                std::memory_order_relaxed);
+
+            if (CONNECTION_CLOSING - counter == tmp) {
+                break;
+            }
+
+            std::this_thread::yield();
+        }
+    }
 
     // remove connection
     std::shared_ptr<core::IbConnection> connection = m_connections[nodeId];
@@ -199,12 +255,6 @@ void IbConnectionManager::CloseConnection(uint16_t nodeId, bool force)
     if (connection == nullptr) {
         m_connectionMutex.unlock();
         return;
-    }
-
-    // wait until we own the only reference to the object
-    // let's hope nobody is caching/storing one
-    while (!connection.unique()) {
-        std::this_thread::yield();
     }
 
     // FIXME don't remove because entries are replaced on new connection anyway? plus avoid race condition?
@@ -220,6 +270,9 @@ void IbConnectionManager::CloseConnection(uint16_t nodeId, bool force)
     connection.reset();
 
     m_openConnections--;
+
+    m_connectionAvailable[nodeId].store(CONNECTION_NOT_AVAILABLE,
+        std::memory_order_relaxed);
 
     m_connectionMutex.unlock();
 
@@ -324,9 +377,11 @@ void IbConnectionManager::_RunLoop(void)
 
             m_connectionMutex.unlock();
 
-            IBNET_LOG_TRACE("Replying with connection exchg info to node 0x{:X}",
-                    remoteNodeId);
-            res = m_socket.Send(m_buffer, bufferSize, recvAddr, m_socket.GetPort());
+            IBNET_LOG_TRACE(
+                "Replying with connection exchg info to node 0x{:X}",
+                remoteNodeId);
+            res = m_socket.Send(m_buffer, bufferSize, recvAddr,
+                m_socket.GetPort());
 
             if (res != bufferSize) {
                 IBNET_LOG_ERROR("Establishing connection with node 0x{:x}"

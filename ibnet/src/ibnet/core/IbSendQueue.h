@@ -69,7 +69,7 @@ public:
      *          the queue
      */
     inline bool Reserve(void) {
-        if (m_isClosed.load(std::memory_order_relaxed)) {
+        if (m_isClosed) {
             throw IbQueueClosedException();
         }
 
@@ -117,7 +117,7 @@ public:
 private:
     IbQueuePair& m_parentQp;
     uint16_t m_queueSize;
-    std::atomic<bool> m_isClosed;
+    bool m_isClosed;
 
     std::unique_ptr<IbCompQueue> m_compQueue;
 };

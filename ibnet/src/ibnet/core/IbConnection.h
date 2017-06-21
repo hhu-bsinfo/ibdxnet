@@ -45,6 +45,13 @@ public:
     }
 
     /**
+     * Get the node id of the remote node
+     */
+    uint16_t GetRemoteNodeId(void) const {
+        return m_remoteInfo.GetNodeId();
+    }
+
+    /**
      * Create and add a new queue pair to the connection
      *
      * @param sharedRecvQueue Shared receive queue to use (optional)
@@ -68,10 +75,6 @@ public:
      * @return Pointer to the queue pair
      */
     std::shared_ptr<IbQueuePair>& GetQp(uint32_t idx) {
-        if (!m_isConnected.load(std::memory_order_relaxed)) {
-            throw IbNodeNotAvailableException(m_remoteInfo.GetNodeId());
-        }
-
         return m_qps.at(idx);
     }
 

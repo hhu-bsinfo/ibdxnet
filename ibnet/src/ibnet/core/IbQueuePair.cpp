@@ -60,7 +60,7 @@ void IbQueuePair::__CreateQP(std::shared_ptr<IbProtDom>& protDom)
     qp_init_attr.qp_type = IBV_QPT_RC;
 
     // if available, use a srq
-    if (m_recvQueue->IsCompQueueShared()) {
+    if (m_recvQueue->IsRecvQueueShared()) {
         IBNET_LOG_DEBUG("Using shared recv work queue");
         qp_init_attr.srq = m_recvQueue->m_sharedRecvQueue->GetQueue();
     }

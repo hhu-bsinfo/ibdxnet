@@ -177,6 +177,7 @@ private:
     uint16_t m_ownNodeId;
 
     std::mutex m_connectionMutex;
+
     std::atomic<int32_t> m_connectionAvailable[IbNodeId::MAX_NUM_NODES];
     std::shared_ptr<IbConnection> m_connections[IbNodeId::MAX_NUM_NODES];
     uint32_t m_openConnections;

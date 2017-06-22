@@ -89,15 +89,14 @@ void SendThread::_RunLoop(void)
     }
 
     try {
-        if (__ProcessFlowControl(targetNodeId, connection, flowControlData)) {
-            __ProcessBuffers(targetNodeId, connection, queue);
+        if (__ProcessFlowControl(connection, flowControlData)) {
+            __ProcessBuffers(connection, queue);
         }
 
         m_connectionManager->ReturnConnection(connection);
     } catch (core::IbQueueClosedException& e) {
         m_connectionManager->ReturnConnection(connection);
-        // ignore ?
-        // TODO
+        // ignore
     } catch (core::IbDisconnectedException& e) {
         m_connectionManager->ReturnConnection(connection);
         m_connectionManager->CloseConnection(connection->GetRemoteNodeId(), true);
@@ -112,7 +111,7 @@ void SendThread::_AfterRunLoop(void)
 }
 
 bool SendThread::__ProcessFlowControl(
-        uint16_t nodeId, std::shared_ptr<core::IbConnection>& connection,
+        std::shared_ptr<core::IbConnection>& connection,
         std::shared_ptr<std::atomic<uint32_t>>& flowControlData)
 {
     uint32_t numBytesToSend = sizeof(uint32_t);
@@ -158,7 +157,7 @@ bool SendThread::__ProcessFlowControl(
     return true;
 }
 
-bool SendThread::__ProcessBuffers(uint16_t nodeId,
+bool SendThread::__ProcessBuffers(
         std::shared_ptr<core::IbConnection>& connection,
         std::shared_ptr<ibnet::sys::Queue<std::shared_ptr<SendData>>>& queue)
 {

@@ -1,3 +1,4 @@
+#include <ibnet/core/IbDisconnectedException.h>
 #include "RecvThread.h"
 
 #include "MsgException.h"

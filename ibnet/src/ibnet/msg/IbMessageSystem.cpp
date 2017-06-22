@@ -130,6 +130,11 @@ void IbMessageSystem::AddNode(const core::IbNodeConf::Entry& entry)
     m_discoveryManager->AddNode(entry);
 }
 
+bool IbMessageSystem::IsConnectionAvailable(uint16_t destination)
+{
+    return m_connectionManager->IsConnectionAvailable(destination);
+}
+
 bool IbMessageSystem::SendMessage(uint16_t destination, void* buffer,
         uint32_t length)
 {

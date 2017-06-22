@@ -73,6 +73,12 @@ IbConnectionManager::~IbConnectionManager(void)
     IBNET_LOG_DEBUG("Shutting down connection manager done");
 }
 
+bool IbConnectionManager::IsConnectionAvailable(uint16_t nodeId)
+{
+    return m_connectionAvailable[nodeId].load(std::memory_order_relaxed) >=
+        CONNECTION_AVAILABLE;
+}
+
 std::shared_ptr<IbConnection> IbConnectionManager::GetConnection(
         uint16_t nodeId)
 {

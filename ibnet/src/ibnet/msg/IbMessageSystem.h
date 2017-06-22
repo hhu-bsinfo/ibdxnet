@@ -67,6 +67,14 @@ public:
     void AddNode(const core::IbNodeConf::Entry& entry);
 
     /**
+     * Check if a connection is available (open and connected)
+     *
+     * @param destination Remote node id
+     * @return True if available, false otherwise
+     */
+    bool IsConnectionAvailable(uint16_t destination);
+
+    /**
      * Send a message/buffer
      *
      * @param destination Node id of the destination

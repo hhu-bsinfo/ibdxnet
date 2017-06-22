@@ -93,6 +93,14 @@ public:
     }
 
     /**
+     * Check if a connection is available (open and connected)
+     *
+     * @param destination Remote node id
+     * @return True if available, false otherwise
+     */
+    bool IsConnectionAvailable(uint16_t nodeId);
+
+    /**
      * Get a connection
      *
      * If called for the first time with a node id, this might establish the

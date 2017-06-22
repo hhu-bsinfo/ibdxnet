@@ -33,12 +33,15 @@ public:
      *
      * @param nodeId Node id of the remote node
      * @param lid LID of the remote node
+     * @param conManIdent Identifier of connection manager to detect
+     *      rebooted nodes
      * @param physicalQpIds Physical QP ids of the remote QPs to connect to
      */
-    IbRemoteInfo(uint16_t nodeId, uint16_t lid,
+    IbRemoteInfo(uint16_t nodeId, uint16_t lid, uint32_t conManIdent,
             const std::vector<uint32_t>& physicalQpIds) :
         m_nodeId(nodeId),
         m_lid(lid),
+        m_conManIdent(conManIdent),
         m_physicalQpIds(physicalQpIds)
     {}
 
@@ -70,6 +73,13 @@ public:
     }
 
     /**
+     * Get the identifier of the remote connection manager
+     */
+    uint32_t GetConManIdent(void) const {
+        return m_conManIdent;
+    }
+
+    /**
      * Get the list of physical QP ids of the remote node
      */
     const std::vector<uint32_t>& GetPhysicalQpIds(void) const {
@@ -93,6 +103,7 @@ public:
 private:
     uint16_t m_nodeId;
     uint16_t m_lid;
+    uint32_t m_conManIdent;
     std::vector<uint32_t> m_physicalQpIds;
 };
 

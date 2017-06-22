@@ -1,6 +1,7 @@
 #include "IbConnectionManager.h"
 
 #include "ibnet/sys/Logger.hpp"
+#include "ibnet/sys/Random.h"
 
 #include "IbTimeoutException.h"
 
@@ -21,6 +22,7 @@ IbConnectionManager::IbConnectionManager(
         std::unique_ptr<IbConnectionCreator> connectionCreator) :
     ThreadLoop("ConnectionManager"),
     m_socket(socketPort),
+    m_conManIdent(sys::Random::Generate32()),
     m_maxNumConnections(maxNumConnections),
     m_device(device),
     m_protDom(protDom),
@@ -147,6 +149,7 @@ std::shared_ptr<IbConnection> IbConnectionManager::GetConnection(
         PaketNodeInfo paket;
 
         paket.m_magic = PAKET_MAGIC;
+        paket.m_ident = m_conManIdent;
         paket.m_info.m_nodeId = m_ownNodeId;
         paket.m_info.m_lid = m_device->GetLid();
         memset(paket.m_info.m_physicalQpId, 0xFF,
@@ -306,8 +309,9 @@ void IbConnectionManager::_RunLoop(void)
     if (res == bufferSize) {
         PaketNodeInfo* paket = (PaketNodeInfo*) m_buffer;
 
-        IBNET_LOG_TRACE("Received paket from {}, magic 0x{:x}",
-                sys::AddressIPV4(recvAddr), paket->m_magic);
+        IBNET_LOG_TRACE(
+            "Received paket from {}, magic 0x{:x}, conManIdent 0x{:x}",
+                sys::AddressIPV4(recvAddr), paket->m_magic, paket->m_ident);
 
         if (paket->m_magic == PAKET_MAGIC) {
 
@@ -316,6 +320,42 @@ void IbConnectionManager::_RunLoop(void)
                     remoteNodeId);
 
             m_connectionMutex.lock();
+
+            // check if the current node didn't figure out that the remote
+            // died and was restarted (current node acting as receiver only).
+            // this results in still owning old queue pair information
+            // which cannot be re-used with the new remote
+
+            if (m_connections[remoteNodeId] != nullptr &&
+                    m_connections[remoteNodeId]->IsConnected() &&
+                    m_connections[remoteNodeId]->GetRemoteInfo()
+                        .GetConManIdent() != paket->m_ident) {
+                // different connection manager though same node id
+                // -> application restarted, kill old connection
+                IBNET_LOG_DEBUG(
+                    "Detected zombie connection to node 0x{:x}, killing...",
+                    paket->m_info.m_nodeId);
+
+                m_connectionAvailable[remoteNodeId].exchange(
+                    CONNECTION_CLOSING, std::memory_order_relaxed);
+
+                // remove connection
+                std::shared_ptr<core::IbConnection> connection =
+                    m_connections[remoteNodeId];
+                m_connections[remoteNodeId] = nullptr;
+
+                // check if someone else was faster and removed it already
+                if (connection != nullptr) {
+                    connection->Close(true);
+
+                    // re-use connection id
+                    m_availableConnectionIds.push_back(
+                        connection->GetConnectionId());
+
+                    m_connectionAvailable[remoteNodeId].store(
+                        CONNECTION_NOT_AVAILABLE, std::memory_order_relaxed);
+                }
+            }
 
             // check first if creating a connection is already in progress
             if (m_connections[remoteNodeId] == nullptr) {
@@ -349,7 +389,7 @@ void IbConnectionManager::_RunLoop(void)
                 }
 
                 IbRemoteInfo remoteInfo(paket->m_info.m_nodeId,
-                    paket->m_info.m_lid, remotePhysicalQpIds);
+                    paket->m_info.m_lid, paket->m_ident, remotePhysicalQpIds);
 
                 m_connections[remoteNodeId]->Connect(remoteInfo);
                 IBNET_LOG_INFO("Connected QP to remote {}", remoteInfo);
@@ -373,6 +413,7 @@ void IbConnectionManager::_RunLoop(void)
             // thread
 
             // reply with connection information to remote
+            paket->m_ident = m_conManIdent;
             paket->m_info.m_nodeId = m_ownNodeId;
             paket->m_info.m_lid = m_device->GetLid();
 

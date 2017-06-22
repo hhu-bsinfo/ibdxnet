@@ -52,6 +52,13 @@ public:
     }
 
     /**
+     * Get the remote node information
+     */
+    const IbRemoteInfo& GetRemoteInfo(void) const {
+        return m_remoteInfo;
+    }
+
+    /**
      * Create and add a new queue pair to the connection
      *
      * @param sharedRecvQueue Shared receive queue to use (optional)

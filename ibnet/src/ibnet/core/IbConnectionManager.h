@@ -167,7 +167,8 @@ private:
 private:
     sys::SocketUDP m_socket;
 
-    uint32_t m_maxNumConnections;
+    const uint32_t m_conManIdent;
+    const uint32_t m_maxNumConnections;
 
     std::shared_ptr<IbDevice> m_device;
     std::shared_ptr<IbProtDom> m_protDom;
@@ -200,6 +201,7 @@ private:
     struct PaketNodeInfo
     {
         uint32_t m_magic;
+        uint32_t m_ident;
         NodeInfo m_info;
     } __attribute__((packed));
 };

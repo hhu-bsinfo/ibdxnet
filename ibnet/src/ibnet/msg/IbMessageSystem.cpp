@@ -136,7 +136,7 @@ bool IbMessageSystem::IsConnectionAvailable(uint16_t destination)
 }
 
 bool IbMessageSystem::SendMessage(uint16_t destination, void* buffer,
-        uint32_t length)
+        uint32_t length, bool freeBuffer)
 {
     if (length > m_config.m_inOutBufferSize) {
         throw MsgException("Buffer size (" + std::to_string(length) +
@@ -149,7 +149,7 @@ bool IbMessageSystem::SendMessage(uint16_t destination, void* buffer,
         m_connectionManager->GetConnection(destination);
 
     auto elem = std::make_shared<SendData>(destination,
-        connection->GetConnectionId(), length, buffer);
+        connection->GetConnectionId(), length, buffer, freeBuffer);
 
     bool res = m_bufferSendQueues->PushBack(elem);
 
@@ -175,6 +175,15 @@ bool IbMessageSystem::SendFlowControl(uint16_t destination, uint32_t data)
 void IbMessageSystem::PrintStatus(void)
 {
     std::cout << "Buffer send queues: " << *m_bufferSendQueues << std::endl;
+    std::cout << "Send threads:" << std::endl;
+    for (auto& it : m_sendThreads) {
+        it->PrintStatistics();
+    }
+
+    std::cout << "Recv threads:" << std::endl;
+    for (auto& it : m_recvThreads) {
+        it->PrintStatistics();
+    }
 }
 
 void IbMessageSystem::NodeConnected(uint16_t nodeId,

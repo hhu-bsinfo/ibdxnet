@@ -195,6 +195,11 @@ bool SendThread::__ProcessBuffers(
 
         numBytesToSend = data->m_size;
         memcpy(m_buffers[i]->GetAddress(), data->m_buffer, data->m_size);
+
+        if (data->m_freeAfterSend) {
+            free(data->m_buffer);
+        }
+
         data.reset();
 
         m_timers[6].Exit();

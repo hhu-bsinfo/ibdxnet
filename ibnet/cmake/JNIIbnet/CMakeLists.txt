@@ -11,6 +11,7 @@ include_directories(/usr/lib/jvm/java-8-openjdk-amd64/include/linux)
 
 set(SOURCE_FILES
         ${IBNET_SRC_DIR}/ibnet/jni/Callbacks.cpp
+        ${IBNET_SRC_DIR}/ibnet/jni/DebugThread.cpp
         ${IBNET_SRC_DIR}/ibnet/jni/JNIIbnet.cpp)
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})

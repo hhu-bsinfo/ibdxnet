@@ -25,6 +25,7 @@
 #include "ibnet/msg/IbMessageSystem.h"
 
 #include "Callbacks.h"
+#include "DebugThread.h"
 #include "MessageHandler.h"
 #include "NodeConnectionListener.h"
 #include "NodeDiscoveryListener.h"
@@ -38,11 +39,8 @@ static std::shared_ptr<ibnet::jni::Callbacks> g_callbacks;
 static std::shared_ptr<ibnet::jni::MessageHandler> g_messageHandler;
 static std::shared_ptr<ibnet::jni::NodeConnectionListener> g_nodeConnectionListener;
 static std::shared_ptr<ibnet::jni::NodeDiscoveryListener> g_nodeDiscoveryListener;
-static std::unique_ptr<ibnet::msg::IbMessageSystem> g_messageSystem;
-
-const char *__asan_default_options() {
-    return "verbosity=1";
-}
+static std::shared_ptr<ibnet::msg::IbMessageSystem> g_messageSystem;
+static std::unique_ptr<ibnet::jni::DebugThread> g_debugThread;
 
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_init(JNIEnv* p_env,
         jclass p_class, jshort p_ownNodeId, jint p_maxRecvReqs,
@@ -80,7 +78,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_init(JNIEnv* p_env
     ibnet::core::IbNodeConf nodeConf;
 
     try {
-        g_messageSystem = std::make_unique<ibnet::msg::IbMessageSystem>(
+        g_messageSystem = std::make_shared<ibnet::msg::IbMessageSystem>(
             p_ownNodeId, nodeConf, config, g_messageHandler,
             g_nodeConnectionListener, g_nodeDiscoveryListener);
     } catch (...) {
@@ -88,6 +86,9 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_init(JNIEnv* p_env
         return (jboolean) 0;
     }
 
+    // TODO have parameter passed to init to turn on/off
+    g_debugThread = std::make_unique<ibnet::jni::DebugThread>(g_messageSystem);
+    g_debugThread->Start();
 
 //	int counter = 0;
 //	auto enter = std::chrono::high_resolution_clock::now();
@@ -111,6 +112,9 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_shutdown(JNIEnv* p
     IBNET_LOG_TRACE_FUNC;
 
     jboolean res = (jboolean) 1;
+
+    g_debugThread->Stop();
+    g_debugThread.reset();
 
     try {
         g_messageSystem.reset();
@@ -152,7 +156,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_postBuffer(
     while (true) {
         try {
             if (g_messageSystem->SendMessage((uint16_t) p_nodeId, tmp,
-                (uint32_t) p_length)) {
+                (uint32_t) p_length), true) {
                 break;
             }
         } catch (...) {

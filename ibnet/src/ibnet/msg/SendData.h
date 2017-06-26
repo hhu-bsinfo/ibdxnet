@@ -18,6 +18,7 @@ public:
     uint16_t m_connectionId;
     uint32_t m_size;
     void* m_buffer;
+    bool m_freeAfterSend;
 
     /**
      * Constructor
@@ -26,13 +27,15 @@ public:
      * @param connectionId Id of the connection to write the data to
      * @param size Size of the data (bytes)
      * @param buffer Pointer to allocated buffer with data to send
+     * @param freeAfterSend True to free the buffer after done sending
      */
     SendData(uint16_t destNodeId, uint16_t connectionId, uint32_t size,
-            void* buffer) :
+            void* buffer, bool freeAfterSend) :
         m_destNodeId(destNodeId),
         m_connectionId(connectionId),
         m_size(size),
-        m_buffer(buffer)
+        m_buffer(buffer),
+        m_freeAfterSend(freeAfterSend)
     {};
 };
 

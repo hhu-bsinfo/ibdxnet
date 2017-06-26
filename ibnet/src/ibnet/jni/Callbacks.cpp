@@ -18,7 +18,8 @@ Callbacks::Callbacks(JNIEnv* env, jobject callbacks) :
     m_midReceivedBuffer(env->GetMethodID(env->GetObjectClass(callbacks), "receivedBuffer",
         "(SLjava/nio/ByteBuffer;I)V")),
     m_midReceivedFlowControlData(env->GetMethodID(env->GetObjectClass(callbacks),
-        "receivedFlowControlData", "(SI)V"))
+        "receivedFlowControlData", "(SI)V")),
+    m_directBufferAddressField(env->GetFieldID(env->FindClass("java/nio/Buffer"), "address", "J"))
 {
     env->GetJavaVM(&m_vm);
 
@@ -70,6 +71,8 @@ Callbacks::Callbacks(JNIEnv* env, jobject callbacks) :
         // TODO proper exception derived from from sys
         throw std::runtime_error("");
     }
+
+
 }
 
 Callbacks::~Callbacks(void)

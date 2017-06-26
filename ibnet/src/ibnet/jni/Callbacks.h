@@ -68,17 +68,19 @@ public:
 
         JNIEnv* env = __GetEnv();
 
+        // get a byte buffer with at least length size
         jobject byteBuffer =
             env->CallObjectMethod(m_callbacks, m_midGetReceiveBuffer, length);
 
-        void* byteBufferAddr = env->GetDirectBufferAddress(byteBuffer);
-        uint32_t byteBufferLength =
-            (uint32_t) env->GetDirectBufferCapacity(byteBuffer);
+        // I can't believe these calls are so expensive they cut performance
+        // to less than 1/20th...
+        // void* byteBufferAddr = env->GetDirectBufferAddress(byteBuffer);
+        // uint32_t byteBufferLength =
+        //    (uint32_t) env->GetDirectBufferCapacity(byteBuffer);
 
-        if (byteBufferLength < length) {
-            // TODO log error handling
-            throw std::runtime_error("Recv buffer too small");
-        }
+        // that's better
+        void* byteBufferAddr = (void*)(intptr_t)
+            env->GetLongField(byteBuffer, m_directBufferAddressField);
 
         memcpy(byteBufferAddr, buffer, length);
         env->CallVoidMethod(m_callbacks, m_midReceivedBuffer, source,
@@ -111,6 +113,7 @@ private:
     jmethodID m_midGetReceiveBuffer;
     jmethodID m_midReceivedBuffer;
     jmethodID m_midReceivedFlowControlData;
+    jfieldID m_directBufferAddressField;
 
     inline JNIEnv* __GetEnv(void)
     {
@@ -118,13 +121,16 @@ private:
 
         JNIEnv* env;
 
+        // Very important note:
+        // If the JVM is crashing here: Have a look at the JNINotes.md file
+
         int envStat = m_vm->GetEnv((void **)&env, JNI_VERSION_1_8);
         if (envStat == JNI_EDETACHED) {
             if (m_vm->AttachCurrentThread((void **) &env, NULL) != 0) {
                 throw std::runtime_error("Failed to attach to java vm");
             }
         } else if (envStat == JNI_OK) {
-
+            // already attached to environment
         } else if (envStat == JNI_EVERSION) {
             throw std::runtime_error("Failed to attach to java vm, jni version not supported");
         }
@@ -136,11 +142,16 @@ private:
     {
         IBNET_LOG_TRACE_FUNC;
 
-        if (env->ExceptionCheck()) {
-            env->ExceptionDescribe();
-        }
+        // Don't check for exceptions because this is extremely expensive
+        // and kills performance on recv callbacks
+        // if (env->ExceptionCheck()) {
+        //    env->ExceptionDescribe();
+        // }
 
-        m_vm->DetachCurrentThread();
+        // Don't detach. This is very expensive and increases the costs
+        // for re-attaching a lot. The number of threads calling back to
+        // the java context is limited, so we keep them attached
+        // m_vm->DetachCurrentThread();
     }
 };
 

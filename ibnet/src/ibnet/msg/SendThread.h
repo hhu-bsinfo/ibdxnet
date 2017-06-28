@@ -59,11 +59,11 @@ private:
     void _AfterRunLoop(void) override;
 
 private:
-    bool __ProcessFlowControl(
+    void __ProcessFlowControl(
         std::shared_ptr<core::IbConnection>& connection,
         std::shared_ptr<std::atomic<uint32_t>>& flowControlData);
 
-    bool __ProcessBuffers(
+    uint32_t __ProcessBuffers(
         std::shared_ptr<core::IbConnection>& connection,
         std::shared_ptr<ibnet::sys::Queue<std::shared_ptr<SendData>>>& queue);
 

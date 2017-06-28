@@ -5,12 +5,14 @@
 namespace ibnet {
 namespace msg {
 
-SendQueues::SendQueues(uint16_t maxNumConnections, uint32_t jobQueueSizePerConnection) :
+SendQueues::SendQueues(uint16_t maxNumConnections,
+        uint32_t jobQueueSizePerConnection) :
     m_writeInterests(maxNumConnections),
     m_connections(maxNumConnections)
 {
     for (size_t i = 0; i < maxNumConnections; i++) {
         m_connections[i].m_nodeId = core::IbNodeId::INVALID;
+        m_connections[i].m_writeInterest = false;
         m_connections[i].m_writeInterestCount = 0;
         m_connections[i].m_flowControlData =
             std::make_shared<std::atomic<uint32_t>>(0);
@@ -38,8 +40,11 @@ bool SendQueues::PushBack(std::shared_ptr<SendData> data)
     // connectionId -> nodeId mapping
     m_connections[connectionId].m_nodeId = data->m_destNodeId;
 
-    if (m_connections[connectionId].m_writeInterestCount
-            .fetch_add(1, std::memory_order_relaxed) == 0) {
+    m_connections[connectionId].m_writeInterestCount.fetch_add(1,
+        std::memory_order_relaxed);
+    if (!m_connections[connectionId].m_writeInterest.exchange(true,
+            std::memory_order_release)) {
+        //std::cout << "push back buffer " << std::dec << connectionId << std::endl;
         m_writeInterests.PushBack(connectionId);
     }
 
@@ -56,8 +61,13 @@ bool SendQueues::PushBackFlowControl(uint16_t nodeId, uint16_t connectionId,
     // connectionId -> nodeId mapping
     m_connections[connectionId].m_nodeId = nodeId;
 
-    if (m_connections[connectionId].m_writeInterestCount
-            .load(std::memory_order_relaxed) == 0) {
+    // don't increase the interest counter, just mark the write interest on
+    // the connection. the send thread will always check if flow control
+    // data is available (ensure high priority to avoid blocking/deadlocking)
+
+    if (!m_connections[connectionId].m_writeInterest.exchange(true,
+            std::memory_order_release)) {
+        //std::cout << "push back FC " << std::dec << connectionId << std::endl;
         m_writeInterests.PushBack(connectionId);
     }
 
@@ -72,10 +82,12 @@ bool SendQueues::Next(uint16_t& targetNodeId, uint16_t& connectionId,
         return false;
     }
 
+    //std::cout << "got next " << std::dec << connectionId << std::endl;
+
     bool expected = false;
     if (!m_connections[connectionId].m_aquiredQueue.compare_exchange_strong(
             expected, true, std::memory_order_acquire)) {
-
+        std::cout << "next queue acquired " << std::dec << connectionId << std::endl;
         // got an interest token but the queue is already acquired
         // put interest back
         while (!m_writeInterests.PushBack(connectionId)) {
@@ -98,7 +110,9 @@ void SendQueues::NodeDisconnected(uint16_t connectionId)
     // important: because all write interests are added to a queue, we can't
     // remove them (easily). we leave the interest in the queue but set the
     // count to 0. thus, if a thread gets the next interest in the queue
-    // it has to check if there are even operations available.
+    // it has to check if there are even operations available and removes
+    // the interest automatically when it realized nothing's available to be
+    // processed
 
     m_connections[connectionId].m_nodeId = core::IbNodeId::INVALID;
     m_connections[connectionId].m_writeInterestCount.store(0,
@@ -110,12 +124,19 @@ void SendQueues::NodeDisconnected(uint16_t connectionId)
 
 void SendQueues::Finished(uint16_t connectionId, uint32_t consumedInterests)
 {
+    m_connections[connectionId].m_writeInterest.store(false,
+        std::memory_order_relaxed);
+
     if (m_connections[connectionId].m_writeInterestCount.fetch_sub(
             consumedInterests,
-            std::memory_order_relaxed) - consumedInterests > 0) {
-        while (!m_writeInterests.PushBack(connectionId)) {
-            // force push back, don't lose interest
-            std::this_thread::yield();
+            std::memory_order_relaxed) - consumedInterests > 0 ||
+            m_connections[connectionId].m_flowControlData->load(
+                std::memory_order_relaxed) > 0) {
+
+        if (!m_connections[connectionId].m_writeInterest.exchange(true,
+                std::memory_order_release)) {
+            //std::cout << "push back finish " << std::dec << connectionId << " " << m_writeInterests.GetElementCount() << std::endl;
+            m_writeInterests.PushBack(connectionId);
         }
     }
 

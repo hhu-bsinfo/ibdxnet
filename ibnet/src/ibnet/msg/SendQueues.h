@@ -105,12 +105,15 @@ public:
             if (o.m_connections[i].m_nodeId != core::IbNodeId::INVALID) {
                 os << std::endl << " " << i << ": 0x" << std::hex <<
                    o.m_connections[i].m_nodeId <<
-                   ", " << std::dec << o.m_connections[i].m_writeInterestCount
-                   <<
+                   ", " << std::dec << o.m_connections[i].m_writeInterest.load(
+                    std::memory_order_relaxed) << ", " << std::dec <<
+                   o.m_connections[i].m_writeInterestCount.load(
+                       std::memory_order_relaxed) <<
                    ", " << o.m_connections[i].m_flowControlData->load(
                     std::memory_order_relaxed) <<
                    ", " << o.m_connections[i].m_queue->GetElementCount() <<
-                   ", " << o.m_connections[i].m_aquiredQueue;
+                   ", " << o.m_connections[i].m_aquiredQueue.load(
+                    std::memory_order_relaxed);
             }
         }
 
@@ -123,6 +126,7 @@ private:
     struct Connection
     {
         uint16_t m_nodeId;
+        std::atomic<bool> m_writeInterest;
         std::atomic<uint32_t> m_writeInterestCount;
         std::shared_ptr<std::atomic<uint32_t>> m_flowControlData;
         std::shared_ptr<ibnet::sys::Queue<std::shared_ptr<SendData>>> m_queue;

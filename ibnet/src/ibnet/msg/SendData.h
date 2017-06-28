@@ -13,7 +13,6 @@ namespace msg {
  */
 struct SendData
 {
-public:
     uint16_t m_destNodeId;
     uint16_t m_connectionId;
     uint32_t m_size;

@@ -42,6 +42,8 @@ static std::shared_ptr<ibnet::jni::NodeDiscoveryListener> g_nodeDiscoveryListene
 static std::shared_ptr<ibnet::msg::IbMessageSystem> g_messageSystem;
 static std::unique_ptr<ibnet::jni::DebugThread> g_debugThread;
 
+static jfieldID g_directBufferAddressField;
+
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_init(JNIEnv* p_env,
         jclass p_class, jshort p_ownNodeId, jint p_maxRecvReqs,
         jint p_maxSendReqs, jint p_inOutBufferSize,
@@ -49,6 +51,9 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_init(JNIEnv* p_env
         jint p_connectionJobPoolSize, jint p_sendThreads,
         jint p_recvThreads, jint p_maxNumConnections, jobject p_callbacks)
 {
+    g_directBufferAddressField = p_env->GetFieldID(
+        p_env->FindClass("java/nio/Buffer"), "address", "J");
+
     try {
         g_callbacks = std::make_shared<ibnet::jni::Callbacks>(p_env, p_callbacks);
     } catch (...) {
@@ -145,7 +150,13 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_postBuffer(
     IBNET_LOG_TRACE_FUNC;
 
     // note: all buffers _MUST_ be allocated as direct buffers
-    void* buf = p_env->GetDirectBufferAddress(p_buffer);
+    // very expensive call
+    // void* buf = p_env->GetDirectBufferAddress(p_buffer);
+
+    // cheaper
+    void* buf = (void*)(intptr_t) p_env->GetLongField(p_buffer,
+        g_directBufferAddressField);
+
     // TODO copying is bad...but passing on the direct buffer is bad too =/
     void* tmp = malloc(p_length);
     memcpy(tmp, buf, (size_t) p_length);
@@ -156,10 +167,12 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_postBuffer(
     while (true) {
         try {
             if (g_messageSystem->SendMessage((uint16_t) p_nodeId, tmp,
-                (uint32_t) p_length), true) {
+                    (uint32_t) p_length, true)) {
                 break;
             }
         } catch (...) {
+            // buffer failed to post (queue full), avoid leaks
+            free(tmp);
             return (jboolean) 0;
         }
 

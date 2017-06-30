@@ -35,6 +35,7 @@
 // Avg. time per call from Java -> JNI: ~650 ns
 // Avg. time per call from JNI -> Java (callbacks): ~14 ns
 
+static std::unique_ptr<backward::SignalHandling> g_signalHandler;
 static std::shared_ptr<ibnet::jni::Callbacks> g_callbacks;
 static std::shared_ptr<ibnet::jni::MessageHandler> g_messageHandler;
 static std::shared_ptr<ibnet::jni::NodeConnectionListener> g_nodeConnectionListener;
@@ -49,7 +50,8 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_init(JNIEnv* p_env
         jint p_maxSendReqs, jint p_inOutBufferSize,
         jint p_flowControlMaxRecvReqs, jint p_flowControlMaxSendReqs,
         jint p_connectionJobPoolSize, jint p_sendThreads,
-        jint p_recvThreads, jint p_maxNumConnections, jobject p_callbacks)
+        jint p_recvThreads, jint p_maxNumConnections, jobject p_callbacks,
+        jboolean p_enableSignalHandler, jboolean p_enableDebugThread)
 {
     g_directBufferAddressField = p_env->GetFieldID(
         p_env->FindClass("java/nio/Buffer"), "address", "J");
@@ -60,8 +62,9 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_init(JNIEnv* p_env
         return (jboolean) 0;
     }
 
-    // TODO flag to disable signal handler to get proper dumps on segfaults from java
-    //backward::SignalHandling sh;
+    if (p_enableSignalHandler) {
+        g_signalHandler = std::make_unique<backward::SignalHandling>();
+    }
 
     ibnet::sys::Logger::Setup();
 
@@ -92,23 +95,11 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_init(JNIEnv* p_env
         return (jboolean) 0;
     }
 
-    // TODO have parameter passed to init to turn on/off
-    g_debugThread = std::make_unique<ibnet::jni::DebugThread>(g_messageSystem);
-    g_debugThread->Start();
-
-//	int counter = 0;
-//	auto enter = std::chrono::high_resolution_clock::now();
-//	std::chrono::duration<uint64_t, std::nano> m_total;
-//
-//	for (int i = 0; i < 1000000; i++) {
-//		auto enter = std::chrono::high_resolution_clock::now();
-//    	_Callbacks_nodeConnected(p_env, 1);
-//		std::chrono::duration<uint64_t, std::nano> delta(std::chrono::high_resolution_clock::now() - enter);
-//		m_total += delta;
-//		counter++;
-//	}
-//
-//	printf("callback to java: %f\n", std::chrono::duration<double>(m_total).count() / counter);
+    if (p_enableDebugThread) {
+        g_debugThread = std::make_unique<ibnet::jni::DebugThread>(
+            g_messageSystem);
+        g_debugThread->Start();
+    }
 
 	return (jboolean) 1;
 }
@@ -119,8 +110,10 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_shutdown(JNIEnv* p
 
     jboolean res = (jboolean) 1;
 
-    g_debugThread->Stop();
-    g_debugThread.reset();
+    if (g_debugThread) {
+        g_debugThread->Stop();
+        g_debugThread.reset();
+    }
 
     try {
         g_messageSystem.reset();
@@ -132,6 +125,8 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_shutdown(JNIEnv* p
     g_callbacks.reset();
 
     ibnet::sys::Logger::Shutdown();
+
+    g_signalHandler.reset();
 
     return res;
 }
@@ -159,7 +154,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_postBuffer(
         g_directBufferAddressField);
 
     // TODO copying is bad...but passing on the direct buffer is bad too =/
-    void* tmp = malloc(p_length);
+    void* tmp = malloc((size_t) p_length);
     memcpy(tmp, buf, (size_t) p_length);
 
     // buffer is free'd by message system (TODO bad idea?)

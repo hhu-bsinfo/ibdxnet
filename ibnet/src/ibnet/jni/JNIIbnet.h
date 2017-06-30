@@ -10,10 +10,11 @@ extern "C" {
 /*
  * Class:     de_hhu_bsinfo_net_ib_JNIIbnet
  * Method:    init
- * Signature: (SIIIIIIIIILde/hhu/bsinfo/net/ib/JNIIbnet/Callbacks;)Z
+ * Signature: (SIIIIIIIIILde/hhu/bsinfo/net/ib/JNIIbnet/Callbacks;ZZ)Z
  */
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_init
-    (JNIEnv *, jclass, jshort, jint, jint, jint, jint, jint, jint, jint, jint, jint, jobject);
+    (JNIEnv *, jclass, jshort, jint, jint, jint, jint, jint, jint, jint, jint,
+     jint, jobject, jboolean, jboolean);
 
 /*
  * Class:     de_hhu_bsinfo_net_ib_JNIIbnet

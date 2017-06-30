@@ -153,7 +153,7 @@ public:
             return false;
         }
 
-        std::swap(m_data[m_back % m_size], elem);
+        m_data[m_back % m_size] = std::move(elem);
         m_back++;
 
         m_mutex.unlock();
@@ -169,7 +169,7 @@ public:
             return false;
         }
 
-        m_data[m_back % m_size] = elem;
+        m_data[m_back % m_size] = std::move(elem);
         m_back++;
 
         m_mutex.unlock();
@@ -185,7 +185,7 @@ public:
             return false;
         }
 
-        std::swap(elem, m_data[m_front % m_size]);
+        elem = m_data[m_front % m_size];
         m_front++;
 
         m_mutex.unlock();

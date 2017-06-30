@@ -111,7 +111,7 @@ uint32_t IbCompQueue::Flush(void)
 
     // poll off outstanding completions
 
-    while (m_outstandingComps.SubOutstanding()) {
+    while (m_outstandingComps.GetCurrent() > 0) {
         PollForCompletion(true);
         count++;
     }

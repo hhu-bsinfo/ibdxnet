@@ -60,7 +60,8 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_init(JNIEnv* p_env
         return (jboolean) 0;
     }
 
-    backward::SignalHandling sh;
+    // TODO flag to disable signal handler to get proper dumps on segfaults from java
+    //backward::SignalHandling sh;
 
     ibnet::sys::Logger::Setup();
 

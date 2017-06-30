@@ -72,19 +72,23 @@ public:
         jobject byteBuffer =
             env->CallObjectMethod(m_callbacks, m_midGetReceiveBuffer, length);
 
-        // I can't believe these calls are so expensive they cut performance
-        // to less than 1/20th...
-        // void* byteBufferAddr = env->GetDirectBufferAddress(byteBuffer);
-        // uint32_t byteBufferLength =
-        //    (uint32_t) env->GetDirectBufferCapacity(byteBuffer);
+        if (byteBuffer == NULL) {
+            IBNET_LOG_ERROR("Getting buffer for received data failed, null");
+        } else {
+            // I can't believe these calls are so expensive they cut performance
+            // to less than 1/20th...
+            // void* byteBufferAddr = env->GetDirectBufferAddress(byteBuffer);
+            // uint32_t byteBufferLength =
+            //    (uint32_t) env->GetDirectBufferCapacity(byteBuffer);
 
-        // that's better
-        void* byteBufferAddr = (void*)(intptr_t)
-            env->GetLongField(byteBuffer, m_directBufferAddressField);
+            // that's better
+            void* byteBufferAddr = (void*) (intptr_t)
+                env->GetLongField(byteBuffer, m_directBufferAddressField);
 
-        memcpy(byteBufferAddr, buffer, length);
-        env->CallVoidMethod(m_callbacks, m_midReceivedBuffer, source,
-            byteBuffer, length);
+            memcpy(byteBufferAddr, buffer, length);
+            env->CallVoidMethod(m_callbacks, m_midReceivedBuffer, source,
+                byteBuffer, length);
+        }
 
         __ReturnEnv(env);
 

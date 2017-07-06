@@ -53,7 +53,7 @@ IbMessageSystem::IbMessageSystem(uint16_t ownNodeId,
         m_config.m_flowControlMaxRecvReqs, m_protDom);
 
     m_discoveryManager = std::make_shared<core::IbDiscoveryManager>(ownNodeId,
-        nodeConf, 5730, m_config.m_maxNumConnections);
+        nodeConf, 5730, 500);
 
     m_connectionManager = std::make_shared<core::IbConnectionManager>(ownNodeId,
         5731, m_config.m_maxNumConnections, m_device, m_protDom,

@@ -63,7 +63,7 @@ void SendThread::_RunLoop(void)
     uint16_t targetNodeId;
     uint16_t connectionId;
     std::shared_ptr<std::atomic<uint32_t>> flowControlData;
-    std::shared_ptr<ibnet::sys::Queue<std::shared_ptr<SendData>>> queue;
+    std::shared_ptr<ibnet::msg::SendQueue> queue;
 
     m_timers[1].Enter();
 
@@ -163,7 +163,7 @@ void SendThread::__ProcessFlowControl(
 
 uint32_t SendThread::__ProcessBuffers(
         std::shared_ptr<core::IbConnection>& connection,
-        std::shared_ptr<ibnet::sys::Queue<std::shared_ptr<SendData>>>& queue)
+        std::shared_ptr<ibnet::msg::SendQueue>& queue)
 {
     uint16_t queueSize = connection->GetQp(0)->GetSendQueue()->GetQueueSize();
     uint32_t elemsToSend = queue->GetElementCount();
@@ -188,8 +188,8 @@ uint32_t SendThread::__ProcessBuffers(
             break;
         }
 
-        std::shared_ptr<SendData> data;
-        if (!queue->PopFront(data)) {
+        SendData* data;
+        if (!queue->PopFront(&data)) {
             connection->GetQp(0)->GetSendQueue()->RevokeReservation();
             break;
         }
@@ -203,7 +203,7 @@ uint32_t SendThread::__ProcessBuffers(
             free(data->m_buffer);
         }
 
-        data.reset();
+        delete(data);
 
         m_timers[6].Exit();
 

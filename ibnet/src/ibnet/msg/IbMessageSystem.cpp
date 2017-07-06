@@ -148,7 +148,8 @@ bool IbMessageSystem::SendMessage(uint16_t destination, void* buffer,
     std::shared_ptr<core::IbConnection> connection =
         m_connectionManager->GetConnection(destination);
 
-    auto elem = std::make_shared<SendData>(destination,
+    // TODO pool SendData objects to avoid alloc/dealloc -> combine with queue
+    SendData* elem = new SendData(destination,
         connection->GetConnectionId(), length, buffer, freeBuffer);
 
     bool res = m_bufferSendQueues->PushBack(elem);

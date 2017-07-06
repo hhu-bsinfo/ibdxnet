@@ -8,9 +8,10 @@
 #include <vector>
 
 #include "ibnet/core/IbNodeId.h"
-#include "ibnet/sys/Queue.h"
 
+#include "InterestQueue.h"
 #include "SendData.h"
+#include "SendQueue.h"
 
 namespace ibnet {
 namespace msg {
@@ -43,7 +44,7 @@ public:
      * @param data SendData object with a buffer to send
      * @return True if adding successful, false if queue full
      */
-    bool PushBack(std::shared_ptr<SendData> data);
+    bool PushBack(SendData* data);
 
     /**
      * Add a new job with flow control data to send
@@ -74,7 +75,7 @@ public:
      */
     bool Next(uint16_t& targetNodeId, uint16_t& connectionId,
         std::shared_ptr<std::atomic<uint32_t>>& flowControlData,
-        std::shared_ptr<ibnet::sys::Queue<std::shared_ptr<SendData>>>& queue);
+        std::shared_ptr<ibnet::msg::SendQueue>& queue);
 
     /**
      * Signal the queues that a node disconnected.
@@ -121,7 +122,7 @@ public:
     }
 
 private:
-    sys::Queue<uint16_t> m_writeInterests;
+    ibnet::msg::InterestQueue m_writeInterests;
 
     struct Connection
     {
@@ -129,7 +130,7 @@ private:
         std::atomic<bool> m_writeInterest;
         std::atomic<uint32_t> m_writeInterestCount;
         std::shared_ptr<std::atomic<uint32_t>> m_flowControlData;
-        std::shared_ptr<ibnet::sys::Queue<std::shared_ptr<SendData>>> m_queue;
+        std::shared_ptr<ibnet::msg::SendQueue> m_queue;
         std::atomic<bool> m_aquiredQueue;
     };
 

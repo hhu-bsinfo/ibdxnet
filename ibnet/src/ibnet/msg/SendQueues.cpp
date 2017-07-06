@@ -16,8 +16,7 @@ SendQueues::SendQueues(uint16_t maxNumConnections,
         m_connections[i].m_writeInterestCount = 0;
         m_connections[i].m_flowControlData =
             std::make_shared<std::atomic<uint32_t>>(0);
-        m_connections[i].m_queue = std::make_shared<
-            ibnet::sys::Queue<std::shared_ptr<SendData>>>(
+        m_connections[i].m_queue = std::make_shared<ibnet::msg::SendQueue>(
             jobQueueSizePerConnection);
         m_connections[i].m_aquiredQueue = false;
     }
@@ -28,7 +27,7 @@ SendQueues::~SendQueues(void)
 
 }
 
-bool SendQueues::PushBack(std::shared_ptr<SendData> data)
+bool SendQueues::PushBack(SendData* data)
 {
     uint16_t connectionId = data->m_connectionId;
 
@@ -76,7 +75,7 @@ bool SendQueues::PushBackFlowControl(uint16_t nodeId, uint16_t connectionId,
 
 bool SendQueues::Next(uint16_t& targetNodeId, uint16_t& connectionId,
         std::shared_ptr<std::atomic<uint32_t>>& flowControlData,
-        std::shared_ptr<ibnet::sys::Queue<std::shared_ptr<SendData>>>& queue)
+        std::shared_ptr<ibnet::msg::SendQueue>& queue)
 {
     if (!m_writeInterests.PopFront(connectionId)) {
         return false;

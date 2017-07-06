@@ -65,7 +65,7 @@ private:
 
     uint32_t __ProcessBuffers(
         std::shared_ptr<core::IbConnection>& connection,
-        std::shared_ptr<ibnet::sys::Queue<std::shared_ptr<SendData>>>& queue);
+        std::shared_ptr<ibnet::msg::SendQueue>& queue);
 
     std::shared_ptr<core::IbMemReg> __AllocAndRegisterMem(
         std::shared_ptr<core::IbProtDom>& protDom, uint32_t size);

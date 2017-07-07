@@ -22,13 +22,18 @@
 #include "ibnet/sys/ProfileTimer.hpp"
 #include "ibnet/core/IbException.h"
 #include "ibnet/core/IbNodeConfArgListReader.h"
-#include "ibnet/msg/IbMessageSystem.h"
 
-#include "Callbacks.h"
+#include "BufferPool.h"
+#include "ConnectionCreator.h"
+#include "ConnectionHandler.h"
 #include "DebugThread.h"
-#include "MessageHandler.h"
-#include "NodeConnectionListener.h"
-#include "NodeDiscoveryListener.h"
+#include "DiscoveryHandler.h"
+#include "RecvHandler.h"
+#include "RecvThread.h"
+#include "SendHandler.h"
+#include "SendThread.h"
+
+
 
 // Notes about JNI performance:
 // CPU: Intel® Core™ i7-5820K CPU @ 3.30GHz × 12 
@@ -36,75 +41,159 @@
 // Avg. time per call from JNI -> Java (callbacks): ~14 ns
 
 static std::unique_ptr<backward::SignalHandling> g_signalHandler;
-static std::shared_ptr<ibnet::jni::Callbacks> g_callbacks;
-static std::shared_ptr<ibnet::jni::MessageHandler> g_messageHandler;
-static std::shared_ptr<ibnet::jni::NodeConnectionListener> g_nodeConnectionListener;
-static std::shared_ptr<ibnet::jni::NodeDiscoveryListener> g_nodeDiscoveryListener;
-static std::shared_ptr<ibnet::msg::IbMessageSystem> g_messageSystem;
+
+static std::shared_ptr<ibnet::jni::ConnectionHandler> g_connectionHandler;
+static std::shared_ptr<ibnet::jni::DiscoveryHandler> g_discoveryHandler;
+static std::shared_ptr<ibnet::jni::RecvHandler> g_recvHandler;
+static std::shared_ptr<ibnet::jni::SendHandler> g_sendHandler;
+
+static std::shared_ptr<ibnet::core::IbDevice> g_device;
+static std::shared_ptr<ibnet::core::IbProtDom> g_protDom;
+
+static std::shared_ptr<ibnet::core::IbSharedRecvQueue> g_sharedRecvQueue;
+static std::shared_ptr<ibnet::core::IbSharedRecvQueue> g_sharedFlowControlRecvQueue;
+static std::shared_ptr<ibnet::core::IbCompQueue> g_sharedRecvCompQueue;
+static std::shared_ptr<ibnet::core::IbCompQueue> g_sharedFlowControlRecvCompQueue;
+
+static std::shared_ptr<ibnet::core::IbDiscoveryManager> g_discoveryManager;
+static std::shared_ptr<ibnet::core::IbConnectionManager> g_connectionManager;
+
+static std::shared_ptr<ibnet::jni::BufferPool> g_recvBufferPool;
+static std::shared_ptr<ibnet::jni::BufferPool> g_flowControlRecvBufferPool;
+
+static std::vector<std::unique_ptr<ibnet::jni::RecvThread>> g_recvThreads;
+static std::vector<std::unique_ptr<ibnet::jni::SendThread>> g_sendThreads;
+
 static std::unique_ptr<ibnet::jni::DebugThread> g_debugThread;
 
-static jfieldID g_directBufferAddressField;
-
-JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_init(JNIEnv* p_env,
-        jclass p_class, jshort p_ownNodeId, jint p_maxRecvReqs,
+JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
+        JNIEnv* p_env, jclass p_class, jshort p_ownNodeId, jint p_maxRecvReqs,
         jint p_maxSendReqs, jint p_inOutBufferSize,
         jint p_flowControlMaxRecvReqs, jint p_flowControlMaxSendReqs,
-        jint p_connectionJobPoolSize, jint p_sendThreads,
-        jint p_recvThreads, jint p_maxNumConnections, jobject p_callbacks,
+        jint p_sendThreads, jint p_recvThreads, jint p_maxNumConnections,
+        jobject p_sendHandler, jobject p_recvHandler,
+        jobject p_discoveryHandler, jobject p_connectionHandler,
         jboolean p_enableSignalHandler, jboolean p_enableDebugThread)
 {
-    g_directBufferAddressField = p_env->GetFieldID(
-        p_env->FindClass("java/nio/Buffer"), "address", "J");
-
-    try {
-        g_callbacks = std::make_shared<ibnet::jni::Callbacks>(p_env, p_callbacks);
-    } catch (...) {
-        return (jboolean) 0;
-    }
-
+    // setup foundation
     if (p_enableSignalHandler) {
         g_signalHandler = std::make_unique<backward::SignalHandling>();
     }
 
     ibnet::sys::Logger::Setup();
 
-    g_messageHandler = std::make_shared<ibnet::jni::MessageHandler>(g_callbacks);
-    g_nodeConnectionListener = std::make_shared<ibnet::jni::NodeConnectionListener>(g_callbacks);
-    g_nodeDiscoveryListener = std::make_shared<ibnet::jni::NodeDiscoveryListener>(g_callbacks);
+    IBNET_LOG_DEBUG("Foundation setup done");
 
-    ibnet::msg::Config config;
-    config.m_maxRecvReqs = (uint16_t) p_maxRecvReqs;
-    config.m_maxSendReqs = (uint16_t) p_maxSendReqs;
-    config.m_inOutBufferSize = (uint32_t) p_inOutBufferSize;
-    config.m_flowControlMaxRecvReqs = (uint16_t) p_flowControlMaxRecvReqs;
-    config.m_flowControlMaxSendReqs = (uint16_t) p_flowControlMaxSendReqs;
-    config.m_connectionJobPoolSize = (uint32_t) p_connectionJobPoolSize;
-    config.m_sendThreads = (uint8_t) p_sendThreads;
-    config.m_recvThreads = (uint8_t) p_recvThreads;
-    config.m_maxNumConnections = (uint16_t) p_maxNumConnections;
-
-    // add nodes later
-    ibnet::core::IbNodeConf nodeConf;
+    // callbacks to java vm
 
     try {
-        g_messageSystem = std::make_shared<ibnet::msg::IbMessageSystem>(
-            p_ownNodeId, nodeConf, config, g_messageHandler,
-            g_nodeConnectionListener, g_nodeDiscoveryListener);
+        g_connectionHandler = std::make_shared<ibnet::jni::ConnectionHandler>(
+            p_env, p_connectionHandler, g_recvThreads);
+        g_discoveryHandler = std::make_shared<ibnet::jni::DiscoveryHandler>(
+            p_env, p_discoveryHandler);
+        g_recvHandler = std::make_shared<ibnet::jni::RecvHandler>(p_env,
+            p_recvHandler);
+        g_sendHandler = std::make_shared<ibnet::jni::SendHandler>(p_env,
+            p_sendHandler);
     } catch (...) {
+        IBNET_LOG_ERROR("Setting up callbacks to java vm failed");
+        return (jboolean) 0;
+    }
+
+    IBNET_LOG_DEBUG("Setting up java vm callbacks done");
+
+    try {
+        IBNET_LOG_INFO("Initializing infiniband backend...");
+
+        g_device = std::make_shared<ibnet::core::IbDevice>();
+        g_protDom = std::make_shared<ibnet::core::IbProtDom>(g_device,
+            "jni_ibnet");
+
+        IBNET_LOG_DEBUG("Protection domain:\n{}", *g_protDom);
+
+        g_sharedRecvQueue = std::make_shared<ibnet::core::IbSharedRecvQueue>(
+            g_protDom,
+            p_maxRecvReqs);
+        g_sharedFlowControlRecvQueue =
+            std::make_shared<ibnet::core::IbSharedRecvQueue>(g_protDom,
+                p_flowControlMaxRecvReqs);
+
+        g_sharedRecvCompQueue = std::make_shared<ibnet::core::IbCompQueue>(
+            g_device,
+            p_maxRecvReqs);
+        g_sharedFlowControlRecvCompQueue =
+            std::make_shared<ibnet::core::IbCompQueue>(g_device,
+                p_flowControlMaxRecvReqs);
+
+        // add nodes later
+        ibnet::core::IbNodeConf nodeConf;
+
+        g_discoveryManager = std::make_shared<ibnet::core::IbDiscoveryManager>(
+            p_ownNodeId,
+            nodeConf, 5730, 500);
+
+        g_connectionManager = std::make_shared<ibnet::core::IbConnectionManager>(
+            p_ownNodeId,
+            5731, p_maxNumConnections, g_device, g_protDom,
+            g_discoveryManager,
+            std::make_unique<ibnet::jni::ConnectionCreator>(p_maxRecvReqs,
+                p_maxSendReqs, p_flowControlMaxRecvReqs,
+                p_flowControlMaxSendReqs,
+                g_sharedRecvQueue, g_sharedRecvCompQueue,
+                g_sharedFlowControlRecvQueue,
+                g_sharedFlowControlRecvCompQueue));
+
+        g_connectionManager->SetNodeConnectedListener(g_connectionHandler.get());
+        g_discoveryManager->SetNodeDiscoveryListener(g_discoveryHandler.get());
+
+        IBNET_LOG_INFO("Initializing buffer pools...");
+
+        g_recvBufferPool = std::make_shared<ibnet::jni::BufferPool>(
+            p_inOutBufferSize, p_maxRecvReqs, g_protDom);
+        g_flowControlRecvBufferPool = std::make_shared<ibnet::jni::BufferPool>(
+            4,
+            p_flowControlMaxRecvReqs, g_protDom);
+
+        IBNET_LOG_INFO("Starting {} receiver threads", p_recvThreads);
+
+        for (uint8_t i = 0; i < p_recvThreads; i++) {
+            auto thread = std::make_unique<ibnet::jni::RecvThread>(i == 0,
+                g_connectionManager, g_sharedRecvCompQueue,
+                g_sharedFlowControlRecvCompQueue, g_recvBufferPool,
+                g_flowControlRecvBufferPool, g_recvHandler);
+            thread->Start();
+            g_recvThreads.push_back(std::move(thread));
+        }
+
+        IBNET_LOG_INFO("Starting {} sender threads", p_sendThreads);
+        for (uint8_t i = 0; i < p_sendThreads; i++) {
+            auto thread = std::make_unique<ibnet::jni::SendThread>(
+                g_protDom,
+                p_inOutBufferSize, p_maxSendReqs,
+                g_sendHandler, g_connectionManager);
+            thread->Start();
+            g_sendThreads.push_back(std::move(thread));
+        }
+    } catch (...) {
+        // TODO shutdown what's created and initialized so far
         ibnet::sys::Logger::Shutdown();
         return (jboolean) 0;
     }
 
+    // TODO adjust debug thread
     if (p_enableDebugThread) {
         g_debugThread = std::make_unique<ibnet::jni::DebugThread>(
-            g_messageSystem);
+            g_recvThreads, g_sendThreads);
         g_debugThread->Start();
     }
+
+    IBNET_LOG_INFO("Initializing ibdxnet subsystem done");
 
 	return (jboolean) 1;
 }
 
-JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_shutdown(JNIEnv* p_env, jclass p_class)
+JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_shutdown(
+        JNIEnv* p_env, jclass p_class)
 {
     IBNET_LOG_TRACE_FUNC;
 
@@ -115,14 +204,35 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_shutdown(JNIEnv* p
         g_debugThread.reset();
     }
 
+    // TODO cleanup outgoing msg queues, make sure everything's processed?
+    // TODO don't allow any new messages to be put to the send queue
+    // wait until everything on the send queues is sent?
+
+    for (auto& it : g_sendThreads) {
+        it->Stop();
+    }
+    g_sendThreads.clear();
+
+    for (auto& it : g_recvThreads) {
+        it->Stop();
+    }
+    g_recvThreads.clear();
+
     try {
-        g_messageSystem.reset();
+        g_connectionManager.reset();
+        g_discoveryManager.reset();
+        g_sharedRecvCompQueue.reset();
+        g_sharedRecvQueue.reset();
+        g_protDom.reset();
+        g_device.reset();
     } catch (...) {
         res = (jboolean) 0;
     }
 
-    g_messageHandler.reset();
-    g_callbacks.reset();
+    g_connectionHandler.reset();
+    g_discoveryHandler.reset();
+    g_recvHandler.reset();
+    g_sendHandler.reset();
 
     ibnet::sys::Logger::Shutdown();
 
@@ -131,59 +241,11 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_shutdown(JNIEnv* p
     return res;
 }
 
-JNIEXPORT void JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_addNode(JNIEnv* p_env,
-        jclass p_class, jint p_ipv4)
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_addNode(
+        JNIEnv* p_env, jclass p_class, jint p_ipv4)
 {
     IBNET_LOG_TRACE_FUNC;
 
     ibnet::core::IbNodeConf::Entry entry(ibnet::sys::AddressIPV4((uint32_t) p_ipv4));
-    g_messageSystem->AddNode(entry);
-}
-
-JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_postBuffer(
-        JNIEnv* p_env, jclass p_class, jshort p_nodeId, jobject p_buffer, jint p_length)
-{
-    IBNET_LOG_TRACE_FUNC;
-
-    // note: all buffers _MUST_ be allocated as direct buffers
-    // very expensive call
-    // void* buf = p_env->GetDirectBufferAddress(p_buffer);
-
-    // cheaper
-    void* buf = (void*)(intptr_t) p_env->GetLongField(p_buffer,
-        g_directBufferAddressField);
-
-    // TODO copying is bad...but passing on the direct buffer is bad too =/
-    void* tmp = malloc((size_t) p_length);
-    memcpy(tmp, buf, (size_t) p_length);
-
-    // buffer is free'd by message system (TODO bad idea?)
-
-    // keep pushing until we get it into the queue
-    while (true) {
-        try {
-            if (g_messageSystem->SendMessage((uint16_t) p_nodeId, tmp,
-                    (uint32_t) p_length, true)) {
-                break;
-            }
-        } catch (...) {
-            // buffer failed to post (queue full), avoid leaks
-            free(tmp);
-            return (jboolean) 0;
-        }
-
-        std::this_thread::yield();
-    }
-    IBNET_LOG_TRACE_FUNC_EXIT;
-
-    return (jboolean) 1;
-}
-
-JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbnet_postFlowControlData(
-    JNIEnv* p_env, jclass p_class, jshort p_nodeId, jint p_data)
-{
-    IBNET_LOG_TRACE_FUNC;
-
-    return (jboolean) g_messageSystem->SendFlowControl((uint16_t) p_nodeId,
-        (uint32_t) p_data);
+    g_discoveryManager->AddNode(entry);
 }

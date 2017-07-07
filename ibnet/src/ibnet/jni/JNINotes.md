@@ -190,7 +190,7 @@ I don't know for sure but judging by different bug reports in the past
 
 When calling *AttachCurrentThread* to attach the current non JVM thread to the 
 JVM in order to call back into the Java context, the thread has to undergo
-a state transition which is shared with other JVM threads (a comment mentiones 
+a state transition which is shared with other JVM threads (a comment mentions 
 the GC thread explicitly). 
 
 There are two methods which can be selected by switching the *UseMembar* 

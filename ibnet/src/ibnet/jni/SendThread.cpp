@@ -201,7 +201,7 @@ uint32_t SendThread::__ProcessBuffers(
         }
 
         memcpy(m_buffers[i]->GetAddress(),
-            (void*) data->m_ptrBuffer + totalBytesSent, sliceSize);
+            (void*) (data->m_ptrBuffer + totalBytesSent), sliceSize);
 
         m_timers[6].Exit();
 

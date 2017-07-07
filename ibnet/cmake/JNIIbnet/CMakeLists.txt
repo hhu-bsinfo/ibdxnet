@@ -23,6 +23,6 @@ set(SOURCE_FILES
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 
-target_link_libraries(${PROJECT_NAME} IbnetMsg)
+target_link_libraries(${PROJECT_NAME} IbnetCore)
 
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fpic")

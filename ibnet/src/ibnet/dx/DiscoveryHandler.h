@@ -8,17 +8,38 @@
 namespace ibnet {
 namespace dx {
 
+/**
+ * Handle node discovered/invalidated events by calling back to the jvm space
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 07.07.2017
+ */
 class DiscoveryHandler : public ibnet::core::IbDiscoveryManager::Listener
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param env The java environment from a java thread
+     * @param object Java object of the equivalent callback class in java
+     */
     DiscoveryHandler(JNIEnv* env, jobject object);
+
+    /**
+     * Destructor
+     */
     ~DiscoveryHandler(void);
 
+    /**
+     * Override
+     */
     void NodeDiscovered(uint16_t nodeId) override
     {
         __NodeDiscovered(nodeId);
     }
 
+    /**
+     * Override
+     */
     void NodeInvalidated(uint16_t nodeId) override
     {
         __NodeInvalidated(nodeId);

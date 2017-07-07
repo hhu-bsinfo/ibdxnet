@@ -6,9 +6,18 @@
 namespace ibnet {
 namespace dx {
 
+/**
+ * Provide access to buffers which are available in the jvm space. This
+ * is called by the SendThread to get new/next buffers to send
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 07.07.2017
+ */
 class SendHandler
 {
 public:
+    /**
+     * A work request package that defines which data to be sent next
+     */
     struct NextWorkParameters
     {
         uint64_t m_ptrBuffer;
@@ -18,9 +27,31 @@ public:
     } __attribute__((packed));
 
 public:
+    /**
+     * Constructor
+     *
+     * @param env The java environment from a java thread
+     * @param object Java object of the equivalent callback class in java
+     */
     SendHandler(JNIEnv* env, jobject object);
+
+    /**
+     * Destructor
+     */
     ~SendHandler(void);
 
+    /**
+     * Called by an instance of SendThread. Get the next buffer/work package
+     * to send
+     *
+     * @param prevNodeIdWritten Node id of the previous next call
+     *        (or -1 if there is no previous valid work request)
+     * @param prevDataWrittenLen Number of bytes written on the previous work
+     *          request
+     * @param prevFlowControlWritten Flow control data written on the previous
+     *          work request
+     * @return Pointer to the next work request package (don't free)
+     */
     inline NextWorkParameters* GetNextDataToSend(uint16_t prevNodeIdWritten,
             uint32_t prevDataWrittenLen, uint64_t prevFlowControlWritten)
     {

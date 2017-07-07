@@ -18,12 +18,12 @@ namespace dx {
 /**
  * Dedicated thread for sending data.
  *
- * The thread is checking a job queue for new send jobs (SendData).
- * If data is available, it tries to poll the job queue to get
- * as many SendData objects as possible to fill up the send queue
- * for optimal utilization. This is done on both the buffer queue
- * as well as the flow control queue. However, handling flow control
- * data is prioritized.
+ * The thread is using the SendHandler to call into the java space to get the
+ * next buffer/data to send. If data is available, it fills one or, if enough
+ * data is available, multiple pinned infiniband buffers and posts them on the
+ * infiniband work queue. Afterwards, the same amount of work completions are
+ * polled for optimal utilization. However, handling flow control data is
+ * prioritized and always comes first to avoid deadlocking.
  *
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 02.06.2017
  */
@@ -36,8 +36,8 @@ public:
      * @param protDom Protection domain to register buffers at
      * @param outBufferSize Size of the buffer(s) for outgoing data
      * @param bufferQueueSize Size of send queue
-     * @param bufferSendQueues Shared data structure containing jobs
-     *          with data to send
+     * @param sendHandler Handler which allows the thread to access the jvm
+     *          space to grab the next available data/work package to send
      * @param connectionManager Parent connection manager
      */
     SendThread(std::shared_ptr<core::IbProtDom>& protDom,

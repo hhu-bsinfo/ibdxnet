@@ -9,12 +9,27 @@
 namespace ibnet {
 namespace dx {
 
+/**
+ * Print performance and debug data periodically
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 07.07.2017
+ */
 class DebugThread : public sys::ThreadLoop
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param recvThreads Vector with active receive threads
+     * @param sendThreads Vector with active send threads
+     */
     DebugThread(
         const std::vector<std::unique_ptr<RecvThread>>& recvThreads,
         const std::vector<std::unique_ptr<SendThread>>& sendThreads);
+
+    /**
+     * Destructor
+     */
     ~DebugThread(void);
 
 protected:

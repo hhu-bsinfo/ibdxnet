@@ -12,9 +12,20 @@
 namespace ibnet {
 namespace dx {
 
+/**
+ * Helper class for JNI related work
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 07.07.2017
+ */
 class JNIHelper
 {
 public:
+    /**
+     * Get the environment for the current thread from the jvm
+     *
+     * @param vm The jvm instance
+     * @return Active environment for the current thread
+     */
     static inline JNIEnv* GetEnv(JavaVM* vm)
     {
         IBNET_LOG_TRACE_FUNC;
@@ -38,6 +49,12 @@ public:
         return env;
     }
 
+    /**
+     * Return the environment received from GetEnv when done using it
+     *
+     * @param vm The jvm instance
+     * @param env The environment to return
+     */
     static inline void ReturnEnv(JavaVM* vm, JNIEnv* env)
     {
         IBNET_LOG_TRACE_FUNC;
@@ -53,7 +70,16 @@ public:
         // the java context is limited, so we keep them attached
         // vm->DetachCurrentThread();
     }
-    
+
+    /**
+     * Get the method id of a java method to call from a jvm environment
+     *
+     * @param env Environment of the jvm
+     * @param object Instance of the class to get a method of
+     * @param name Name of the method
+     * @param signature Signature of the method
+     * @return The method id of the specified java method
+     */
     static inline jmethodID GetAndVerifyMethod(JNIEnv* env, jobject object,
             const std::string& name, const std::string& signature)
     {

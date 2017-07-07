@@ -23,7 +23,8 @@ namespace dx {
  * The thread is polling the buffer and flow control data receive
  * queues. Furthermore, it tries to keep the queues busy by
  * polling for multiple work requests (if available) and also
- * adding new work requests once old ones are consumed
+ * adding new work requests once old ones are consumed. The received data
+ * is forwarded to handlers in the jvm space.
  *
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 02.06.2017
  */
@@ -43,7 +44,7 @@ public:
      *          queues with new work requests
      * @param recvFlowControlBufferPool Buffer pool for flow control
      *          data requests to fill the queues
-     * @param msgHandler Message handler to dispatch incoming data to
+     * @param recvHandler Handler which forwards the received data
      */
     RecvThread(
         bool primaryRecvThread,

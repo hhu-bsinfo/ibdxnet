@@ -1,5 +1,5 @@
-#ifndef IBNET_JNI_JNIHELPER_H
-#define IBNET_JNI_JNIHELPER_H
+#ifndef IBNET_DX_JNIHELPER_H
+#define IBNET_DX_JNIHELPER_H
 
 #include <jni.h>
 #include <string.h>
@@ -10,7 +10,7 @@
 #include "ibnet/sys/Logger.hpp"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 class JNIHelper
 {
@@ -80,4 +80,4 @@ private:
 }
 }
 
-#endif //IBNET_JNI_JNIHELPER_H
+#endif //IBNET_DX_JNIHELPER_H

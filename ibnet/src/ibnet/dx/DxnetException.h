@@ -1,10 +1,10 @@
-#ifndef IBNET_JNI_DXNETEXCEPTION_H
-#define IBNET_JNI_DXNETEXCEPTION_H
+#ifndef IBNET_DX_DXNETEXCEPTION_H
+#define IBNET_DX_DXNETEXCEPTION_H
 
 #include "ibnet/sys/Exception.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 /**
  * Common exception for the dxnet namespace
@@ -34,4 +34,4 @@ public:
 }
 }
 
-#endif // IBNET_JNI_DXNETEXCEPTION_H
+#endif // IBNET_DX_DXNETEXCEPTION_H

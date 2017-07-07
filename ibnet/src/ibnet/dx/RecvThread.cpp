@@ -5,7 +5,7 @@
 #include "DxnetException.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 RecvThread::RecvThread(
         bool primaryRecvThread,

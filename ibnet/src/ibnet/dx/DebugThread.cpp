@@ -1,11 +1,11 @@
 #include "DebugThread.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 DebugThread::DebugThread(
-        const std::vector<std::unique_ptr<ibnet::jni::RecvThread>>& recvThreads,
-        const std::vector<std::unique_ptr<ibnet::jni::SendThread>>& sendThreads) :
+        const std::vector<std::unique_ptr<RecvThread>>& recvThreads,
+        const std::vector<std::unique_ptr<SendThread>>& sendThreads) :
     m_recvThreads(recvThreads),
     m_sendThreads(sendThreads)
 {

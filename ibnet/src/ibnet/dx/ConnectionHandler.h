@@ -1,5 +1,5 @@
-#ifndef IBNET_JNI_CONNECTIONHANDLER_H
-#define IBNET_JNI_CONNECTIONHANDLER_H
+#ifndef IBNET_DX_CONNECTIONHANDLER_H
+#define IBNET_DX_CONNECTIONHANDLER_H
 
 #include "ibnet/core/IbConnectionManager.h"
 
@@ -7,13 +7,13 @@
 #include "RecvThread.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 class ConnectionHandler : public ibnet::core::IbConnectionManager::Listener
 {
 public:
     ConnectionHandler(JNIEnv* env, jobject object,
-        const std::vector<std::unique_ptr<ibnet::jni::RecvThread>>& recvThreads);
+        const std::vector<std::unique_ptr<RecvThread>>& recvThreads);
     ~ConnectionHandler(void);
 
     void NodeConnected(uint16_t nodeId,
@@ -58,7 +58,7 @@ private:
     JavaVM* m_vm;
     jobject m_object;
 
-    const std::vector<std::unique_ptr<ibnet::jni::RecvThread>>& m_recvThreads;
+    const std::vector<std::unique_ptr<RecvThread>>& m_recvThreads;
 
     jmethodID m_midNodeConnected;
     jmethodID m_midNodeDisconnected;
@@ -67,4 +67,4 @@ private:
 }
 }
 
-#endif //IBNET_JNI_CONNECTIONHANDLER_H
+#endif //IBNET_DX_CONNECTIONHANDLER_H

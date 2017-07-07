@@ -1,7 +1,7 @@
 #include "SendHandler.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 SendHandler::SendHandler(JNIEnv* env, jobject object) :
     m_vm(nullptr),

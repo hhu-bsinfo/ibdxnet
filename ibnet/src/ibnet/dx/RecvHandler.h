@@ -1,10 +1,10 @@
-#ifndef IBNET_JNI_RECVHANDLER_H
-#define IBNET_JNI_RECVHANDLER_H
+#ifndef IBNET_DX_RECVHANDLER_H
+#define IBNET_DX_RECVHANDLER_H
 
 #include "JNIHelper.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 class RecvHandler
 {
@@ -71,4 +71,4 @@ private:
 }
 }
 
-#endif //IBNET_JNI_RECVHANDLER_H
+#endif //IBNET_DX_RECVHANDLER_H

@@ -1,12 +1,12 @@
-#ifndef IBNET_JNI_DISCOVERYHANDLER_H
-#define IBNET_JNI_DISCOVERYHANDLER_H
+#ifndef IBNET_DX_DISCOVERYHANDLER_H
+#define IBNET_DX_DISCOVERYHANDLER_H
 
 #include "ibnet/core/IbDiscoveryManager.h"
 
 #include "JNIHelper.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 class DiscoveryHandler : public ibnet::core::IbDiscoveryManager::Listener
 {
@@ -58,4 +58,4 @@ private:
 }
 }
 
-#endif //IBNET_JNI_DISCOVERYHANDLER_H
+#endif //IBNET_DX_DISCOVERYHANDLER_H

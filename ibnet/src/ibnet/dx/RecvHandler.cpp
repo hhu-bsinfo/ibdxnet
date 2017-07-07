@@ -1,7 +1,7 @@
 #include "RecvHandler.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 RecvHandler::RecvHandler(JNIEnv* env, jobject object) :
     m_vm(nullptr),

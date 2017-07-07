@@ -1,12 +1,12 @@
-#ifndef IBNET_JNI_CONNECTIONCREATOR_H
-#define IBNET_JNI_CONNECTIONCREATOR_H
+#ifndef IBNET_DX_CONNECTIONCREATOR_H
+#define IBNET_DX_CONNECTIONCREATOR_H
 
 #include "ibnet/core/IbCompQueue.h"
 #include "ibnet/core/IbConnectionCreator.h"
 #include "ibnet/core/IbSharedRecvQueue.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 /**
  * Connection creator for the message system. Creates two queue pairs
@@ -57,4 +57,4 @@ private:
 }
 }
 
-#endif //IBNET_JNI_CONNECTIONCREATOR_H
+#endif //IBNET_DX_CONNECTIONCREATOR_H

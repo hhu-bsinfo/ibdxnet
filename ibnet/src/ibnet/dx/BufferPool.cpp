@@ -1,7 +1,7 @@
 #include "BufferPool.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 BufferPool::BufferPool(uint32_t bufferSize, uint32_t poolSize, std::shared_ptr<core::IbProtDom>& protDom) :
     m_bufferSize(bufferSize),

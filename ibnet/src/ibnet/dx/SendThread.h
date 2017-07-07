@@ -1,5 +1,5 @@
-#ifndef IBNET_JNI_SENDTHREAD_H
-#define IBNET_JNI_SENDTHREAD_H
+#ifndef IBNET_DX_SENDTHREAD_H
+#define IBNET_DX_SENDTHREAD_H
 
 #include <atomic>
 #include <vector>
@@ -13,7 +13,7 @@
 #include "SendHandler.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 /**
  * Dedicated thread for sending data.
@@ -91,4 +91,4 @@ private:
 }
 }
 
-#endif //IBNET_JNI_SENDTHREAD_H
+#endif //IBNET_DX_SENDTHREAD_H

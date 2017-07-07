@@ -3,7 +3,7 @@
 #include "JNIHelper.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 DiscoveryHandler::DiscoveryHandler(JNIEnv* env, jobject object) :
     m_vm(nullptr),

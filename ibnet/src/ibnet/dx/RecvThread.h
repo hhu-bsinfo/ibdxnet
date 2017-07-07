@@ -1,5 +1,5 @@
-#ifndef IBNET_JNI_RECVTHREAD_H
-#define IBNET_JNI_RECVTHREAD_H
+#ifndef IBNET_DX_RECVTHREAD_H
+#define IBNET_DX_RECVTHREAD_H
 
 #include <atomic>
 #include <memory>
@@ -15,7 +15,7 @@
 #include "RecvHandler.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 /**
  * Dedicated thread for receiving data.
@@ -98,4 +98,4 @@ private:
 }
 }
 
-#endif //IBNET_JNI_RECVTHREAD_H
+#endif //IBNET_DX_RECVTHREAD_H

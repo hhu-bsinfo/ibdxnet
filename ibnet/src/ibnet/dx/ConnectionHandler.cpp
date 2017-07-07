@@ -1,10 +1,10 @@
 #include "ConnectionHandler.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 ConnectionHandler::ConnectionHandler(JNIEnv* env, jobject object,
-        const std::vector<std::unique_ptr<ibnet::jni::RecvThread>>& recvThreads) :
+        const std::vector<std::unique_ptr<RecvThread>>& recvThreads) :
     m_vm(nullptr),
     m_object(object),
     m_recvThreads(recvThreads),

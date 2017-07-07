@@ -1,10 +1,10 @@
-#ifndef IBNET_JNI_SENDHANDLER_H
-#define IBNET_JNI_SENDHANDLER_H
+#ifndef IBNET_DX_SENDHANDLER_H
+#define IBNET_DX_SENDHANDLER_H
 
 #include "JNIHelper.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 class SendHandler
 {
@@ -46,4 +46,4 @@ private:
 }
 }
 
-#endif //IBNET_JNI_SENDHANDLER_H
+#endif //IBNET_DX_SENDHANDLER_H

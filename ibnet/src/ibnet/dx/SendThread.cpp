@@ -3,7 +3,7 @@
 #include "ibnet/core/IbDisconnectedException.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 SendThread::SendThread(std::shared_ptr<core::IbProtDom>& protDom,
         uint32_t outBufferSize, uint32_t bufferQueueSize,

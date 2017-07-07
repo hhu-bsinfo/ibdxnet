@@ -1,10 +1,10 @@
-#ifndef IBNET_JNI_BUFFERPOOL_H
-#define IBNET_JNI_BUFFERPOOL_H
+#ifndef IBNET_DX_BUFFERPOOL_H
+#define IBNET_DX_BUFFERPOOL_H
 
 #include "ibnet/core/IbProtDom.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 /**
  * Pool for buffers that are registered with a protection domain
@@ -75,4 +75,4 @@ private:
 }
 }
 
-#endif //IBNET_JNI_BUFFERPOOL_H
+#endif //IBNET_DX_BUFFERPOOL_H

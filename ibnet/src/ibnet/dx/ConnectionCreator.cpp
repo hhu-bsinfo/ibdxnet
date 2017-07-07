@@ -1,7 +1,7 @@
 #include "ConnectionCreator.h"
 
 namespace ibnet {
-namespace jni {
+namespace dx {
 
 ConnectionCreator::ConnectionCreator(uint16_t qpMaxRecvReqs,
         uint16_t qpMaxSendReqs, uint16_t qpFlowControlMaxRecvReqs,

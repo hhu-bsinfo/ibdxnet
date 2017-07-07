@@ -7,7 +7,6 @@
 #include "ibnet/core/IbConnectionManager.h"
 #include "ibnet/core/IbMemReg.h"
 #include "ibnet/sys/ProfileTimer.hpp"
-#include "ibnet/sys/Queue.h"
 #include "ibnet/sys/ThreadLoop.h"
 
 #include "SendHandler.h"

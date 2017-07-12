@@ -48,7 +48,7 @@ public:
      *          destroyed, false if the caller takes care of memory management
      * @return Pointer to a IbMemReg object registered at the protected domain
      */
-    std::shared_ptr<IbMemReg> Register(void* addr, uint32_t size, bool freeOnCleanup = true);
+    IbMemReg* Register(void* addr, uint32_t size, bool freeOnCleanup = true);
 
     /**
      * Get the IB protection domain object
@@ -89,7 +89,7 @@ private:
     ibv_pd* m_ibProtDom;
 
     std::mutex m_mutex;
-    std::vector<std::shared_ptr<IbMemReg>> m_registeredRegions;
+    std::vector<IbMemReg*> m_registeredRegions;
 };
 
 }

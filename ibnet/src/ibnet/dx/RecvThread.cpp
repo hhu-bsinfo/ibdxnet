@@ -12,8 +12,7 @@ RecvThread::RecvThread(
         std::shared_ptr<core::IbConnectionManager>& connectionManager,
         std::shared_ptr<core::IbCompQueue>& sharedRecvCQ,
         std::shared_ptr<core::IbCompQueue>& sharedFlowControlRecvCQ,
-        std::shared_ptr<BufferPool>& recvBufferPool,
-        std::shared_ptr<BufferPool>& recvFlowControlBufferPool,
+        std::shared_ptr<RecvBufferPool>& recvBufferPool,
         std::shared_ptr<RecvHandler>& recvHandler) :
     ThreadLoop("RecvThread"),
     m_primaryRecvThread(primaryRecvThread),
@@ -21,7 +20,6 @@ RecvThread::RecvThread(
     m_sharedRecvCQ(sharedRecvCQ),
     m_sharedFlowControlRecvCQ(sharedFlowControlRecvCQ),
     m_recvBufferPool(recvBufferPool),
-    m_recvFlowControlBufferPool(recvFlowControlBufferPool),
     m_recvHandler(recvHandler),
     m_sharedQueueInitialFill(false),
     m_recvBytes(0),
@@ -59,13 +57,12 @@ void RecvThread::NodeConnected(core::IbConnection& connection)
             throw DxnetException("Can't work with non shared recv queue(s)");
         }
 
-        auto vec = m_recvBufferPool->GetEntries();
-        for (auto& it : vec) {
-            if (!connection.GetQp(0)->GetRecvQueue()->Reserve()) {
-                throw DxnetException("Recv queue buffer outstanding overrun");
-            }
+        uint32_t size = connection.GetQp(0)->GetRecvQueue()->GetQueueSize();
+        for (uint32_t i = 0; i < size; i++) {
+            core::IbMemReg* buf = m_recvBufferPool->GetBuffer();
 
-            connection.GetQp(0)->GetRecvQueue()->Receive(it.m_mem, it.m_id);
+            // Use the pointer as the work req id
+            connection.GetQp(0)->GetRecvQueue()->Receive(buf, (uint64_t) buf);
         }
 
         // sanity check
@@ -73,13 +70,12 @@ void RecvThread::NodeConnected(core::IbConnection& connection)
             throw DxnetException("Can't work with non shared FC recv queue(s)");
         }
 
-        vec = m_recvFlowControlBufferPool->GetEntries();
-        for (auto& it : vec) {
-            if (!connection.GetQp(1)->GetRecvQueue()->Reserve()) {
-                throw DxnetException("Recv queue FC outstanding overrun");
-            }
+        size = connection.GetQp(1)->GetRecvQueue()->GetQueueSize();
+        for (uint32_t i = 0; i < size; i++) {
+            core::IbMemReg* buf = m_recvBufferPool->GetFlowControlBuffer();
 
-            connection.GetQp(1)->GetRecvQueue()->Receive(it.m_mem, it.m_id);
+            // Use the pointer as the work req id
+            connection.GetQp(1)->GetRecvQueue()->Receive(buf, (uint64_t) buf);
         }
     }
 }
@@ -149,8 +145,8 @@ bool RecvThread::__ProcessFlowControl(void)
     m_timers[2].Enter();
 
     uint16_t sourceNode = m_connectionManager->GetNodeIdForPhysicalQPNum(qpNum);
-    const BufferPool::Entry& poolEntry =
-        m_recvFlowControlBufferPool->Get((uint32_t) workReqId);
+
+    core::IbMemReg* mem = (core::IbMemReg*) workReqId;
     m_recvFlowControlBytes += recvLength;
 
     m_timers[2].Exit();
@@ -167,7 +163,7 @@ bool RecvThread::__ProcessFlowControl(void)
     m_timers[3].Enter();
 
     m_recvHandler->ReceivedFlowControlData(sourceNode,
-        *((uint32_t*) poolEntry.m_mem->GetAddress()));
+        *((uint32_t*) mem->GetAddress()));
 
     m_timers[3].Exit();
 
@@ -176,14 +172,9 @@ bool RecvThread::__ProcessFlowControl(void)
     std::shared_ptr<core::IbConnection> connection =
         m_connectionManager->GetConnection(sourceNode);
 
-    if (!connection->GetQp(1)->GetRecvQueue()->Reserve()) {
-        m_connectionManager->ReturnConnection(connection);
-        throw DxnetException("Recv queue FC outstanding overrun");
-    }
 
     // keep the recv queue filled, using a shared recv queue here
-    connection->GetQp(1)->GetRecvQueue()->Receive(
-        poolEntry.m_mem, poolEntry.m_id);
+    connection->GetQp(1)->GetRecvQueue()->Receive(mem, (uint64_t) mem);
 
     m_connectionManager->ReturnConnection(connection);
 
@@ -220,8 +211,7 @@ bool RecvThread::__ProcessBuffers(void)
     m_timers[6].Enter();
 
     uint16_t sourceNode = m_connectionManager->GetNodeIdForPhysicalQPNum(qpNum);
-    const BufferPool::Entry& poolEntry =
-        m_recvBufferPool->Get((uint32_t) workReqId);
+    core::IbMemReg* mem = (core::IbMemReg*) workReqId;
     m_recvBytes += recvLength;
 
     m_timers[6].Exit();
@@ -237,8 +227,9 @@ bool RecvThread::__ProcessBuffers(void)
 
     m_timers[7].Enter();
 
-    m_recvHandler->ReceivedBuffer(sourceNode, poolEntry.m_mem->GetAddress(),
-        recvLength);
+    // pass to jvm space
+    // buffer is return to the pool async
+    m_recvHandler->ReceivedBuffer(sourceNode, mem->GetAddress(), recvLength);
 
     m_timers[7].Exit();
 
@@ -247,14 +238,13 @@ bool RecvThread::__ProcessBuffers(void)
     std::shared_ptr<core::IbConnection> connection =
         m_connectionManager->GetConnection(sourceNode);
 
-    if (!connection->GetQp(0)->GetRecvQueue()->Reserve()) {
-        m_connectionManager->ReturnConnection(connection);
-        throw DxnetException("Recv queue FC outstanding overrun");
-    }
-
     // keep the recv queue filled, using a shared recv queue here
-    connection->GetQp(0)->GetRecvQueue()->Receive(
-        poolEntry.m_mem, poolEntry.m_id);
+    // get another buffer from the pool
+    core::IbMemReg* buf = m_recvBufferPool->GetBuffer();
+
+    // Use the pointer as the work req id
+    connection->GetQp(0)->GetRecvQueue()->Receive(buf,
+        (uint64_t) buf);
 
     m_connectionManager->ReturnConnection(connection);
 

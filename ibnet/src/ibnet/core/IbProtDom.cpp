@@ -27,7 +27,7 @@ IbProtDom::IbProtDom(std::shared_ptr<IbDevice>& device, const std::string& name)
 IbProtDom::~IbProtDom(void)
 {
     IBNET_LOG_TRACE_FUNC;
-    IBNET_LOG_INFO("[{}] Destroying protection domain", m_name);
+    IBNET_LOG_DEBUG("[{}] Destroying protection domain", m_name);
 
     IBNET_LOG_TRACE("[{}] ibv_dereg_mr", m_name);
     for (auto& it : m_registeredRegions) {
@@ -42,7 +42,7 @@ IbProtDom::~IbProtDom(void)
     IBNET_LOG_DEBUG("[{}] Destroying protection domain done", m_name);
 }
 
-std::shared_ptr<IbMemReg> IbProtDom::Register(void* addr, uint32_t size, bool freeOnCleanup)
+IbMemReg* IbProtDom::Register(void* addr, uint32_t size, bool freeOnCleanup)
 {
     IBNET_LOG_TRACE_FUNC;
     IBNET_ASSERT_PTR(addr);
@@ -50,12 +50,11 @@ std::shared_ptr<IbMemReg> IbProtDom::Register(void* addr, uint32_t size, bool fr
 
     m_mutex.lock();
 
-    IBNET_LOG_INFO("[{}] Registering memory region {:p}, size {}",
+    IBNET_LOG_DEBUG("[{}] Registering memory region {:p}, size {}",
             m_name, addr, size);
 
     IBNET_LOG_TRACE("[{}] ibv_reg_mr", m_name);
-    std::shared_ptr<IbMemReg> memReg =
-            std::make_shared<IbMemReg>(addr, size, freeOnCleanup);
+    IbMemReg* memReg = new IbMemReg(addr, size, freeOnCleanup);
 
     memReg->m_ibMemReg = ibv_reg_mr(
             m_ibProtDom,
@@ -75,7 +74,7 @@ std::shared_ptr<IbMemReg> IbProtDom::Register(void* addr, uint32_t size, bool fr
     IBNET_LOG_DEBUG("[{}] Registering memory region successful, {}",
             m_name, *memReg);
 
-    std::shared_ptr<IbMemReg> ret = m_registeredRegions.back();
+    IbMemReg* ret = m_registeredRegions.back();
 
     m_mutex.unlock();
 

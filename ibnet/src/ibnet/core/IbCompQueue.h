@@ -59,17 +59,6 @@ public:
     }
 
     /**
-     * Decrease the outstanding completion counter keeping track of work
-     * request completions
-     *
-     * @return True if decreasing successful, false if failed because queue is
-     *          empty
-     */
-    inline bool SubOutstandingCompletion(void) {
-        return m_outstandingComps.SubOutstanding();
-    }
-
-    /**
      * Get the number of currently outstanding work completions
      */
     inline uint16_t GetCurrentOutstandingCompletions(void) {

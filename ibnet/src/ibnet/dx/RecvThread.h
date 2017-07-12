@@ -11,7 +11,7 @@
 #include "ibnet/sys/ProfileTimer.hpp"
 #include "ibnet/sys/ThreadLoop.h"
 
-#include "BufferPool.h"
+#include "RecvBufferPool.h"
 #include "RecvHandler.h"
 
 namespace ibnet {
@@ -51,8 +51,7 @@ public:
         std::shared_ptr<core::IbConnectionManager>& connectionManager,
         std::shared_ptr<core::IbCompQueue>& sharedRecvCQ,
         std::shared_ptr<core::IbCompQueue>& sharedFlowControlRecvCQ,
-        std::shared_ptr<BufferPool>& recvBufferPool,
-        std::shared_ptr<BufferPool>& recvFlowControlBufferPool,
+        std::shared_ptr<RecvBufferPool>& recvBufferPool,
         std::shared_ptr<RecvHandler>& recvHandler);
     ~RecvThread(void);
 
@@ -84,9 +83,10 @@ private:
     std::shared_ptr<core::IbConnectionManager> m_connectionManager;
     std::shared_ptr<core::IbCompQueue> m_sharedRecvCQ;
     std::shared_ptr<core::IbCompQueue> m_sharedFlowControlRecvCQ;
-    std::shared_ptr<BufferPool> m_recvBufferPool;
-    std::shared_ptr<BufferPool> m_recvFlowControlBufferPool;
+    std::shared_ptr<RecvBufferPool> m_recvBufferPool;
     std::shared_ptr<RecvHandler> m_recvHandler;
+
+
 
 private:
     std::atomic<bool> m_sharedQueueInitialFill;

@@ -47,15 +47,6 @@ public:
     }
 
     /**
-     * Destructor
-     */
-    ~IbMemReg(void) {
-        if (m_freeOnCleanup) {
-            free(m_addr);
-        }
-    }
-
-    /**
      * Get the local key assigned to the region when registered with a
      * protection domain
      */
@@ -128,6 +119,16 @@ private:
     bool m_freeOnCleanup;
 
     ibv_mr* m_ibMemReg;
+
+private:
+    /**
+     * Destructor
+     */
+    ~IbMemReg(void) {
+        if (m_freeOnCleanup) {
+            free(m_addr);
+        }
+    }
 };
 
 }

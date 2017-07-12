@@ -80,7 +80,7 @@ void IbSendQueue::Close(bool force)
     m_isClosed = true;
 }
 
-void IbSendQueue::Send(const std::shared_ptr<IbMemReg>& memReg, uint32_t size, uint64_t workReqId)
+void IbSendQueue::Send(const IbMemReg* memReg, uint32_t offset, uint32_t size, uint64_t workReqId)
 {
     struct ibv_sge sge_list;
     struct ibv_send_wr wr;
@@ -92,7 +92,7 @@ void IbSendQueue::Send(const std::shared_ptr<IbMemReg>& memReg, uint32_t size, u
     }
 
     // hook memory with message contents to send
-    sge_list.addr      		= (uintptr_t) memReg->GetAddress();
+    sge_list.addr      		= (uintptr_t) memReg->GetAddress() + offset;
     if (size == -1) {
         sge_list.length = (uint32_t) memReg->GetSize();
     } else {
@@ -123,6 +123,8 @@ void IbSendQueue::Send(const std::shared_ptr<IbMemReg>& memReg, uint32_t size, u
                                   memReg->ToString());
         }
     }
+
+    m_compQueue->AddOutstandingCompletion();
 }
 
 uint32_t IbSendQueue::PollCompletion(bool blocking)

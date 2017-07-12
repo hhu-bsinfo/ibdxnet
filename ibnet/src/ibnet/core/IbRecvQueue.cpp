@@ -110,8 +110,7 @@ void IbRecvQueue::Close(bool force)
     m_isClosed = true;
 }
 
-void IbRecvQueue::Receive(const std::shared_ptr<IbMemReg>& memReg,
-        uint64_t workReqId)
+void IbRecvQueue::Receive(const IbMemReg* memReg, uint64_t workReqId)
 {
     struct ibv_sge sge_list;
     struct ibv_recv_wr wr;
@@ -151,6 +150,8 @@ void IbRecvQueue::Receive(const std::shared_ptr<IbMemReg>& memReg,
                                   std::to_string(ret) + ", mem: " + memReg->ToString());
         }
     }
+
+    m_compQueue->AddOutstandingCompletion();
 }
 
 uint32_t IbRecvQueue::PollCompletion(bool blocking)

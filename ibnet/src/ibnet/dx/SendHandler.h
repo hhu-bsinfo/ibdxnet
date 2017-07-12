@@ -1,6 +1,8 @@
 #ifndef IBNET_DX_SENDHANDLER_H
 #define IBNET_DX_SENDHANDLER_H
 
+#include "ibnet/core/IbNodeId.h"
+
 #include "JNIHelper.h"
 
 namespace ibnet {
@@ -20,8 +22,8 @@ public:
      */
     struct NextWorkParameters
     {
-        uint64_t m_ptrBuffer;
-        uint32_t m_len;
+        uint32_t m_posFrontRel;
+        uint32_t m_posBackRel;
         uint32_t m_flowControlData;
         uint16_t m_nodeId;
     } __attribute__((packed));
@@ -48,21 +50,21 @@ public:
      *        (or -1 if there is no previous valid work request)
      * @param prevDataWrittenLen Number of bytes written on the previous work
      *          request
-     * @param prevFlowControlWritten Flow control data written on the previous
-     *          work request
      * @return Pointer to the next work request package (don't free)
      */
     inline NextWorkParameters* GetNextDataToSend(uint16_t prevNodeIdWritten,
-            uint32_t prevDataWrittenLen, uint64_t prevFlowControlWritten)
+            uint32_t prevDataWrittenLen)
     {
-        IBNET_LOG_TRACE_FUNC;
+        // IBNET_LOG_TRACE_FUNC;
 
         JNIEnv* env = JNIHelper::GetEnv(m_vm);
         jlong ret = env->CallLongMethod(m_object, m_midGetNextDataToSend,
-            prevNodeIdWritten, prevDataWrittenLen, prevFlowControlWritten);
+            // odd: 0xFFFF is not reinterpreted as -1 when assigned to a jshort
+            prevNodeIdWritten == core::IbNodeId::INVALID ? -1 : prevNodeIdWritten,
+            prevDataWrittenLen);
         JNIHelper::ReturnEnv(m_vm, env);
 
-        IBNET_LOG_TRACE_FUNC_EXIT;
+        // IBNET_LOG_TRACE_FUNC_EXIT;
 
         return (NextWorkParameters*) ret;
     }

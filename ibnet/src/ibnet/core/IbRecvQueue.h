@@ -89,31 +89,13 @@ public:
     void Close(bool force);
 
     /**
-     * Reserve a single recv call to avoid overrunning the queue.
-     *
-     * Call this before calling Receive
-     *
-     * @return True if reserve ok, continue with Receive call; false if queue
-     *          full, don't continue with Receive call. Create some space by
-     *          emptying the queue
-     */
-    bool Reserve(void) {
-        if (m_isClosed) {
-            throw IbQueueClosedException();
-        }
-
-        // keep track of queue size limit
-        return m_compQueue->AddOutstandingCompletion();
-    }
-
-    /**
      * Post a message to allow receiving data from a remote send post
      *
      * @param memReg Memory region to write the receiving data to
      * @param workReqId Work request id to assign to the InfiniBand work
      *                  request
      */
-    void Receive(const std::shared_ptr<IbMemReg>& memReg, uint64_t workReqId = 0);
+    void Receive(const IbMemReg* memReg, uint64_t workReqId = 0);
 
     /**
      * Poll the next enqueued work request until it completed

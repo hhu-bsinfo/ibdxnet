@@ -5,26 +5,20 @@
 namespace ibnet {
 namespace dx {
 
-SendThread::SendThread(std::shared_ptr<core::IbProtDom>& protDom,
-        uint32_t outBufferSize, uint32_t bufferQueueSize,
+SendThread::SendThread(std::shared_ptr<SendBuffers> buffers,
         std::shared_ptr<SendHandler>& sendHandler,
         std::shared_ptr<core::IbConnectionManager>& connectionManager) :
     ThreadLoop("SendThread"),
-    m_outBufferSize(outBufferSize),
+    m_buffers(buffers),
     m_sendHandler(sendHandler),
     m_connectionManager(connectionManager),
     m_prevNodeIdWritten(core::IbNodeId::INVALID),
     m_prevDataWritten(0),
-    m_prevFlowControlWritten(0),
     m_sentBytes(0),
     m_sentFlowControlBytes(0)
 {
-    m_flowControlBuffer = __AllocAndRegisterMem(protDom, sizeof(uint32_t));
 
-    for (uint32_t i = 0; i < bufferQueueSize; i++) {
-        m_buffers.push_back(__AllocAndRegisterMem(protDom, outBufferSize));
-    }
-
+    // TODO rename timers
     m_timers.push_back(sys::ProfileTimer("Total"));
     m_timers.push_back(sys::ProfileTimer("NextJob"));
     m_timers.push_back(sys::ProfileTimer("GetConnection"));
@@ -67,21 +61,21 @@ void SendThread::_RunLoop(void)
     m_timers[1].Enter();
 
     SendHandler::NextWorkParameters* data = m_sendHandler->GetNextDataToSend(
-        m_prevNodeIdWritten, m_prevDataWritten, m_prevFlowControlWritten);
+        m_prevNodeIdWritten, m_prevDataWritten);
+
+    m_timers[1].Exit();
+
+    // reset previous state
+    m_prevNodeIdWritten = core::IbNodeId::INVALID;
+    m_prevDataWritten = 0;
 
     // nothing to process
     if (data == nullptr) {
-        m_timers[1].Exit();
         std::this_thread::yield();
         return;
     }
 
-    m_timers[1].Exit();
-
-    // update and reset previous state
     m_prevNodeIdWritten = data->m_nodeId;
-    m_prevFlowControlWritten = 0;
-    m_prevDataWritten = 0;
 
     m_timers[2].Enter();
 
@@ -94,13 +88,12 @@ void SendThread::_RunLoop(void)
     if (!connection) {
         // sent back to java space on the next GetNext call
         m_prevDataWritten = 0;
-        m_prevFlowControlWritten = 0;
         return;
     }
 
     try {
-        m_prevFlowControlWritten = __ProcessFlowControl(connection, data);
-        m_prevDataWritten = __ProcessBuffers(connection, data);
+        __ProcessFlowControl(connection, data);
+        m_prevDataWritten = __ProcessBuffer(connection, data);
 
         m_connectionManager->ReturnConnection(connection);
     } catch (core::IbQueueClosedException& e) {
@@ -122,7 +115,7 @@ uint32_t SendThread::__ProcessFlowControl(
         std::shared_ptr<core::IbConnection>& connection,
         SendHandler::NextWorkParameters* data)
 {
-    const uint32_t numBytesToSend = sizeof(data->m_flowControlData);
+    const uint32_t numBytesToSend = sizeof(uint32_t);
 
     if (data->m_flowControlData == 0) {
         return 0;
@@ -130,20 +123,17 @@ uint32_t SendThread::__ProcessFlowControl(
 
     m_timers[3].Enter();
 
-    if (!connection->GetQp(1)->GetSendQueue()->Reserve()) {
-        m_timers[3].Exit();
-        return 0;
-    }
+    core::IbMemReg* mem = m_buffers->GetFlowControlBuffer(
+        connection->GetConnectionId());
 
-    memcpy(m_flowControlBuffer->GetAddress(), &data->m_flowControlData,
-        numBytesToSend);
+    memcpy(mem->GetAddress(), &data->m_flowControlData, numBytesToSend);
 
     m_timers[3].Exit();
 
     m_timers[4].Enter();
 
-    connection->GetQp(1)->GetSendQueue()->Send(m_flowControlBuffer,
-        numBytesToSend);
+    connection->GetQp(1)->GetSendQueue()->Send(mem, 0, numBytesToSend);
+
     m_timers[4].Exit();
 
     m_timers[5].Enter();
@@ -162,61 +152,52 @@ uint32_t SendThread::__ProcessFlowControl(
     return data->m_flowControlData;
 }
 
-uint32_t SendThread::__ProcessBuffers(
+uint32_t SendThread::__ProcessBuffer(
         std::shared_ptr<core::IbConnection>& connection,
         SendHandler::NextWorkParameters* data)
 {
-    const uint16_t queueSize = connection->GetQp(0)->GetSendQueue()->GetQueueSize();
-    uint16_t wqsToSend;
-
-    // happens if a node disconnected. the write interest can't be removed
-    // from the queue on disconnect
-    if (data->m_len == 0) {
-        return 0;
-    }
-
-    wqsToSend = (uint16_t) (data->m_len / m_outBufferSize);
-    // at least one buffer if > 0
-    wqsToSend++;
-
-    // limit to max queue size
-    if (wqsToSend > queueSize) {
-        wqsToSend = queueSize;
-    }
-
-    uint32_t wqsSent = 0;
+    uint32_t startOffset = 0;
+    uint32_t workRequests = 0;
     uint32_t totalBytesSent = 0;
 
-    // batch send as many elements possible by utilizing the queue size
-    for (uint32_t i = 0; i < wqsToSend; i++) {
-        if (!connection->GetQp(0)->GetSendQueue()->Reserve()) {
-            break;
-        }
 
-        m_timers[6].Enter();
+    m_timers[6].Enter();
 
-        uint32_t sliceSize = m_outBufferSize;
-        if (data->m_len - totalBytesSent < sliceSize) {
-            sliceSize = data->m_len - totalBytesSent;
-        }
+    core::IbMemReg* mem = m_buffers->GetBuffer(connection->GetConnectionId());
 
-        memcpy(m_buffers[i]->GetAddress(),
-            (void*) (data->m_ptrBuffer + totalBytesSent), sliceSize);
+    m_timers[6].Exit();
 
-        m_timers[6].Exit();
+    if (data->m_posBackRel < data->m_posFrontRel) {
+        // two WQs because ring buffer wrap around
+        // send slice up to the buffer's end first
 
         m_timers[7].Enter();
 
-        connection->GetQp(0)->GetSendQueue()->Send(m_buffers[i], sliceSize);
+        connection->GetQp(0)->GetSendQueue()->Send(mem, data->m_posFrontRel,
+            mem->GetSize() - data->m_posFrontRel);
 
         m_timers[7].Exit();
 
-        totalBytesSent += sliceSize;
-        wqsSent++;
+        totalBytesSent += mem->GetSize() - data->m_posFrontRel;
+        workRequests++;
+        startOffset = 0;
+    } else {
+        // single WQ
+        startOffset = data->m_posFrontRel;
     }
 
+    m_timers[7].Enter();
+
+    connection->GetQp(0)->GetSendQueue()->Send(mem, startOffset,
+        data->m_posBackRel - startOffset);
+
+    m_timers[7].Exit();
+
+    totalBytesSent += data->m_posBackRel - startOffset;
+    workRequests++;
+
     // poll for send completions
-    for (uint32_t i = 0; i < wqsSent; i++) {
+    for (uint32_t i = 0; i < workRequests; i++) {
         m_timers[8].Enter();
 
         try {
@@ -232,15 +213,6 @@ uint32_t SendThread::__ProcessBuffers(
     m_sentBytes += totalBytesSent;
 
     return totalBytesSent;
-}
-
-std::shared_ptr<core::IbMemReg> SendThread::__AllocAndRegisterMem(
-        std::shared_ptr<core::IbProtDom>& protDom, uint32_t size)
-{
-    void* buffer = malloc(size);
-    memset(buffer, 0, size);
-
-    return protDom->Register(buffer, size, true);
 }
 
 }

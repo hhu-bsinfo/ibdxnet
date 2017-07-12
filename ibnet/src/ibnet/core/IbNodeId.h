@@ -1,6 +1,8 @@
 #ifndef IBNET_CORE_IBNODEID_H
 #define IBNET_CORE_IBNODEID_H
 
+#include <cstdint>
+
 namespace ibnet {
 namespace core {
 

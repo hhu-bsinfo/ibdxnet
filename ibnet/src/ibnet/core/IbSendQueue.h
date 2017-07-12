@@ -60,41 +60,13 @@ public:
     void Close(bool force);
 
     /**
-     * Reserve a single send call to avoid overrunning the queue.
-     *
-     * Call this before calling Send
-     *
-     * @return True if reserve ok, continue with Send call; false if queue full,
-     *          don't continue with Send call. Create some space by emptying
-     *          the queue
-     */
-    inline bool Reserve(void) {
-        if (m_isClosed) {
-            throw IbQueueClosedException();
-        }
-
-        // keep track of queue size limit
-        return m_compQueue->AddOutstandingCompletion();
-    }
-
-    /**
-     * If reserve was called and you figured out that you don't need the
-     * reserved send slot, reove it to avoid reserved slots "leaking"
-     */
-    inline void RevokeReservation(void) {
-        if (!m_compQueue->SubOutstandingCompletion()) {
-            throw IbException("Send queue outstanding completion undderrun");
-        }
-    }
-
-    /**
      * Posts a message send work request to the (parent) queue pair
      *
      * @param memReg Memory region with data to send
      * @param size Number of bytes to send
      * @param workReqId Work request id to assign to the InfiniBand work request
      */
-    void Send(const std::shared_ptr<IbMemReg>& memReg,
+    void Send(const IbMemReg* memReg, uint32_t offset = 0,
               uint32_t size = (uint32_t) -1, uint64_t workReqId = 0);
 
     /**

@@ -9,6 +9,7 @@
 #include "ibnet/sys/ProfileTimer.hpp"
 #include "ibnet/sys/ThreadLoop.h"
 
+#include "SendBuffers.h"
 #include "SendHandler.h"
 
 namespace ibnet {
@@ -39,8 +40,7 @@ public:
      *          space to grab the next available data/work package to send
      * @param connectionManager Parent connection manager
      */
-    SendThread(std::shared_ptr<core::IbProtDom>& protDom,
-        uint32_t outBufferSize, uint32_t bufferQueueSize,
+    SendThread(std::shared_ptr<SendBuffers> buffers,
         std::shared_ptr<SendHandler>& sendHandler,
         std::shared_ptr<core::IbConnectionManager>& connectionManager);
     ~SendThread(void);
@@ -62,24 +62,18 @@ private:
         std::shared_ptr<core::IbConnection>& connection,
         SendHandler::NextWorkParameters* data);
 
-    uint32_t __ProcessBuffers(
+    uint32_t __ProcessBuffer(
         std::shared_ptr<core::IbConnection>& connection,
         SendHandler::NextWorkParameters* data);
 
-    std::shared_ptr<core::IbMemReg> __AllocAndRegisterMem(
-        std::shared_ptr<core::IbProtDom>& protDom, uint32_t size);
-
 private:
-    const uint32_t m_outBufferSize;
-    std::shared_ptr<core::IbMemReg> m_flowControlBuffer;
-    std::vector<std::shared_ptr<core::IbMemReg>> m_buffers;
+    std::shared_ptr<SendBuffers> m_buffers;
     std::shared_ptr<SendHandler> m_sendHandler;
     std::shared_ptr<core::IbConnectionManager> m_connectionManager;
 
 private:
     uint16_t m_prevNodeIdWritten;
     uint32_t m_prevDataWritten;
-    uint64_t m_prevFlowControlWritten;
 
 private:
     uint64_t m_sentBytes;

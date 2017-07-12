@@ -28,7 +28,7 @@ public:
      */
     static inline JNIEnv* GetEnv(JavaVM* vm)
     {
-        IBNET_LOG_TRACE_FUNC;
+        //IBNET_LOG_TRACE_FUNC;
 
         JNIEnv* env;
 
@@ -57,7 +57,7 @@ public:
      */
     static inline void ReturnEnv(JavaVM* vm, JNIEnv* env)
     {
-        IBNET_LOG_TRACE_FUNC;
+        //IBNET_LOG_TRACE_FUNC;
 
         // Don't check for exceptions because this is extremely expensive
         // and kills performance on recv callbacks

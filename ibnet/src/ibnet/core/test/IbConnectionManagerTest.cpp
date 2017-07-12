@@ -46,9 +46,6 @@ int main(int argc, char** argv)
     uint8_t* buffer = (uint8_t*) malloc(sizeBuffer);
     memset(buffer, 0, sizeBuffer);
 
-    std::shared_ptr<ibnet::core::IbMemReg> memReg =
-        protDom->Register(buffer, sizeBuffer, true);
-
     std::shared_ptr<ibnet::core::IbCompQueue> compQueue =
         std::make_shared<ibnet::core::IbCompQueue>(device, 100);
 

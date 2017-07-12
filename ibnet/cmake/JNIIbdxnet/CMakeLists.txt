@@ -10,14 +10,15 @@ include_directories(/usr/lib/jvm/java-8-openjdk/include/linux)
 include_directories(/usr/lib/jvm/java-8-openjdk-amd64/include/linux)
 
 set(SOURCE_FILES
-        ${IBNET_SRC_DIR}/ibnet/dx/BufferPool.cpp
         ${IBNET_SRC_DIR}/ibnet/dx/ConnectionCreator.cpp
         ${IBNET_SRC_DIR}/ibnet/dx/ConnectionHandler.cpp
         ${IBNET_SRC_DIR}/ibnet/dx/DebugThread.cpp
         ${IBNET_SRC_DIR}/ibnet/dx/DiscoveryHandler.cpp
         ${IBNET_SRC_DIR}/ibnet/dx/JNIIbdxnet.cpp
+        ${IBNET_SRC_DIR}/ibnet/dx/RecvBufferPool.cpp
         ${IBNET_SRC_DIR}/ibnet/dx/RecvHandler.cpp
         ${IBNET_SRC_DIR}/ibnet/dx/RecvThread.cpp
+        ${IBNET_SRC_DIR}/ibnet/dx/SendBuffers.cpp
         ${IBNET_SRC_DIR}/ibnet/dx/SendHandler.cpp
         ${IBNET_SRC_DIR}/ibnet/dx/SendThread.cpp)
 

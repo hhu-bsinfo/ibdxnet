@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     de_hhu_bsinfo_net_ib_JNIIdxbnet
  * Method:    init
- * Signature: (SIIIIIIIIILde/hhu/bsinfo/net/ib/JNIIbdxnet/SendHandler;Lde/hhu/bsinfo/net/ib/JNIIbdxnet/RecvHandler;Lde/hhu/bsinfo/net/ib/JNIIbdxnet/DiscoveryHandler;Lde/hhu/bsinfo/net/ib/JNIIbdxnet/ConnectionHandler;ZZ)Z
+ * Signature: (SIIIIIIIILde/hhu/bsinfo/net/ib/JNIIbdxnet/SendHandler;Lde/hhu/bsinfo/net/ib/JNIIbdxnet/RecvHandler;Lde/hhu/bsinfo/net/ib/JNIIbdxnet/DiscoveryHandler;Lde/hhu/bsinfo/net/ib/JNIIbdxnet/ConnectionHandler;ZZ)Z
  */
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init
-    (JNIEnv *, jclass, jshort, jint, jint, jint, jint, jint, jint, jint, jint, jint, jobject, jobject, jobject, jobject, jboolean, jboolean);
+    (JNIEnv *, jclass, jshort, jint, jint, jint, jint, jint, jint, jint, jint, jobject, jobject, jobject, jobject, jboolean, jboolean);
 
 /*
  * Class:     de_hhu_bsinfo_net_ib_JNIIbdxnet
@@ -30,6 +30,22 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_shutdown
  */
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_addNode
     (JNIEnv *, jclass, jint);
+
+/*
+ * Class:     de_hhu_bsinfo_net_ib_JNIIbdxnet
+ * Method:    getSendBufferAddress
+ * Signature: (S)J
+ */
+JNIEXPORT jlong JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_getSendBufferAddress
+    (JNIEnv *, jclass, jshort);
+
+/*
+ * Class:     de_hhu_bsinfo_net_ib_JNIIbdxnet
+ * Method:    returnRecvBuffer
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_returnRecvBuffer
+    (JNIEnv *, jclass, jlong);
 
 #ifdef __cplusplus
 }

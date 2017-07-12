@@ -40,27 +40,8 @@ public:
 
         JNIEnv* env = JNIHelper::GetEnv(m_vm);
 
-        // get a byte buffer with at least length size
-        jobject byteBuffer =
-            env->CallObjectMethod(m_object, m_midGetReceiveBuffer, length);
-
-        if (byteBuffer == NULL) {
-            IBNET_LOG_ERROR("Getting buffer for received data failed, null");
-        } else {
-            // I can't believe these calls are so expensive they cut performance
-            // to less than 1/20th...
-            // void* byteBufferAddr = env->GetDirectBufferAddress(byteBuffer);
-            // uint32_t byteBufferLength =
-            //    (uint32_t) env->GetDirectBufferCapacity(byteBuffer);
-
-            // that's better
-            void* byteBufferAddr = (void*) (intptr_t)
-                env->GetLongField(byteBuffer, m_directBufferAddressField);
-
-            memcpy(byteBufferAddr, buffer, length);
-            env->CallVoidMethod(m_object, m_midReceivedBuffer, source,
-                byteBuffer, length);
-        }
+        env->CallVoidMethod(m_object, m_midReceivedBuffer, source, buffer,
+            length);
 
         JNIHelper::ReturnEnv(m_vm, env);
 
@@ -89,7 +70,6 @@ private:
     JavaVM* m_vm;
     jobject m_object;
 
-    jmethodID m_midGetReceiveBuffer;
     jmethodID m_midReceivedBuffer;
     jmethodID m_midReceivedFlowControlData;
 

@@ -109,7 +109,8 @@ void RecvBufferPool::ReturnBuffer(core::IbMemReg* buffer)
         }
     } else {
         // TODO destroy and cleanup buffer
-        IBNET_LOG_ERROR("Encountered buffer with invalid size, cannot be assigned to a pool");
+        IBNET_LOG_ERROR("Encountered buffer with invalid size {}, cannot be assigned to a pool",
+            buffer->GetSize());
     }
 
     m_lock.unlock();

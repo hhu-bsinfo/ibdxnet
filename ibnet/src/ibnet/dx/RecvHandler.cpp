@@ -7,7 +7,7 @@ RecvHandler::RecvHandler(JNIEnv* env, jobject object) :
     m_vm(nullptr),
     m_object(env->NewGlobalRef(object)),
     m_midReceivedBuffer(JNIHelper::GetAndVerifyMethod(env, m_object,
-        "receivedBuffer", "(SJI)V")),
+        "receivedBuffer", "(SJJI)V")),
     m_midReceivedFlowControlData(JNIHelper::GetAndVerifyMethod(env, m_object,
         "receivedFlowControlData", "(SI)V")),
     m_directBufferAddressField(env->GetFieldID(

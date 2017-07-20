@@ -229,7 +229,8 @@ bool RecvThread::__ProcessBuffers(void)
 
     // pass to jvm space
     // buffer is return to the pool async
-    m_recvHandler->ReceivedBuffer(sourceNode, mem->GetAddress(), recvLength);
+    m_recvHandler->ReceivedBuffer(sourceNode, mem, mem->GetAddress(),
+        recvLength);
 
     m_timers[7].Exit();
 

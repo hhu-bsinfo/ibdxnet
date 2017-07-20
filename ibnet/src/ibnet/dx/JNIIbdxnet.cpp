@@ -261,10 +261,12 @@ JNIEXPORT jlong JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_getSendBufferAddres
 }
 
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_returnRecvBuffer(
-        JNIEnv* p_env, jclass p_class, jlong p_addr)
+        JNIEnv* p_env, jclass p_class, jlong p_bufferHandle)
 {
-    IBNET_LOG_TRACE("Return recv buffer {}", p_addr);
+    ibnet::core::IbMemReg* mem = (ibnet::core::IbMemReg*) p_bufferHandle;
 
-    ibnet::core::IbMemReg* mem = (ibnet::core::IbMemReg*) p_addr;
+    IBNET_LOG_TRACE("Return recv buffer handle {:x}, buffer addr {:x}, size %d",
+        p_bufferHandle, mem->GetAddress(), mem->GetSize());
+
     g_recvBufferPool->ReturnBuffer(mem);
 }

@@ -1,6 +1,8 @@
 #ifndef IBNET_DX_RECVHANDLER_H
 #define IBNET_DX_RECVHANDLER_H
 
+#include "ibnet/core/IbMemReg.h"
+
 #include "JNIHelper.h"
 
 namespace ibnet {
@@ -34,14 +36,15 @@ public:
      * @param buffer Pointer to the buffer with the received data
      * @param length Number of bytes received
      */
-    inline void ReceivedBuffer(uint16_t source, void* buffer, uint32_t length)
+    inline void ReceivedBuffer(uint16_t source, core::IbMemReg* mem,
+            void* buffer, uint32_t length)
     {
         IBNET_LOG_TRACE_FUNC;
 
         JNIEnv* env = JNIHelper::GetEnv(m_vm);
 
-        env->CallVoidMethod(m_object, m_midReceivedBuffer, source, buffer,
-            length);
+        env->CallVoidMethod(m_object, m_midReceivedBuffer, source,
+            (uintptr_t) mem, buffer, length);
 
         JNIHelper::ReturnEnv(m_vm, env);
 

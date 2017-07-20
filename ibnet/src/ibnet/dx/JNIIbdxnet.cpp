@@ -63,9 +63,8 @@ static std::vector<std::unique_ptr<ibnet::dx::SendThread>> g_sendThreads;
 static std::unique_ptr<ibnet::dx::DebugThread> g_debugThread;
 
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
-        JNIEnv* p_env, jclass p_class, jshort p_ownNodeId, jint p_maxRecvReqs,
-        jint p_maxSendReqs, jint p_inOutBufferSize,
-        jint p_flowControlMaxRecvReqs, jint p_flowControlMaxSendReqs,
+        JNIEnv* p_env, jclass p_class, jshort p_ownNodeId, jint p_outBufferSize,
+        jint p_maxRecvReqs, jint p_flowControlMaxRecvReqs,
         jint p_sendThreads, jint p_recvThreads, jint p_maxNumConnections,
         jobject p_sendHandler, jobject p_recvHandler,
         jobject p_discoveryHandler, jobject p_connectionHandler,
@@ -133,8 +132,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
             5731, p_maxNumConnections, g_device, g_protDom,
             g_discoveryManager,
             std::make_unique<ibnet::dx::ConnectionCreator>(p_maxRecvReqs,
-                p_maxSendReqs, p_flowControlMaxRecvReqs,
-                p_flowControlMaxSendReqs, g_sharedRecvQueue,
+                p_flowControlMaxRecvReqs, g_sharedRecvQueue,
                 g_sharedRecvCompQueue, g_sharedFlowControlRecvQueue,
                 g_sharedFlowControlRecvCompQueue));
 
@@ -144,9 +142,9 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
         IBNET_LOG_INFO("Initializing buffer pools...");
 
         g_sendBuffers = std::make_shared<ibnet::dx::SendBuffers>(
-            p_inOutBufferSize, p_maxNumConnections, g_protDom);
+            p_outBufferSize, p_maxNumConnections, g_protDom);
         g_recvBufferPool = std::make_shared<ibnet::dx::RecvBufferPool>(
-            p_inOutBufferSize, p_flowControlMaxRecvReqs, g_protDom);
+            p_outBufferSize, p_flowControlMaxRecvReqs, g_protDom);
 
         IBNET_LOG_INFO("Starting {} receiver threads", p_recvThreads);
 

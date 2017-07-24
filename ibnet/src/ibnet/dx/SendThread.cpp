@@ -132,6 +132,7 @@ uint32_t SendThread::__ProcessFlowControl(
 
     m_timers[4].Enter();
 
+    std::cout << ">>>>>>>>>>>>> fc send: " << data->m_flowControlData << std::endl;
     connection->GetQp(1)->GetSendQueue()->Send(mem, 0, numBytesToSend);
 
     m_timers[4].Exit();
@@ -160,6 +161,10 @@ uint32_t SendThread::__ProcessBuffer(
     uint32_t workRequests = 0;
     uint32_t totalBytesSent = 0;
 
+    // no data to send
+    if (data->m_posBackRel == data->m_posFrontRel) {
+        return 0;
+    }
 
     m_timers[6].Enter();
 

@@ -162,6 +162,8 @@ bool RecvThread::__ProcessFlowControl(void)
 
     m_timers[3].Enter();
 
+    std::cout << "???????? recv fc data " <<  *((uint32_t*) mem->GetAddress()) << std::endl;
+
     m_recvHandler->ReceivedFlowControlData(sourceNode,
         *((uint32_t*) mem->GetAddress()));
 
@@ -171,7 +173,6 @@ bool RecvThread::__ProcessFlowControl(void)
 
     std::shared_ptr<core::IbConnection> connection =
         m_connectionManager->GetConnection(sourceNode);
-
 
     // keep the recv queue filled, using a shared recv queue here
     connection->GetQp(1)->GetRecvQueue()->Receive(mem, (uint64_t) mem);

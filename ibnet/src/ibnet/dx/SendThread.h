@@ -40,7 +40,7 @@ public:
      *          space to grab the next available data/work package to send
      * @param connectionManager Parent connection manager
      */
-    SendThread(std::shared_ptr<SendBuffers> buffers,
+    SendThread(uint32_t recvBufferSize, std::shared_ptr<SendBuffers> buffers,
         std::shared_ptr<SendHandler>& sendHandler,
         std::shared_ptr<core::IbConnectionManager>& connectionManager);
     ~SendThread(void);
@@ -67,6 +67,7 @@ private:
         SendHandler::NextWorkParameters* data);
 
 private:
+    const uint32_t m_recvBufferSize;
     std::shared_ptr<SendBuffers> m_buffers;
     std::shared_ptr<SendHandler> m_sendHandler;
     std::shared_ptr<core::IbConnectionManager> m_connectionManager;

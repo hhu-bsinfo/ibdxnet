@@ -22,7 +22,9 @@ public:
      * @param bufferSize Size of the send buffer in bytes
      * @param protDom Protection domain to register all buffers at
      */
-    RecvBufferPool(uint32_t bufferSize, uint32_t flowControlQueueSize, std::shared_ptr<core::IbProtDom>& protDom);
+    RecvBufferPool(uint32_t initialTotalPoolSize, uint32_t recvBufferSize,
+        uint32_t flowControlQueueSize,
+        std::shared_ptr<core::IbProtDom>& protDom);
 
     /**
      * Destructor
@@ -52,26 +54,12 @@ public:
     void ReturnFlowControlBuffer(core::IbMemReg* buffer);
 
 private:
-    const uint32_t m_largeBufferPoolSize;
-    const uint32_t m_mediumBufferPoolSize;
-    const uint32_t m_smallBufferPoolSize;
-
-    const uint32_t m_largeBufferPoolFactor;
-    const uint32_t m_mediumBufferPoolFactor;
-    const uint32_t m_smallBufferPoolFactor;
-
-    const uint32_t m_largeBufferSize;
-    const uint32_t m_mediumBufferSize;
-    const uint32_t m_smallBufferSize;
-
+    const uint32_t m_bufferPoolSize;
     const uint32_t m_bufferSize;
 
     const uint32_t m_numFlowControlBuffers;
 
-    std::vector<core::IbMemReg*> m_largeBufferPool;
-    std::vector<core::IbMemReg*> m_mediumBufferPool;
-    std::vector<core::IbMemReg*> m_smallBufferPool;
-
+    std::vector<core::IbMemReg*> m_dataBuffers;
     std::vector<core::IbMemReg*> m_flowControlBuffers;
 
     std::mutex m_lock;

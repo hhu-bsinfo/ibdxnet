@@ -162,8 +162,6 @@ bool RecvThread::__ProcessFlowControl(void)
 
     m_timers[3].Enter();
 
-    std::cout << "???????? recv fc data " <<  *((uint32_t*) mem->GetAddress()) << std::endl;
-
     m_recvHandler->ReceivedFlowControlData(sourceNode,
         *((uint32_t*) mem->GetAddress()));
 

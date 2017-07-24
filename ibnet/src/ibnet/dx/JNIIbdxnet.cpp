@@ -70,6 +70,11 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
         jobject p_discoveryHandler, jobject p_connectionHandler,
         jboolean p_enableSignalHandler, jboolean p_enableDebugThread)
 {
+    // TODO make these configurable -> func args
+    const uint16_t p_maxSendReqs = 10;
+    const uint32_t p_inBufferSize = 4096;
+    const uint32_t p_recvPoolSizeBytes = 4096 * 2560; // 10mb
+
     // setup foundation
     if (p_enableSignalHandler) {
         g_signalHandler = std::make_unique<backward::SignalHandling>();
@@ -131,8 +136,8 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
             p_ownNodeId,
             5731, p_maxNumConnections, g_device, g_protDom,
             g_discoveryManager,
-            std::make_unique<ibnet::dx::ConnectionCreator>(p_maxRecvReqs,
-                p_flowControlMaxRecvReqs, g_sharedRecvQueue,
+            std::make_unique<ibnet::dx::ConnectionCreator>(p_maxSendReqs,
+                p_maxRecvReqs, p_flowControlMaxRecvReqs, g_sharedRecvQueue,
                 g_sharedRecvCompQueue, g_sharedFlowControlRecvQueue,
                 g_sharedFlowControlRecvCompQueue));
 
@@ -144,7 +149,8 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
         g_sendBuffers = std::make_shared<ibnet::dx::SendBuffers>(
             p_outBufferSize, p_maxNumConnections, g_protDom);
         g_recvBufferPool = std::make_shared<ibnet::dx::RecvBufferPool>(
-            p_outBufferSize, p_flowControlMaxRecvReqs, g_protDom);
+            p_recvPoolSizeBytes, p_inBufferSize, p_flowControlMaxRecvReqs,
+            g_protDom);
 
         IBNET_LOG_INFO("Starting {} receiver threads", p_recvThreads);
 
@@ -160,7 +166,8 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
         IBNET_LOG_INFO("Starting {} sender threads", p_sendThreads);
         for (uint8_t i = 0; i < p_sendThreads; i++) {
             auto thread = std::make_unique<ibnet::dx::SendThread>(
-                g_sendBuffers, g_sendHandler, g_connectionManager);
+                p_inBufferSize, g_sendBuffers, g_sendHandler,
+                g_connectionManager);
             thread->Start();
             g_sendThreads.push_back(std::move(thread));
         }

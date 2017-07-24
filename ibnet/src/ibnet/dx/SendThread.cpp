@@ -5,10 +5,12 @@
 namespace ibnet {
 namespace dx {
 
-SendThread::SendThread(std::shared_ptr<SendBuffers> buffers,
+SendThread::SendThread(uint32_t recvBufferSize,
+        std::shared_ptr<SendBuffers> buffers,
         std::shared_ptr<SendHandler>& sendHandler,
         std::shared_ptr<core::IbConnectionManager>& connectionManager) :
     ThreadLoop("SendThread"),
+    m_recvBufferSize(recvBufferSize),
     m_buffers(buffers),
     m_sendHandler(sendHandler),
     m_connectionManager(connectionManager),
@@ -17,7 +19,6 @@ SendThread::SendThread(std::shared_ptr<SendBuffers> buffers,
     m_sentBytes(0),
     m_sentFlowControlBytes(0)
 {
-
     // TODO rename timers
     m_timers.push_back(sys::ProfileTimer("Total"));
     m_timers.push_back(sys::ProfileTimer("NextJob"));
@@ -132,7 +133,6 @@ uint32_t SendThread::__ProcessFlowControl(
 
     m_timers[4].Enter();
 
-    std::cout << ">>>>>>>>>>>>> fc send: " << data->m_flowControlData << std::endl;
     connection->GetQp(1)->GetSendQueue()->Send(mem, 0, numBytesToSend);
 
     m_timers[4].Exit();
@@ -157,8 +157,6 @@ uint32_t SendThread::__ProcessBuffer(
         std::shared_ptr<core::IbConnection>& connection,
         SendHandler::NextWorkParameters* data)
 {
-    uint32_t startOffset = 0;
-    uint32_t workRequests = 0;
     uint32_t totalBytesSent = 0;
 
     // no data to send
@@ -168,54 +166,79 @@ uint32_t SendThread::__ProcessBuffer(
 
     m_timers[6].Enter();
 
-    core::IbMemReg* mem = m_buffers->GetBuffer(connection->GetConnectionId());
+    core::IbMemReg* sendBuffer = m_buffers->GetBuffer(connection->GetConnectionId());
 
     m_timers[6].Exit();
 
-    if (data->m_posBackRel < data->m_posFrontRel) {
-        // two WQs because ring buffer wrap around
-        // send slice up to the buffer's end first
+    uint16_t queueSize = connection->GetQp(0)->GetSendQueue()->GetQueueSize();
+    uint32_t posFront = data->m_posFrontRel;
+    uint32_t posBack = data->m_posBackRel;
+    bool overflow = posBack < posFront;
 
-        m_timers[7].Enter();
-
-        connection->GetQp(0)->GetSendQueue()->Send(mem, data->m_posFrontRel,
-            mem->GetSize() - data->m_posFrontRel);
-
-        m_timers[7].Exit();
-
-        totalBytesSent += mem->GetSize() - data->m_posFrontRel;
-        workRequests++;
-        startOffset = 0;
-    } else {
-        // single WQ
-        startOffset = data->m_posFrontRel;
+    // handle first section up to ring buffer end, remaining from start later
+    if (overflow) {
+        posBack = sendBuffer->GetSize();
     }
 
-    m_timers[7].Enter();
+    while (posFront != posBack) {
+        uint16_t sliceCount = 0;
+        uint32_t iterationBytesSent = 0;
 
-    connection->GetQp(0)->GetSendQueue()->Send(mem, startOffset,
-        data->m_posBackRel - startOffset);
+        // slice area of send buffer into slices fitting receive buffers
+        while (sliceCount < queueSize && posFront != posBack) {
+            // fits a full receive buffer
+            if (posFront + m_recvBufferSize < posBack) {
+                m_timers[7].Enter();
 
-    m_timers[7].Exit();
+                connection->GetQp(0)->GetSendQueue()->Send(sendBuffer,
+                    posFront, m_recvBufferSize);
 
-    totalBytesSent += data->m_posBackRel - startOffset;
-    workRequests++;
+                m_timers[7].Exit();
 
-    // poll for send completions
-    for (uint32_t i = 0; i < workRequests; i++) {
-        m_timers[8].Enter();
+                posFront += m_recvBufferSize;
+                iterationBytesSent += m_recvBufferSize;
+            } else {
+                // smaller than a receive buffer
+                m_timers[7].Enter();
 
-        try {
-            connection->GetQp(0)->GetSendQueue()->PollCompletion(true);
-        } catch (...) {
-            m_timers[8].Exit();
-            throw;
+                uint32_t size = posBack - posFront;
+
+                connection->GetQp(0)->GetSendQueue()->Send(sendBuffer,
+                    posFront, size);
+
+                m_timers[7].Exit();
+
+                posFront += size;
+                iterationBytesSent += size;
+            }
+
+            sliceCount++;
         }
 
-        m_timers[8].Exit();
-    }
+        // poll completions
+        for (uint16_t i = 0; i < sliceCount; i++) {
+            m_timers[8].Enter();
 
-    m_sentBytes += totalBytesSent;
+            try {
+                connection->GetQp(0)->GetSendQueue()->PollCompletion(true);
+            } catch (...) {
+                m_timers[8].Exit();
+                throw;
+            }
+
+            m_timers[8].Exit();
+        }
+
+        m_sentBytes += iterationBytesSent;
+        totalBytesSent += iterationBytesSent;
+
+        // hit end of buffer but overflow available and not handled, yet
+        if (posFront == posBack && overflow) {
+            overflow = false;
+            posFront = 0;
+            posBack = data->m_posBackRel;
+        }
+    }
 
     return totalBytesSent;
 }

@@ -160,18 +160,18 @@ uint32_t SendThread::__ProcessBuffer(
 {
     uint32_t totalBytesSent = 0;
 
-    // check if there is anything at all to send
-    uint32_t totalSize;
-    if (data->m_posFrontRel <= data->m_posBackRel) {
-        totalSize = data->m_posBackRel - data->m_posFrontRel;
-    } else {
-        // consider overflow
-        totalSize = 1024 * 1024 - data->m_posFrontRel + data->m_posBackRel;
+    // we are expecting the ring buffer (in java) to handle overflows
+    // and slice them correctly, i.e. posFrontRel <= posBackRel, always
+    // sanity check that
+    if (data->m_posFrontRel > data->m_posBackRel) {
+        IBNET_LOG_PANIC("posFrontRel {} > posBackRel {} not allowed",
+            data->m_posFrontRel, data->m_posBackRel);
+        return 0;
     }
 
     // happens if another send thread was able to process everything while
     // some application thread was still adding more to the queue
-    if (totalSize == 0) {
+    if (data->m_posFrontRel == data->m_posBackRel) {
         return 0;
     }
 
@@ -184,12 +184,6 @@ uint32_t SendThread::__ProcessBuffer(
     uint16_t queueSize = connection->GetQp(0)->GetSendQueue()->GetQueueSize();
     uint32_t posFront = data->m_posFrontRel;
     uint32_t posBack = data->m_posBackRel;
-    bool overflow = posBack < posFront;
-
-    // handle first section up to ring buffer end, remaining from start later
-    if (overflow) {
-        posBack = sendBuffer->GetSize();
-    }
 
     while (posFront != posBack) {
         uint16_t sliceCount = 0;
@@ -242,13 +236,6 @@ uint32_t SendThread::__ProcessBuffer(
 
         m_sentBytes += iterationBytesSent;
         totalBytesSent += iterationBytesSent;
-
-        // hit end of buffer but overflow available and not handled, yet
-        if (posFront == posBack && overflow) {
-            overflow = false;
-            posFront = 0;
-            posBack = data->m_posBackRel;
-        }
     }
 
     return totalBytesSent;

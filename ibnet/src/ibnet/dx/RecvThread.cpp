@@ -104,10 +104,7 @@ void RecvThread::_BeforeRunLoop(void)
 void RecvThread::_RunLoop(void)
 {
     // flow control has higher priority, always try this queue first
-    if (__ProcessFlowControl()) {
-        return;
-    }
-
+    __ProcessFlowControl();
     __ProcessBuffers();
 }
 
@@ -122,6 +119,7 @@ bool RecvThread::__ProcessFlowControl(void)
     uint32_t qpNum;
     uint64_t workReqId = (uint64_t) -1;
     uint32_t recvLength = 0;
+    uint32_t flowControlData;
 
     m_timers[1].Enter();
 
@@ -132,26 +130,22 @@ bool RecvThread::__ProcessFlowControl(void)
         m_timers[1].Exit();
         IBNET_LOG_ERROR("Polling for flow control completion failed: {}",
             e.what());
-        return false;
+        return true;
     }
 
     m_timers[1].Exit();
 
     // no flow control data available
     if (qpNum == -1) {
-        return false;
+        return true;
     }
 
     m_timers[2].Enter();
 
     uint16_t sourceNode = m_connectionManager->GetNodeIdForPhysicalQPNum(qpNum);
 
-    core::IbMemReg* mem = (core::IbMemReg*) workReqId;
-    m_recvFlowControlBytes += recvLength;
-
-    m_timers[2].Exit();
-
     if (sourceNode == core::IbNodeId::INVALID) {
+        m_timers[2].Exit();
         IBNET_LOG_ERROR("No node id mapping for qpNum 0x{:x} on FC data recv",
             qpNum);
 
@@ -160,14 +154,13 @@ bool RecvThread::__ProcessFlowControl(void)
         return false;
     }
 
+    core::IbMemReg* mem = (core::IbMemReg*) workReqId;
+    m_recvFlowControlBytes += recvLength;
+    flowControlData = *((uint32_t*) mem->GetAddress());
+
+    m_timers[2].Exit();
+
     m_timers[3].Enter();
-
-    m_recvHandler->ReceivedFlowControlData(sourceNode,
-        *((uint32_t*) mem->GetAddress()));
-
-    m_timers[3].Exit();
-
-    m_timers[4].Enter();
 
     std::shared_ptr<core::IbConnection> connection =
         m_connectionManager->GetConnection(sourceNode);
@@ -176,6 +169,12 @@ bool RecvThread::__ProcessFlowControl(void)
     connection->GetQp(1)->GetRecvQueue()->Receive(mem, (uint64_t) mem);
 
     m_connectionManager->ReturnConnection(connection);
+
+    m_timers[3].Exit();
+
+    m_timers[4].Enter();
+
+    m_recvHandler->ReceivedFlowControlData(sourceNode, flowControlData);
 
     m_timers[4].Exit();
 
@@ -197,14 +196,14 @@ bool RecvThread::__ProcessBuffers(void)
         m_timers[5].Exit();
         IBNET_LOG_ERROR("Polling for flow control completion failed: {}",
             e.what());
-        return false;
+        return true;
     }
 
     m_timers[5].Exit();
 
     // no data available
     if (qpNum == -1) {
-        return false;
+        return true;
     }
 
     m_timers[6].Enter();

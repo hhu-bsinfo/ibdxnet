@@ -76,6 +76,7 @@ void SendThread::_RunLoop(void)
         return;
     }
 
+    // seems like we got something to process
     m_prevNodeIdWritten = data->m_nodeId;
 
     m_timers[2].Enter();
@@ -159,8 +160,18 @@ uint32_t SendThread::__ProcessBuffer(
 {
     uint32_t totalBytesSent = 0;
 
-    // no data to send
-    if (data->m_posBackRel == data->m_posFrontRel) {
+    // check if there is anything at all to send
+    uint32_t totalSize;
+    if (data->m_posFrontRel <= data->m_posBackRel) {
+        totalSize = data->m_posBackRel - data->m_posFrontRel;
+    } else {
+        // consider overflow
+        totalSize = 1024 * 1024 - data->m_posFrontRel + data->m_posBackRel;
+    }
+
+    // happens if another send thread was able to process everything while
+    // some application thread was still adding more to the queue
+    if (totalSize == 0) {
         return 0;
     }
 
@@ -187,7 +198,7 @@ uint32_t SendThread::__ProcessBuffer(
         // slice area of send buffer into slices fitting receive buffers
         while (sliceCount < queueSize && posFront != posBack) {
             // fits a full receive buffer
-            if (posFront + m_recvBufferSize < posBack) {
+            if (posFront + m_recvBufferSize <= posBack) {
                 m_timers[7].Enter();
 
                 connection->GetQp(0)->GetSendQueue()->Send(sendBuffer,

@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     de_hhu_bsinfo_net_ib_JNIIdxbnet
  * Method:    init
- * Signature: (SIIIIIILde/hhu/bsinfo/net/ib/JNIIbdxnet/SendHandler;Lde/hhu/bsinfo/net/ib/JNIIbdxnet/RecvHandler;Lde/hhu/bsinfo/net/ib/JNIIbdxnet/DiscoveryHandler;Lde/hhu/bsinfo/net/ib/JNIIbdxnet/ConnectionHandler;ZZ)Z
+ * Signature: (SIIIIIIIIILde/hhu/bsinfo/net/ib/JNIIbdxnet/SendHandler;Lde/hhu/bsinfo/net/ib/JNIIbdxnet/RecvHandler;Lde/hhu/bsinfo/net/ib/JNIIbdxnet/DiscoveryHandler;Lde/hhu/bsinfo/net/ib/JNIIbdxnet/ConnectionHandler;ZZ)Z
  */
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init
-    (JNIEnv *, jclass, jshort, jint, jint, jint, jint, jint, jint, jobject, jobject, jobject, jobject, jboolean, jboolean);
+    (JNIEnv *, jclass, jshort, jint, jint, jint, jint, jint, jint, jint, jint, jint, jobject, jobject, jobject, jobject, jboolean, jboolean);
 
 /*
  * Class:     de_hhu_bsinfo_net_ib_JNIIbdxnet

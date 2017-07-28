@@ -63,18 +63,14 @@ static std::vector<std::unique_ptr<ibnet::dx::SendThread>> g_sendThreads;
 static std::unique_ptr<ibnet::dx::DebugThread> g_debugThread;
 
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
-        JNIEnv* p_env, jclass p_class, jshort p_ownNodeId, jint p_outBufferSize,
-        jint p_maxRecvReqs, jint p_flowControlMaxRecvReqs,
-        jint p_sendThreads, jint p_recvThreads, jint p_maxNumConnections,
-        jobject p_sendHandler, jobject p_recvHandler,
-        jobject p_discoveryHandler, jobject p_connectionHandler,
-        jboolean p_enableSignalHandler, jboolean p_enableDebugThread)
+        JNIEnv* p_env, jclass p_class, jshort p_ownNodeId, jint p_inBufferSize,
+        jint p_outBufferSize, jint p_recvPoolSizeBytes, jint p_maxRecvReqs,
+        jint p_maxSendReqs, jint p_flowControlMaxRecvReqs, jint p_sendThreads,
+        jint p_recvThreads, jint p_maxNumConnections, jobject p_sendHandler,
+        jobject p_recvHandler, jobject p_discoveryHandler,
+        jobject p_connectionHandler, jboolean p_enableSignalHandler,
+        jboolean p_enableDebugThread)
 {
-    // TODO make these configurable -> func args
-    const uint16_t p_maxSendReqs = 10;
-    const uint32_t p_inBufferSize = 4096;
-    const uint32_t p_recvPoolSizeBytes = 4096 * 2560; // 10mb
-
     // setup foundation
     if (p_enableSignalHandler) {
         g_signalHandler = std::make_unique<backward::SignalHandling>();

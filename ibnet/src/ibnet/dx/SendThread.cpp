@@ -19,16 +19,15 @@ SendThread::SendThread(uint32_t recvBufferSize,
     m_sentBytes(0),
     m_sentFlowControlBytes(0)
 {
-    // TODO rename timers
     m_timers.push_back(sys::ProfileTimer("Total"));
-    m_timers.push_back(sys::ProfileTimer("NextJob"));
+    m_timers.push_back(sys::ProfileTimer("GetNextDataToSend"));
     m_timers.push_back(sys::ProfileTimer("GetConnection"));
-    m_timers.push_back(sys::ProfileTimer("FCCopy"));
+    m_timers.push_back(sys::ProfileTimer("FCGetBufferAndCpy"));
     m_timers.push_back(sys::ProfileTimer("FCSend"));
     m_timers.push_back(sys::ProfileTimer("FCPoll"));
-    m_timers.push_back(sys::ProfileTimer("BufferCopy"));
-    m_timers.push_back(sys::ProfileTimer("BufferSend"));
-    m_timers.push_back(sys::ProfileTimer("BufferPoll"));
+    m_timers.push_back(sys::ProfileTimer("DataGetBuffer"));
+    m_timers.push_back(sys::ProfileTimer("DataSend"));
+    m_timers.push_back(sys::ProfileTimer("DataPoll"));
 }
 
 SendThread::~SendThread(void)

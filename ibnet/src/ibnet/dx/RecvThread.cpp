@@ -28,8 +28,8 @@ RecvThread::RecvThread(
     m_timers.push_back(sys::ProfileTimer("Total"));
     m_timers.push_back(sys::ProfileTimer("FCPoll"));
     m_timers.push_back(sys::ProfileTimer("FCGetNodeIdForQp"));
-    m_timers.push_back(sys::ProfileTimer("FCHandle"));
     m_timers.push_back(sys::ProfileTimer("FCPostWRQ"));
+    m_timers.push_back(sys::ProfileTimer("FCHandle"));
     m_timers.push_back(sys::ProfileTimer("BufferPoll"));
     m_timers.push_back(sys::ProfileTimer("BufferGetNodeIdForQp"));
     m_timers.push_back(sys::ProfileTimer("BufferHandle"));

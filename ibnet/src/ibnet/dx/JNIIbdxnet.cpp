@@ -169,6 +169,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
         }
     } catch (...) {
         IBNET_LOG_ERROR("Initializing infiniband backend failed");
+        // TODO print exception message
 
         // TODO shutdown what's created and initialized so far
         ibnet::sys::Logger::Shutdown();

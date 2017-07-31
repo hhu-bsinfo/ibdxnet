@@ -23,8 +23,8 @@ public:
      * @param protDom Protection domain to register all buffers at
      */
     RecvBufferPool(uint32_t initialTotalPoolSize, uint32_t recvBufferSize,
-        uint32_t flowControlQueueSize,
-        std::shared_ptr<core::IbProtDom>& protDom);
+                   uint32_t flowControlQueueSize,
+                   std::shared_ptr<core::IbProtDom>& protDom);
 
     /**
      * Destructor

@@ -33,7 +33,10 @@ RecvThread::RecvThread(
     m_timers.push_back(sys::ProfileTimer("BufferPoll"));
     m_timers.push_back(sys::ProfileTimer("BufferGetNodeIdForQp"));
     m_timers.push_back(sys::ProfileTimer("BufferHandle"));
+    m_timers.push_back(sys::ProfileTimer("BufferGetConnection"));
+    m_timers.push_back(sys::ProfileTimer("BufferGetBuffer"));
     m_timers.push_back(sys::ProfileTimer("BufferPostWRQ"));
+    m_timers.push_back(sys::ProfileTimer("BufferReturnConnection"));
 }
 
 RecvThread::~RecvThread(void)
@@ -237,17 +240,29 @@ bool RecvThread::__ProcessBuffers(void)
     std::shared_ptr<core::IbConnection> connection =
         m_connectionManager->GetConnection(sourceNode);
 
+    m_timers[8].Exit();
+
+    m_timers[9].Enter();
+
     // keep the recv queue filled, using a shared recv queue here
     // get another buffer from the pool
     core::IbMemReg* buf = m_recvBufferPool->GetBuffer();
+
+    m_timers[9].Exit();
+
+    m_timers[10].Enter();
 
     // Use the pointer as the work req id
     connection->GetQp(0)->GetRecvQueue()->Receive(buf,
         (uint64_t) buf);
 
+    m_timers[10].Exit();
+
+    m_timers[11].Enter();
+
     m_connectionManager->ReturnConnection(connection);
 
-    m_timers[8].Exit();
+    m_timers[11].Exit();
 
     return true;
 }

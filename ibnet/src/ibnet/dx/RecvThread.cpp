@@ -90,6 +90,8 @@ void RecvThread::PrintStatistics(void)
     "Throughput: " << m_recvBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
     " MB/sec" << std::endl <<
     "Recv data: " << m_recvBytes / 1024.0 / 1024.0 << " MB" << std::endl <<
+    "Process buffer utilization: " << (double) m_timers[6].GetCounter() /
+        (double) m_timers[5].GetCounter() << std::endl <<
     "FC Throughput: " << m_recvFlowControlBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
     " MB/sec" << std::endl <<
     "FC Recv data: " << m_recvFlowControlBytes / 1024.0 / 1024.0 << " MB" << std::endl;
@@ -107,8 +109,9 @@ void RecvThread::_BeforeRunLoop(void)
 void RecvThread::_RunLoop(void)
 {
     // flow control has higher priority, always try this queue first
-    __ProcessFlowControl();
-    __ProcessBuffers();
+    if (!__ProcessFlowControl() && !__ProcessBuffers()) {
+        std::this_thread::yield();
+    }
 }
 
 void RecvThread::_AfterRunLoop(void)
@@ -133,14 +136,14 @@ bool RecvThread::__ProcessFlowControl(void)
         m_timers[1].Exit();
         IBNET_LOG_ERROR("Polling for flow control completion failed: {}",
             e.what());
-        return true;
+        return false;
     }
 
     m_timers[1].Exit();
 
     // no flow control data available
     if (qpNum == -1) {
-        return true;
+        return false;
     }
 
     m_timers[2].Enter();
@@ -199,14 +202,14 @@ bool RecvThread::__ProcessBuffers(void)
         m_timers[5].Exit();
         IBNET_LOG_ERROR("Polling for flow control completion failed: {}",
             e.what());
-        return true;
+        return false;
     }
 
     m_timers[5].Exit();
 
     // no data available
     if (qpNum == -1) {
-        return true;
+        return false;
     }
 
     m_timers[6].Enter();

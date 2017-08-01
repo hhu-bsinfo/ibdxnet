@@ -1,6 +1,7 @@
 #ifndef IBNET_DX_RECVBUFFERPOOL_H
 #define IBNET_DX_RECVBUFFERPOOL_H
 
+#include <atomic>
 #include <mutex>
 
 #include "ibnet/core/IbProtDom.h"
@@ -59,7 +60,12 @@ private:
 
     const uint32_t m_numFlowControlBuffers;
 
-    std::vector<core::IbMemReg*> m_dataBuffers;
+    std::atomic<uint32_t> m_dataBuffersFront;
+    std::atomic<uint32_t> m_dataBuffersBack;
+    std::atomic<uint32_t> m_dataBuffersBackRes;
+
+    core::IbMemReg** m_dataBuffers;
+
     std::vector<core::IbMemReg*> m_flowControlBuffers;
 
     std::mutex m_lock;

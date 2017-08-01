@@ -33,9 +33,7 @@ class RecvThread : public sys::ThreadLoop
 public:
     /**
      * Constructor
-     *
-     * @param primaryRecvThread True if primary recv thread (handles some
-     *          queue management on NodeConnect), false for all other threads
+
      * @param connectionManager The parent connection manager
      * @param sharedRecvCQ Shared receive buffer queue to use
      * @param sharedFlowControlRecvCQ  Shared receive flow control
@@ -47,7 +45,6 @@ public:
      * @param recvHandler Handler which forwards the received data
      */
     RecvThread(
-        bool primaryRecvThread,
         std::shared_ptr<core::IbConnectionManager>& connectionManager,
         std::shared_ptr<core::IbCompQueue>& sharedRecvCQ,
         std::shared_ptr<core::IbCompQueue>& sharedFlowControlRecvCQ,
@@ -79,14 +76,11 @@ private:
     bool __ProcessBuffers(void);
 
 private:
-    bool m_primaryRecvThread;
     std::shared_ptr<core::IbConnectionManager> m_connectionManager;
     std::shared_ptr<core::IbCompQueue> m_sharedRecvCQ;
     std::shared_ptr<core::IbCompQueue> m_sharedFlowControlRecvCQ;
     std::shared_ptr<RecvBufferPool> m_recvBufferPool;
     std::shared_ptr<RecvHandler> m_recvHandler;
-
-
 
 private:
     std::atomic<bool> m_sharedQueueInitialFill;

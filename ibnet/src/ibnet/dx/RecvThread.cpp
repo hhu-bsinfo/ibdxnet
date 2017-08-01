@@ -8,14 +8,12 @@ namespace ibnet {
 namespace dx {
 
 RecvThread::RecvThread(
-        bool primaryRecvThread,
         std::shared_ptr<core::IbConnectionManager>& connectionManager,
         std::shared_ptr<core::IbCompQueue>& sharedRecvCQ,
         std::shared_ptr<core::IbCompQueue>& sharedFlowControlRecvCQ,
         std::shared_ptr<RecvBufferPool>& recvBufferPool,
         std::shared_ptr<RecvHandler>& recvHandler) :
     ThreadLoop("RecvThread"),
-    m_primaryRecvThread(primaryRecvThread),
     m_connectionManager(connectionManager),
     m_sharedRecvCQ(sharedRecvCQ),
     m_sharedFlowControlRecvCQ(sharedFlowControlRecvCQ),
@@ -47,39 +45,36 @@ RecvThread::~RecvThread(void)
 void RecvThread::NodeConnected(core::IbConnection& connection)
 {
     // on the first connection, fill the shared recv queue
-    // primary recv thread only (on multiple recv threads)
-    if (m_primaryRecvThread) {
-        bool expected = false;
-        if (!m_sharedQueueInitialFill.compare_exchange_strong(expected, true,
-                std::memory_order_relaxed)) {
-            return;
-        }
+    bool expected = false;
+    if (!m_sharedQueueInitialFill.compare_exchange_strong(expected, true,
+            std::memory_order_relaxed)) {
+        return;
+    }
 
-        // sanity check
-        if (!connection.GetQp(0)->GetRecvQueue()->IsRecvQueueShared()) {
-            throw DxnetException("Can't work with non shared recv queue(s)");
-        }
+    // sanity check
+    if (!connection.GetQp(0)->GetRecvQueue()->IsRecvQueueShared()) {
+        throw DxnetException("Can't work with non shared recv queue(s)");
+    }
 
-        uint32_t size = connection.GetQp(0)->GetRecvQueue()->GetQueueSize();
-        for (uint32_t i = 0; i < size; i++) {
-            core::IbMemReg* buf = m_recvBufferPool->GetBuffer();
+    uint32_t size = connection.GetQp(0)->GetRecvQueue()->GetQueueSize();
+    for (uint32_t i = 0; i < size; i++) {
+        core::IbMemReg* buf = m_recvBufferPool->GetBuffer();
 
-            // Use the pointer as the work req id
-            connection.GetQp(0)->GetRecvQueue()->Receive(buf, (uint64_t) buf);
-        }
+        // Use the pointer as the work req id
+        connection.GetQp(0)->GetRecvQueue()->Receive(buf, (uint64_t) buf);
+    }
 
-        // sanity check
-        if (!connection.GetQp(1)->GetRecvQueue()->IsRecvQueueShared()) {
-            throw DxnetException("Can't work with non shared FC recv queue(s)");
-        }
+    // sanity check
+    if (!connection.GetQp(1)->GetRecvQueue()->IsRecvQueueShared()) {
+        throw DxnetException("Can't work with non shared FC recv queue(s)");
+    }
 
-        size = connection.GetQp(1)->GetRecvQueue()->GetQueueSize();
-        for (uint32_t i = 0; i < size; i++) {
-            core::IbMemReg* buf = m_recvBufferPool->GetFlowControlBuffer();
+    size = connection.GetQp(1)->GetRecvQueue()->GetQueueSize();
+    for (uint32_t i = 0; i < size; i++) {
+        core::IbMemReg* buf = m_recvBufferPool->GetFlowControlBuffer();
 
-            // Use the pointer as the work req id
-            connection.GetQp(1)->GetRecvQueue()->Receive(buf, (uint64_t) buf);
-        }
+        // Use the pointer as the work req id
+        connection.GetQp(1)->GetRecvQueue()->Receive(buf, (uint64_t) buf);
     }
 }
 

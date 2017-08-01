@@ -77,6 +77,13 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
 
     IBNET_LOG_DEBUG("Foundation setup done");
 
+    // first, check if we are allowed to pin memory, otherwise we don't have
+    // to continue. just check if we are root...
+    if (getuid() != 0) {
+        IBNET_LOG_PANIC("Cannot run ib subsystem as non root user");
+        return (jboolean) 0;
+    }
+
     // callbacks to java vm
 
     try {

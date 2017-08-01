@@ -47,7 +47,6 @@ public:
      */
     void ReturnBuffer(core::IbMemReg* buffer);
 
-    // TODO doc
     core::IbMemReg* GetFlowControlBuffer(void);
 
 private:

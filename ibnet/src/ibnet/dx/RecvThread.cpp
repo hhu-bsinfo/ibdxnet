@@ -144,18 +144,16 @@ bool RecvThread::__ProcessFlowControl(void)
     m_timers[2].Enter();
 
     uint16_t sourceNode = m_connectionManager->GetNodeIdForPhysicalQPNum(qpNum);
+    core::IbMemReg* mem = (core::IbMemReg*) workReqId;
 
     if (sourceNode == core::IbNodeId::INVALID) {
         m_timers[2].Exit();
-        IBNET_LOG_ERROR("No node id mapping for qpNum 0x{:x} on FC data recv",
-            qpNum);
-
-        // TODO how to add missing receive entry back to connection/queue?
+        IBNET_LOG_PANIC("No node id mapping for qpNum 0x{:x} on FC data recv. "
+            "losing FC recv work requests (not added back to queue)", qpNum);
 
         return false;
     }
 
-    core::IbMemReg* mem = (core::IbMemReg*) workReqId;
     m_recvFlowControlBytes += recvLength;
     flowControlData = *((uint32_t*) mem->GetAddress());
 
@@ -216,10 +214,8 @@ bool RecvThread::__ProcessBuffers(void)
     m_timers[6].Exit();
 
     if (sourceNode == core::IbNodeId::INVALID) {
-        IBNET_LOG_ERROR("No node id mapping for qpNum 0x{:x} on buffer recv",
-            qpNum);
-
-        // TODO how to add missing receive entry back to connection/queue?
+        IBNET_LOG_PANIC("No node id mapping for qpNum 0x{:x} on FC data recv. "
+            "losing data recv work requests (not added back to queue)", qpNum);
 
         return false;
     }

@@ -1,7 +1,5 @@
 #include "DiscoveryHandler.h"
 
-#include "JNIHelper.h"
-
 namespace ibnet {
 namespace dx {
 

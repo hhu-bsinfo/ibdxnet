@@ -43,6 +43,7 @@ core::IbMemReg* RecvBufferPool::GetBuffer(void)
 {
     core::IbMemReg* buffer = NULL;
 
+    bool warnOnce = true;
     uint32_t front = m_dataBuffersFront.load(std::memory_order_relaxed);
     uint32_t back;
 
@@ -50,11 +51,16 @@ core::IbMemReg* RecvBufferPool::GetBuffer(void)
         back = m_dataBuffersBack.load(std::memory_order_relaxed);
 
         if (front % m_bufferPoolSize == back % m_bufferPoolSize) {
-            // TODO replace with spinning
-            IBNET_LOG_WARN("Insufficient pooled incoming buffers. "
-                " Allocating temporary buffer...");
-            buffer = m_protDom->Register(malloc(m_bufferSize), m_bufferSize, true);
-            break;
+            if (warnOnce) {
+                warnOnce = false;
+                IBNET_LOG_WARN("Insufficient pooled incoming buffers... "
+                    "waiting for buffers to get returned. If this warning "
+                    "appears periodically and very frequently, consider "
+                    "increasing the receive pool's total size to avoid "
+                    "possible performance penalties");
+            }
+
+            continue;
         }
 
         buffer = m_dataBuffers[front % m_bufferPoolSize];
@@ -75,8 +81,7 @@ void RecvBufferPool::ReturnBuffer(core::IbMemReg* buffer)
         front = m_dataBuffersFront.load(std::memory_order_relaxed);
 
         if (backRes + 1 % m_bufferPoolSize == front % m_bufferPoolSize) {
-            // TODO destroy and cleanup buffer
-            IBNET_LOG_ERROR("Memory leak, returning temporary buffer");
+            IBNET_LOG_PANIC("Pool overflow, this should not happen");
             break;
         }
 

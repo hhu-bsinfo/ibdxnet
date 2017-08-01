@@ -64,7 +64,7 @@ static std::unique_ptr<ibnet::dx::DebugThread> g_debugThread;
 
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
         JNIEnv* p_env, jclass p_class, jshort p_ownNodeId, jint p_inBufferSize,
-        jint p_outBufferSize, jint p_recvPoolSizeBytes, jint p_maxRecvReqs,
+        jint p_outBufferSize, jlong p_recvPoolSizeBytes, jint p_maxRecvReqs,
         jint p_maxSendReqs, jint p_flowControlMaxRecvReqs,
         jint p_maxNumConnections, jobject p_sendHandler,
         jobject p_recvHandler, jobject p_discoveryHandler,

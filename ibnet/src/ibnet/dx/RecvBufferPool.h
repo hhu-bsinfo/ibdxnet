@@ -22,7 +22,7 @@ public:
      * @param bufferSize Size of the send buffer in bytes
      * @param protDom Protection domain to register all buffers at
      */
-    RecvBufferPool(uint32_t initialTotalPoolSize, uint32_t recvBufferSize,
+    RecvBufferPool(uint64_t initialTotalPoolSize, uint32_t recvBufferSize,
                    uint32_t flowControlQueueSize,
                    std::shared_ptr<core::IbProtDom>& protDom);
 
@@ -51,7 +51,7 @@ public:
     core::IbMemReg* GetFlowControlBuffer(void);
 
 private:
-    const uint32_t m_bufferPoolSize;
+    const uint64_t m_bufferPoolSize;
     const uint32_t m_bufferSize;
 
     const uint32_t m_numFlowControlBuffers;

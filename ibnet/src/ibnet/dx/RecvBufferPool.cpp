@@ -5,15 +5,17 @@
 namespace ibnet {
 namespace dx {
 
-RecvBufferPool::RecvBufferPool(uint32_t initialTotalPoolSize,
+RecvBufferPool::RecvBufferPool(uint64_t initialTotalPoolSize,
                                uint32_t recvBufferSize, uint32_t flowControlQueueSize,
                                std::shared_ptr<core::IbProtDom>& protDom) :
     m_bufferPoolSize(initialTotalPoolSize / recvBufferSize),
     m_bufferSize(recvBufferSize),
     m_numFlowControlBuffers(flowControlQueueSize),
     m_dataBuffersFront(0),
-    m_dataBuffersBack(initialTotalPoolSize / recvBufferSize - 1),
-    m_dataBuffersBackRes(initialTotalPoolSize / recvBufferSize - 1),
+    m_dataBuffersBack(
+        (uint32_t) (initialTotalPoolSize / recvBufferSize - 1)),
+    m_dataBuffersBackRes(
+        (uint32_t) (initialTotalPoolSize / recvBufferSize - 1)),
     m_protDom(protDom)
 {
     IBNET_LOG_INFO("Alloc {} data buffers, size {} each",

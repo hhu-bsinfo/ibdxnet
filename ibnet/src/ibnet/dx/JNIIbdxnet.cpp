@@ -27,9 +27,6 @@
 #include "ConnectionHandler.h"
 #include "DebugThread.h"
 #include "DiscoveryHandler.h"
-#include "RecvBufferPool.h"
-#include "SendBuffers.h"
-
 
 // Notes about JNI performance:
 // CPU: Intel® Core™ i7-5820K CPU @ 3.30GHz × 12 
@@ -160,16 +157,14 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
             p_inBufferSize, g_sendBuffers, g_sendHandler,
             g_connectionManager);
         g_sendThread->Start();
-    } catch (...) {
-        IBNET_LOG_ERROR("Initializing infiniband backend failed");
-        // TODO print exception message
+    } catch (std::exception& e) {
+        IBNET_LOG_PANIC("Initializing infiniband backend failed: {}", e.what());
 
-        // TODO shutdown what's created and initialized so far
-        ibnet::sys::Logger::Shutdown();
+        // no need to shutdown everything in order because this error can't
+        // be handled properly and the system needs to be restarted
         return (jboolean) 0;
     }
 
-    // TODO adjust debug thread
     if (p_enableDebugThread) {
         g_debugThread = std::make_unique<ibnet::dx::DebugThread>(
             g_recvThread, g_sendThread);
@@ -188,14 +183,14 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_shutdown(
 
     jboolean res = (jboolean) 1;
 
+    // TODO cleanup outgoing msg queues, make sure everything's processed?
+    // TODO don't allow any new messages to be put to the send queue
+    // wait until everything on the send queues is sent?
+
     if (g_debugThread) {
         g_debugThread->Stop();
         g_debugThread.reset();
     }
-
-    // TODO cleanup outgoing msg queues, make sure everything's processed?
-    // TODO don't allow any new messages to be put to the send queue
-    // wait until everything on the send queues is sent?
 
     g_sendThread->Stop();
     g_recvThread->Stop();

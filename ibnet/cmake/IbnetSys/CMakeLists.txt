@@ -17,5 +17,4 @@ add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 
 target_link_libraries(${PROJECT_NAME} dl dw)
 
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -rdynamic -g")
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fpic")
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -rdynamic -g -fpic -O3")

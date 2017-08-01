@@ -76,8 +76,8 @@ private:
     uint16_t m_prevNodeIdWritten;
     uint32_t m_prevDataWritten;
 
-    std::atomic<uint64_t> m_ibSendQueueTotalBatchCount;
-    std::atomic<uint64_t> m_ibSendQueueFullUtilization;
+    uint64_t m_ibSendQueueBatchCount;
+    uint64_t m_ibSendQueueFullUtilizationCount;
 
 private:
     uint64_t m_sentBytes;

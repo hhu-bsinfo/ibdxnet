@@ -16,8 +16,8 @@ SendThread::SendThread(uint32_t recvBufferSize,
     m_connectionManager(connectionManager),
     m_prevNodeIdWritten(core::IbNodeId::INVALID),
     m_prevDataWritten(0),
-    m_ibSendQueueTotalBatchCount(0),
-    m_ibSendQueueFullUtilization(0),
+    m_ibSendQueueBatchCount(0),
+    m_ibSendQueueFullUtilizationCount(0),
     m_sentBytes(0),
     m_sentFlowControlBytes(0)
 {
@@ -45,8 +45,8 @@ void SendThread::PrintStatistics(void)
     " MB/sec" << std::endl <<
     "Sent data: " << m_sentBytes / 1024.0 / 1024.0 << " MB" << std::endl <<
     "Full send queue utilization: " <<
-        (double) m_ibSendQueueFullUtilization.load(std::memory_order_relaxed) /
-        (double) m_ibSendQueueTotalBatchCount.load(std::memory_order_relaxed) << std::endl <<
+        (double) m_ibSendQueueBatchCount /
+        (double) m_ibSendQueueFullUtilizationCount << std::endl <<
     "Process buffer utilization: " << (double) m_timers[6].GetCounter() /
         (double) m_timers[1].GetCounter() << std::endl <<
     "FC Throughput: " << m_sentFlowControlBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
@@ -243,12 +243,8 @@ uint32_t SendThread::__ProcessBuffer(
         m_sentBytes += iterationBytesSent;
         totalBytesSent += iterationBytesSent;
 
-        m_ibSendQueueTotalBatchCount.fetch_add(1, std::memory_order_relaxed);
-
-        if (sliceCount == queueSize) {
-            m_ibSendQueueFullUtilization.fetch_add(1,
-                std::memory_order_relaxed);
-        }
+        m_ibSendQueueBatchCount += sliceCount;
+        m_ibSendQueueFullUtilizationCount += queueSize;
     }
 
     return totalBytesSent;

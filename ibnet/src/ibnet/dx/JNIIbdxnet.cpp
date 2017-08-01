@@ -57,8 +57,8 @@ static std::shared_ptr<ibnet::core::IbConnectionManager> g_connectionManager;
 static std::shared_ptr<ibnet::dx::SendBuffers> g_sendBuffers;
 static std::shared_ptr<ibnet::dx::RecvBufferPool> g_recvBufferPool;
 
-static std::vector<std::unique_ptr<ibnet::dx::RecvThread>> g_recvThreads;
-static std::vector<std::unique_ptr<ibnet::dx::SendThread>> g_sendThreads;
+static std::shared_ptr<ibnet::dx::RecvThread> g_recvThread;
+static std::shared_ptr<ibnet::dx::SendThread> g_sendThread;
 
 static std::unique_ptr<ibnet::dx::DebugThread> g_debugThread;
 
@@ -84,7 +84,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
 
     try {
         g_connectionHandler = std::make_shared<ibnet::dx::ConnectionHandler>(
-            p_env, p_connectionHandler, g_recvThreads);
+            p_env, p_connectionHandler, g_recvThread);
         g_discoveryHandler = std::make_shared<ibnet::dx::DiscoveryHandler>(
             p_env, p_discoveryHandler);
         g_recvHandler = std::make_shared<ibnet::dx::RecvHandler>(p_env,
@@ -148,25 +148,18 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
             p_recvPoolSizeBytes, p_inBufferSize, p_flowControlMaxRecvReqs,
             g_protDom);
 
-        IBNET_LOG_INFO("Starting {} receiver threads", p_recvThreads);
+        IBNET_LOG_INFO("Initializing send and recv thread...");
 
-        for (uint8_t i = 0; i < p_recvThreads; i++) {
-            auto thread = std::make_unique<ibnet::dx::RecvThread>(i == 0,
-                g_connectionManager, g_sharedRecvCompQueue,
-                g_sharedFlowControlRecvCompQueue, g_recvBufferPool,
-                g_recvHandler);
-            thread->Start();
-            g_recvThreads.push_back(std::move(thread));
-        }
+        g_recvThread = std::make_shared<ibnet::dx::RecvThread>(
+            g_connectionManager, g_sharedRecvCompQueue,
+            g_sharedFlowControlRecvCompQueue, g_recvBufferPool,
+            g_recvHandler);
+        g_recvThread->Start();
 
-        IBNET_LOG_INFO("Starting {} sender threads", p_sendThreads);
-        for (uint8_t i = 0; i < p_sendThreads; i++) {
-            auto thread = std::make_unique<ibnet::dx::SendThread>(
-                p_inBufferSize, g_sendBuffers, g_sendHandler,
-                g_connectionManager);
-            thread->Start();
-            g_sendThreads.push_back(std::move(thread));
-        }
+        g_sendThread = std::make_shared<ibnet::dx::SendThread>(
+            p_inBufferSize, g_sendBuffers, g_sendHandler,
+            g_connectionManager);
+        g_sendThread->Start();
     } catch (...) {
         IBNET_LOG_ERROR("Initializing infiniband backend failed");
         // TODO print exception message
@@ -179,7 +172,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
     // TODO adjust debug thread
     if (p_enableDebugThread) {
         g_debugThread = std::make_unique<ibnet::dx::DebugThread>(
-            g_recvThreads, g_sendThreads);
+            g_recvThread, g_sendThread);
         g_debugThread->Start();
     }
 
@@ -204,15 +197,8 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_shutdown(
     // TODO don't allow any new messages to be put to the send queue
     // wait until everything on the send queues is sent?
 
-    for (auto& it : g_sendThreads) {
-        it->Stop();
-    }
-    g_sendThreads.clear();
-
-    for (auto& it : g_recvThreads) {
-        it->Stop();
-    }
-    g_recvThreads.clear();
+    g_sendThread->Stop();
+    g_recvThread->Stop();
 
     try {
         g_connectionManager.reset();
@@ -229,6 +215,9 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_shutdown(
     g_discoveryHandler.reset();
     g_recvHandler.reset();
     g_sendHandler.reset();
+
+    g_sendThread.reset();
+    g_recvThread.reset();
 
     ibnet::sys::Logger::Shutdown();
 

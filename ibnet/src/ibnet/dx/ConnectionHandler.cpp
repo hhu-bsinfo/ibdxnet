@@ -4,10 +4,10 @@ namespace ibnet {
 namespace dx {
 
 ConnectionHandler::ConnectionHandler(JNIEnv* env, jobject object,
-        const std::vector<std::unique_ptr<RecvThread>>& recvThreads) :
+        std::shared_ptr<RecvThread>& recvThread) :
     m_vm(nullptr),
     m_object(env->NewGlobalRef(object)),
-    m_recvThreads(recvThreads),
+    m_recvThread(recvThread),
     m_midNodeConnected(env->GetMethodID(env->GetObjectClass(object),
         "nodeConnected", "(S)V")),
     m_midNodeDisconnected(

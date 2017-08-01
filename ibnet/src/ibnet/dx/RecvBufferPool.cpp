@@ -105,8 +105,6 @@ core::IbMemReg* RecvBufferPool::GetFlowControlBuffer(void)
 {
     core::IbMemReg* buffer = NULL;
 
-    m_flowControlLock.lock();
-
     if (!m_flowControlBuffers.empty()) {
         buffer = m_flowControlBuffers.back();
         m_flowControlBuffers.pop_back();
@@ -114,18 +112,7 @@ core::IbMemReg* RecvBufferPool::GetFlowControlBuffer(void)
         IBNET_LOG_ERROR("Out of flow control buffers");
     }
 
-    m_flowControlLock.unlock();
-
     return buffer;
-}
-
-void RecvBufferPool::ReturnFlowControlBuffer(core::IbMemReg* buffer)
-{
-    m_flowControlLock.lock();
-
-    m_flowControlBuffers.push_back(buffer);
-
-    m_flowControlLock.unlock();
 }
 
 }

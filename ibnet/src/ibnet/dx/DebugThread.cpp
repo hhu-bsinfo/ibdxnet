@@ -4,10 +4,10 @@ namespace ibnet {
 namespace dx {
 
 DebugThread::DebugThread(
-        const std::vector<std::unique_ptr<RecvThread>>& recvThreads,
-        const std::vector<std::unique_ptr<SendThread>>& sendThreads) :
-    m_recvThreads(recvThreads),
-    m_sendThreads(sendThreads)
+        std::shared_ptr<RecvThread> recvThread,
+        std::shared_ptr<SendThread> sendThread) :
+    m_recvThread(recvThread),
+    m_sendThread(sendThread)
 {
 
 }
@@ -19,15 +19,8 @@ DebugThread::~DebugThread(void)
 
 void DebugThread::_RunLoop(void)
 {
-    std::cout << "Send threads:" << std::endl;
-    for (auto& it : m_sendThreads) {
-        it->PrintStatistics();
-    }
-
-    std::cout << "Recv threads:" << std::endl;
-    for (auto& it : m_recvThreads) {
-        it->PrintStatistics();
-    }
+    m_sendThread->PrintStatistics();
+    m_recvThread->PrintStatistics();
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
 }

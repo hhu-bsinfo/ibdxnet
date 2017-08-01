@@ -24,8 +24,8 @@ public:
      * @param sendThreads Vector with active send threads
      */
     DebugThread(
-        const std::vector<std::unique_ptr<RecvThread>>& recvThreads,
-        const std::vector<std::unique_ptr<SendThread>>& sendThreads);
+        std::shared_ptr<RecvThread> recvThreads,
+        std::shared_ptr<SendThread> sendThreads);
 
     /**
      * Destructor
@@ -36,8 +36,8 @@ protected:
     void _RunLoop(void) override;
 
 private:
-    const std::vector<std::unique_ptr<RecvThread>>& m_recvThreads;
-    const std::vector<std::unique_ptr<SendThread>>& m_sendThreads;
+    const std::shared_ptr<RecvThread> m_recvThread;
+    const std::shared_ptr<SendThread> m_sendThread;
 };
 
 }

@@ -2,7 +2,6 @@
 #define IBNET_DX_RECVBUFFERPOOL_H
 
 #include <atomic>
-#include <mutex>
 
 #include "ibnet/core/IbProtDom.h"
 
@@ -51,9 +50,6 @@ public:
     // TODO doc
     core::IbMemReg* GetFlowControlBuffer(void);
 
-    // TODO doc
-    void ReturnFlowControlBuffer(core::IbMemReg* buffer);
-
 private:
     const uint32_t m_bufferPoolSize;
     const uint32_t m_bufferSize;
@@ -67,9 +63,6 @@ private:
     core::IbMemReg** m_dataBuffers;
 
     std::vector<core::IbMemReg*> m_flowControlBuffers;
-
-    std::mutex m_lock;
-    std::mutex m_flowControlLock;
 
     std::shared_ptr<core::IbProtDom> m_protDom;
 };

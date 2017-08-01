@@ -25,7 +25,7 @@ public:
      * @param recvThreads Vector with active receive threads
      */
     ConnectionHandler(JNIEnv* env, jobject object,
-        const std::vector<std::unique_ptr<RecvThread>>& recvThreads);
+        std::shared_ptr<RecvThread>& recvThread);
     ~ConnectionHandler(void);
 
     /**
@@ -34,9 +34,7 @@ public:
     void NodeConnected(uint16_t nodeId,
                        ibnet::core::IbConnection &connection) override
     {
-        for (auto& it : m_recvThreads) {
-            it->NodeConnected(connection);
-        }
+        m_recvThread->NodeConnected(connection);
 
         __NodeConnected(nodeId);
     }
@@ -76,7 +74,7 @@ private:
     JavaVM* m_vm;
     jobject m_object;
 
-    const std::vector<std::unique_ptr<RecvThread>>& m_recvThreads;
+    std::shared_ptr<RecvThread>& m_recvThread;
 
     jmethodID m_midNodeConnected;
     jmethodID m_midNodeDisconnected;

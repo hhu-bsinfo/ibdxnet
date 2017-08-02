@@ -50,7 +50,8 @@ public:
     /**
      * Enable usage with out streams
      */
-    friend std::ostream &operator<<(std::ostream& os, const IbRemoteMemInfo& o) {
+    friend std::ostream &operator<<(std::ostream& os,
+            const IbRemoteMemInfo& o) {
         return os << "0x" << std::hex << o.m_rkey << ", " << o.m_size;
     }
 

@@ -33,6 +33,9 @@ public:
      */
     ~IbConnectionCreatorSimple(void);
 
+    /**
+     * Override
+     */
     std::shared_ptr<IbConnection> CreateConnection(
         uint16_t connectionId,
         std::shared_ptr<IbDevice>& device,

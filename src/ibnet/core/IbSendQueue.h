@@ -53,7 +53,8 @@ public:
     void Open(void);
 
     /**
-     * Close the queue. When closed, all calls to the queue throw IbQueueClosedExceptions
+     * Close the queue. When closed, all calls to the queue throw
+     * IbQueueClosedExceptions
      *
      * @param force Force close, i.e. don't wait for tasks to finish processing
      */
@@ -63,6 +64,7 @@ public:
      * Posts a message send work request to the (parent) queue pair
      *
      * @param memReg Memory region with data to send
+     * @param offset Start offset in memory region for data to send
      * @param size Number of bytes to send
      * @param workReqId Work request id to assign to the InfiniBand work request
      */

@@ -73,7 +73,8 @@ void IbDiscoveryManager::AddNode(const IbNodeConf::Entry& entry)
     }
 }
 
-const std::shared_ptr<IbNodeConf::Entry>& IbDiscoveryManager::GetNodeInfo(uint16_t nodeId)
+const std::shared_ptr<IbNodeConf::Entry>& IbDiscoveryManager::GetNodeInfo(
+        uint16_t nodeId)
 {
     IBNET_LOG_TRACE_FUNC;
 
@@ -191,7 +192,8 @@ void IbDiscoveryManager::_RunLoop(void)
         m_activePhase = false;
         // don't sleep, keep going until there is nothing left to be processed
     } else {
-        std::this_thread::sleep_for(std::chrono::milliseconds(m_discoveryIntervalMs));
+        std::this_thread::sleep_for(std::chrono::milliseconds(
+            m_discoveryIntervalMs));
     }
 }
 

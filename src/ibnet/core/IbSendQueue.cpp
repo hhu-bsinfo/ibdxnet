@@ -32,7 +32,8 @@ void IbSendQueue::Open(void)
     struct ibv_qp_attr attr;
     int result = 0;
 
-    // change state to ready to send (qp states needs to be ready to receive, first)
+    // change state to ready to send
+    // (qp states needs to be ready to receive, first)
     memset(&attr, 0, sizeof(struct ibv_qp_attr));
 
     // ready to send state
@@ -80,7 +81,8 @@ void IbSendQueue::Close(bool force)
     m_isClosed = true;
 }
 
-void IbSendQueue::Send(const IbMemReg* memReg, uint32_t offset, uint32_t size, uint64_t workReqId)
+void IbSendQueue::Send(const IbMemReg* memReg, uint32_t offset, uint32_t size,
+        uint64_t workReqId)
 {
     struct ibv_sge sge_list;
     struct ibv_send_wr wr;
@@ -118,9 +120,10 @@ void IbSendQueue::Send(const IbMemReg* memReg, uint32_t offset, uint32_t size, u
                         std::to_string(
                             m_compQueue->GetCurrentOutstandingCompletions()));
             default:
-                throw IbException("Posting work request to send to queue failed (" +
-                                  std::string(strerror(ret)) + ", mem: " +
-                                  memReg->ToString());
+                throw IbException(
+                    "Posting work request to send to queue failed (" +
+                    std::string(strerror(ret)) + ", mem: " +
+                    memReg->ToString());
         }
     }
 

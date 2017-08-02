@@ -46,7 +46,8 @@ public:
      * @param udpPort Port to run the UDP socket on
      * @param discoveryIntervalMs Run the discovery process every X ms
      */
-    IbDiscoveryManager(uint16_t ownNodeId, const IbNodeConf& nodeConf, uint16_t udpPort, uint32_t discoveryIntervalMs);
+    IbDiscoveryManager(uint16_t ownNodeId, const IbNodeConf& nodeConf,
+        uint16_t udpPort, uint32_t discoveryIntervalMs);
 
     /**
      * Destructor

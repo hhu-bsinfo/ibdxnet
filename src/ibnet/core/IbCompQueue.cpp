@@ -2,7 +2,6 @@
 
 #include "ibnet/sys/Logger.hpp"
 
-#include "IbException.h"
 #include "IbDisconnectedException.h"
 
 namespace ibnet {

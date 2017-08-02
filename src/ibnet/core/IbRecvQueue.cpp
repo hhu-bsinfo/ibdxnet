@@ -146,8 +146,9 @@ void IbRecvQueue::Receive(const IbMemReg* memReg, uint64_t workReqId)
             case ENOMEM:
                 throw IbQueueFullException("Receive queue full");
             default:
-                throw IbException("Posting work request to receive to queue failed (" +
-                                  std::to_string(ret) + ", mem: " + memReg->ToString());
+                throw IbException(
+                    "Posting work request to receive to queue failed (" +
+                    std::to_string(ret) + ", mem: " + memReg->ToString());
         }
     }
 

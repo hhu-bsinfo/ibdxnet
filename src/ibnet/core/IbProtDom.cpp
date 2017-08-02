@@ -5,7 +5,8 @@
 namespace ibnet {
 namespace core {
 
-IbProtDom::IbProtDom(std::shared_ptr<IbDevice>& device, const std::string& name) :
+IbProtDom::IbProtDom(std::shared_ptr<IbDevice>& device,
+        const std::string& name) :
     m_name(name),
     m_ibProtDom(nullptr)
 {

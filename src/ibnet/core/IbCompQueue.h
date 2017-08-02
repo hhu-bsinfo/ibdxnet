@@ -40,7 +40,7 @@ public:
     }
 
     /**
-     * Get the IB completion queue object. Used by other parts of the package
+     * Get the IB completion queue "object". Used by other parts of the package
      * but no need for the "user"
      */
     ibv_cq* GetCQ(void) const {
@@ -77,10 +77,11 @@ public:
      * @return The queue pair id of the successfully completed work request or
      *          -1 if queue empty and no work request completed (non blocking)
      */
-    uint32_t PollForCompletion(bool blocking = true, uint64_t* workReqId = nullptr, uint32_t* recvLength = nullptr);
+    uint32_t PollForCompletion(bool blocking = true,
+        uint64_t* workReqId = nullptr, uint32_t* recvLength = nullptr);
 
     /**
-     * Blocking poll all remaining work requests until they completed
+     * Blocking poll all remaining work requests
      *
      * @return Number of remaining work requests completed
      */

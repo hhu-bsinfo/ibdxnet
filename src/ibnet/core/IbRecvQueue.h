@@ -82,7 +82,8 @@ public:
     void Open(uint16_t remoteQpLid, uint32_t remoteQpPhysicalId);
 
     /**
-     * Close the queue. When closed, all calls to the queue throw IbQueueClosedExceptions
+     * Close the queue. When closed, all calls to the queue throw
+     * IbQueueClosedExceptions
      *
      * @param force Force close, i.e. don't wait for tasks to finish processing
      */

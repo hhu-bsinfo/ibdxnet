@@ -34,7 +34,8 @@ public:
         Listener(void) {};
         virtual ~Listener(void) {};
 
-        virtual void NodeConnected(uint16_t nodeId, IbConnection& connection) = 0;
+        virtual void NodeConnected(uint16_t nodeId,
+            IbConnection& connection) = 0;
 
         virtual void NodeDisconnected(uint16_t nodeId) = 0;
     };
@@ -111,16 +112,19 @@ public:
      * Use the returned shared pointer as a handle to determine who is still
      * owning a reference to the connection.
      *
-     * Do not keep/store the shared pointer. If you want to operate on a
-     * connection, always call this function to get the connection.
-     *
      * @param nodeId Get the connection of this node
      * @return If successful, a valid pointer to the established connection.
      *          Throws exceptions on errors.
      */
     std::shared_ptr<IbConnection> GetConnection(uint16_t nodeId);
 
-    // TODO doc
+    /**
+     * Return a connection that was retrieved on the GetConnection call.
+     * This MUST be called for every GetConnection call to ensure
+     * consistency with keeping track of threads working on connections.
+     *
+     * @param connection Connection to return
+     */
     void ReturnConnection(std::shared_ptr<IbConnection>& connection);
 
     /**
@@ -136,7 +140,8 @@ public:
     /**
      * Enable output to an out stream
      */
-    friend std::ostream &operator<<(std::ostream& os, const IbConnectionManager& o) {
+    friend std::ostream &operator<<(std::ostream& os,
+            const IbConnectionManager& o) {
         os << "Connections (" << o.m_openConnections << "):";
 
         for (uint32_t i = 0; i < IbNodeId::MAX_NUM_NODES; i++) {

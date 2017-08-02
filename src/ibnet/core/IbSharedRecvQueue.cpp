@@ -21,7 +21,8 @@ IbSharedRecvQueue::IbSharedRecvQueue(std::shared_ptr<IbProtDom>& protDom,
     m_srq = ibv_create_srq(protDom->GetIBProtDom(), &attr);
 
     if (m_srq == nullptr) {
-        IBNET_LOG_ERROR("Creating shared receive queue failed: {}", strerror(errno));
+        IBNET_LOG_ERROR("Creating shared receive queue failed: {}",
+            strerror(errno));
         throw IbException("Creating shared receive queue failed");
     }
 }

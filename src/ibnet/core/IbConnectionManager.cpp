@@ -186,7 +186,8 @@ std::shared_ptr<IbConnection> IbConnectionManager::GetConnection(
                     return m_connections[nodeId];
                 }
 
-                // FIXME don't remove because entries are replaced on new connection anyway? plus avoid race condition?
+                // FIXME don't remove because entries are replaced on new
+                // connection anyway? plus avoid race condition?
 //                for (auto& it : m_connections[nodeId]->GetQps()) {
 //                    m_qpNumToNodeIdMappings.erase(it->GetPhysicalQpNum());
 //                }
@@ -266,7 +267,8 @@ void IbConnectionManager::CloseConnection(uint16_t nodeId, bool force)
         return;
     }
 
-    // FIXME don't remove because entries are replaced on new connection anyway? plus avoid race condition?
+    // FIXME don't remove because entries are replaced on new connection
+    // anyway? plus avoid race condition?
 //    for (auto& it : m_connections[nodeId]->GetQps()) {
 //        m_qpNumToNodeIdMappings.erase(it->GetPhysicalQpNum());
 //    }

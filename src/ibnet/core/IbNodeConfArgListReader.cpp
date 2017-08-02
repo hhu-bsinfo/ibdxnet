@@ -3,7 +3,8 @@
 namespace ibnet {
 namespace core {
 
-IbNodeConfArgListReader::IbNodeConfArgListReader(uint32_t numItems, char** args) :
+IbNodeConfArgListReader::IbNodeConfArgListReader(uint32_t numItems,
+        char** args) :
     IbNodeConfReader(),
     m_numItems(numItems),
     m_args(args)

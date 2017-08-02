@@ -66,7 +66,8 @@ IbDevice::IbDevice(void) :
 
     if (dev_list == NULL) {
         IBNET_LOG_ERROR("Getting ib device list: {}", strerror(errno));
-        throw IbException("Getting ib device list: " + std::string(strerror(errno)));
+        throw IbException("Getting ib device list: " +
+            std::string(strerror(errno)));
     }
 
     if (num_devices == 0) {
@@ -194,7 +195,8 @@ void IbDevice::UpdateState(void)
     m_linkState = (LinkState) attr.phys_state;
 
     if (m_lid == 0) {
-        IBNET_LOG_ERROR("Device lid is 0, maybe you forgot to start a subnet manager?");
+        IBNET_LOG_ERROR("Device lid is 0, maybe you forgot to start a "
+            "subnet manager?");
     }
 }
 
@@ -211,17 +213,22 @@ void IbDevice::__LogDeviceAttributes(void)
         "Device attributes:\n"
         "Firmware: " + std::string(deviceAttr.fw_ver) + "\n"
         "GUID: " + sys::StringUtils::ToHexString(deviceAttr.node_guid) + "\n"
-        "Sys image GUID: " + sys::StringUtils::ToHexString(deviceAttr.sys_image_guid) + "\n"
-        "Max memory region size (bytes): " + std::to_string(deviceAttr.max_mr_size) + "\n"
-        "Max memory page size (bytes): " + std::to_string(deviceAttr.page_size_cap) + "\n"
+        "Sys image GUID: " +
+            sys::StringUtils::ToHexString(deviceAttr.sys_image_guid) + "\n"
+        "Max memory region size (bytes): " +
+            std::to_string(deviceAttr.max_mr_size) + "\n"
+        "Max memory page size (bytes): " +
+            std::to_string(deviceAttr.page_size_cap) + "\n"
         "Vendor ID: " + std::to_string(deviceAttr.vendor_id) + "\n"
         "Device part ID: " + std::to_string(deviceAttr.vendor_part_id) + "\n"
         "Hardware version: " + std::to_string(deviceAttr.hw_ver) + "\n"
         "Max num QPs: " + std::to_string(deviceAttr.max_qp) + "\n"
         "Max WRQs per QP: " + std::to_string(deviceAttr.max_qp_wr) + "\n"
-        "Device capability flags: " + std::to_string(deviceAttr.device_cap_flags) + "\n"
+        "Device capability flags: " +
+            std::to_string(deviceAttr.device_cap_flags) + "\n"
         "Max SGEs per WRQs: " + std::to_string(deviceAttr.max_sge) + "\n"
-        "Max SGEs per WRQs in RD QP: " + std::to_string(deviceAttr.max_sge_rd) + "\n"
+        "Max SGEs per WRQs in RD QP: " +
+            std::to_string(deviceAttr.max_sge_rd) + "\n"
         "Max num CQs: " + std::to_string(deviceAttr.max_cq) + "\n"
         "Max elements per CQ: " + std::to_string(deviceAttr.max_cqe) + "\n"
         "Max num memory regions: " + std::to_string(deviceAttr.max_mr) + "\n"
@@ -229,8 +236,10 @@ void IbDevice::__LogDeviceAttributes(void)
         "max_qp_rd_atom: " + std::to_string(deviceAttr.max_qp_rd_atom) + "\n"
         "max_ee_rd_atom: " + std::to_string(deviceAttr.max_ee_rd_atom) + "\n"
         "max_res_rd_atom: " + std::to_string(deviceAttr.max_res_rd_atom) + "\n"
-        "max_qp_init_rd_atom: " + std::to_string(deviceAttr.max_qp_init_rd_atom) + "\n"
-        "max_ee_init_rd_atom: " + std::to_string(deviceAttr.max_ee_init_rd_atom) + "\n"
+        "max_qp_init_rd_atom: " +
+            std::to_string(deviceAttr.max_qp_init_rd_atom) + "\n"
+        "max_ee_init_rd_atom: " +
+            std::to_string(deviceAttr.max_ee_init_rd_atom) + "\n"
         "atomic_cap: " + std::to_string(deviceAttr.atomic_cap) + "\n"
         "max_ee: " + std::to_string(deviceAttr.max_ee) + "\n"
         "max_rdd: " + std::to_string(deviceAttr.max_rdd) + "\n"
@@ -238,16 +247,20 @@ void IbDevice::__LogDeviceAttributes(void)
         "max_raw_ipv6_qp: " + std::to_string(deviceAttr.max_raw_ipv6_qp) + "\n"
         "max_raw_ethy_qp: " + std::to_string(deviceAttr.max_raw_ethy_qp) + "\n"
         "max_mcast_grp: " + std::to_string(deviceAttr.max_mcast_grp) + "\n"
-        "max_mcast_qp_attach: " + std::to_string(deviceAttr.max_mcast_qp_attach) + "\n"
-        "max_total_mcast_qp_attach: " + std::to_string(deviceAttr.max_total_mcast_qp_attach) + "\n"
+        "max_mcast_qp_attach: " +
+            std::to_string(deviceAttr.max_mcast_qp_attach) + "\n"
+        "max_total_mcast_qp_attach: " +
+            std::to_string(deviceAttr.max_total_mcast_qp_attach) + "\n"
         "max_ah: " + std::to_string(deviceAttr.max_ah) + "\n"
         "max_fmr: " + std::to_string(deviceAttr.max_fmr) + "\n"
         "max_map_per_fmr: " + std::to_string(deviceAttr.max_map_per_fmr) + "\n"
         "Max num of SRQs: " + std::to_string(deviceAttr.max_srq) + "\n"
         "Max num WRQs per SRQ: " + std::to_string(deviceAttr.max_srq_wr) + "\n"
-        "Max num SGEs per WRQs on SRQ: " + std::to_string(deviceAttr.max_srq_sge) + "\n"
+        "Max num SGEs per WRQs on SRQ: " +
+            std::to_string(deviceAttr.max_srq_sge) + "\n"
         "max_pkeys: " + std::to_string(deviceAttr.max_pkeys) + "\n"
-        "local_ca_ack_delay: " + std::to_string(deviceAttr.local_ca_ack_delay) + "\n"
+        "local_ca_ack_delay: " +
+            std::to_string(deviceAttr.local_ca_ack_delay) + "\n"
         "phys_port_cnt: " + std::to_string(deviceAttr.phys_port_cnt);
 
     IBNET_LOG_DEBUG("{}", str);

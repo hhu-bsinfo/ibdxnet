@@ -1,3 +1,36 @@
+# other very useful resources
+
+http://www.rdmamojo.com/2013/02/02/ibv_post_recv/
+
+# ib commands
+
+ibstat -> list available infiniband devices and state
+ibstatus -> show ib device status
+ibnodes -> show available ib nodes in network
+iblinkinfo -> show switch layout with connected nodes, identifiers and total uplink
+
+# ibperf
+
+# before all commands on all machines, to align cpu freq to performance mode, run:
+for CPUFREQ in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do [ -f $CPUFREQ ] || continue; echo -n performance > $CPUFREQ; done
+
+## latency rdma write test
+## replace ib_write_lat with ib_read_lat for read latency test
+#server:
+ib_write_lat -a -F
+#client:
+ib_write_lat -a -F node51
+
+## rdma write bandwidth test
+## replace ib_write_bw with ib_read_bw for write bandwidth test
+#server
+ib_write_bw -a -F
+#client:
+ib_write_bw -a -F node51
+
+
+# setup
+
 # Konfugration von Infiniband Adaptern
 
 #### Wichtige Information

@@ -50,7 +50,7 @@ IbMemReg* IbProtDom::Register(void* addr, uint32_t size, bool freeOnCleanup)
 
     m_mutex.lock();
 
-    IBNET_LOG_DEBUG("[{}] Registering memory region {:p}, size {}",
+    IBNET_LOG_TRACE("[{}] Registering memory region {:p}, size {}",
             m_name, addr, size);
 
     IBNET_LOG_TRACE("[{}] ibv_reg_mr", m_name);
@@ -71,7 +71,7 @@ IbMemReg* IbProtDom::Register(void* addr, uint32_t size, bool freeOnCleanup)
 
     m_registeredRegions.push_back(memReg);
 
-    IBNET_LOG_DEBUG("[{}] Registering memory region successful, {}",
+    IBNET_LOG_TRACE("[{}] Registering memory region successful, {}",
             m_name, *memReg);
 
     IbMemReg* ret = m_registeredRegions.back();

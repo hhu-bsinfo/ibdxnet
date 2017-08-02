@@ -33,6 +33,7 @@ public:
      * Called when a new buffer was received
      *
      * @param source The source node id
+     * @param mem Pointer to the IbMemReg object of the buffer
      * @param buffer Pointer to the buffer with the received data
      * @param length Number of bytes received
      */

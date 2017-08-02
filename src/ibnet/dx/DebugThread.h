@@ -20,12 +20,12 @@ public:
     /**
      * Constructor
      *
-     * @param recvThreads Vector with active receive threads
-     * @param sendThreads Vector with active send threads
+     * @param recvThread Pointer to receive thread
+     * @param sendThread Pointer to send thread
      */
     DebugThread(
-        std::shared_ptr<RecvThread> recvThreads,
-        std::shared_ptr<SendThread> sendThreads);
+        std::shared_ptr<RecvThread> recvThread,
+        std::shared_ptr<SendThread> sendThread);
 
     /**
      * Destructor

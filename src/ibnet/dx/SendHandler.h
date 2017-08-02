@@ -10,7 +10,7 @@ namespace dx {
 
 /**
  * Provide access to buffers which are available in the jvm space. This
- * is called by the SendThread to get new/next buffers to send
+ * is called by the SendThread to get new/next buffers to send from java
  *
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 07.07.2017
  */
@@ -18,7 +18,8 @@ class SendHandler
 {
 public:
     /**
-     * A work request package that defines which data to be sent next
+     * A work request package that defines which data to be sent next.
+     * Returned using a pointer by the callback from the java space
      */
     struct NextWorkParameters
     {

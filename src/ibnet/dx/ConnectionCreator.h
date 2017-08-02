@@ -9,7 +9,7 @@ namespace ibnet {
 namespace dx {
 
 /**
- * Connection creator for the message system. Creates two queue pairs
+ * Connection creator for the dxnet subsystem. Creates two queue pairs
  * for each connection, one QP for data buffers, one for flow
  * control data.
  *
@@ -21,6 +21,7 @@ public:
     /**
      * Constructor
      *
+     * @param qpMaxSendReqs Size of the buffer send queue
      * @param qpMaxRecvReqs Size of the buffer receive queue
      * @param qpFlowControlMaxRecvReqs Size of the flow control receive queue
      * @param sharedRecvQueue Shared receive queue for buffers
@@ -34,8 +35,15 @@ public:
         std::shared_ptr<core::IbCompQueue> sharedRecvCompQueue,
         std::shared_ptr<core::IbSharedRecvQueue> sharedFlowControlRecvQueue,
         std::shared_ptr<core::IbCompQueue> sharedFlowControlRecvCompQueue);
+
+    /**
+     * Destructor
+     */
     ~ConnectionCreator(void);
 
+    /**
+     * Override
+     */
     std::shared_ptr<core::IbConnection> CreateConnection(
         uint16_t connectionId,
         std::shared_ptr<core::IbDevice>& device,

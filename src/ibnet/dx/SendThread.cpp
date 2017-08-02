@@ -42,7 +42,8 @@ void SendThread::PrintStatistics(void)
 {
     std::cout << "SendThread statistics:" <<
     std::endl <<
-    "Throughput: " << m_sentBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
+    "Throughput: " <<
+        m_sentBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
     " MB/sec" << std::endl <<
     "Sent data: " << m_sentBytes / 1024.0 / 1024.0 << " MB" << std::endl <<
     "Full send queue utilization: " <<
@@ -50,9 +51,11 @@ void SendThread::PrintStatistics(void)
         (double) m_ibSendQueueFullUtilizationCount << std::endl <<
     "Process buffer utilization: " << (double) m_timers[6].GetCounter() /
         (double) m_timers[1].GetCounter() << std::endl <<
-    "FC Throughput: " << m_sentFlowControlBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
+    "FC Throughput: " <<
+        m_sentFlowControlBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
     " MB/sec" << std::endl <<
-    "FC Sent data: " << m_sentFlowControlBytes / 1024.0 / 1024.0 << " MB" << std::endl;
+    "FC Sent data: " <<
+        m_sentFlowControlBytes / 1024.0 / 1024.0 << " MB" << std::endl;
 
     for (auto& it : m_timers) {
         std::cout << it << std::endl;
@@ -124,7 +127,8 @@ void SendThread::_RunLoop(void)
         // ignore
     } catch (core::IbDisconnectedException& e) {
         m_connectionManager->ReturnConnection(connection);
-        m_connectionManager->CloseConnection(connection->GetRemoteNodeId(), true);
+        m_connectionManager->CloseConnection(connection->GetRemoteNodeId(),
+            true);
     }
 }
 
@@ -198,7 +202,8 @@ uint32_t SendThread::__ProcessBuffer(
 
     m_timers[6].Enter();
 
-    core::IbMemReg* sendBuffer = m_buffers->GetBuffer(connection->GetConnectionId());
+    core::IbMemReg* sendBuffer =
+        m_buffers->GetBuffer(connection->GetConnectionId());
 
     m_timers[6].Exit();
 

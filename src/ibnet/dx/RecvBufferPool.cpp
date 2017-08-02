@@ -6,8 +6,8 @@ namespace ibnet {
 namespace dx {
 
 RecvBufferPool::RecvBufferPool(uint64_t initialTotalPoolSize,
-                               uint32_t recvBufferSize, uint32_t flowControlQueueSize,
-                               std::shared_ptr<core::IbProtDom>& protDom) :
+        uint32_t recvBufferSize, uint32_t flowControlQueueSize,
+        std::shared_ptr<core::IbProtDom>& protDom) :
     m_bufferPoolSize(initialTotalPoolSize / recvBufferSize),
     m_bufferSize(recvBufferSize),
     m_numFlowControlBuffers(flowControlQueueSize),

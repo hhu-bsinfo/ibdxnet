@@ -20,7 +20,7 @@ namespace dx {
  *
  * The thread is using the SendHandler to call into the java space to get the
  * next buffer/data to send. If data is available, it fills one or, if enough
- * data is available, multiple pinned infiniband buffers and posts them on the
+ * data is available, multiple pinned infiniband buffers and posts them to the
  * infiniband work queue. Afterwards, the same amount of work completions are
  * polled for optimal utilization. However, handling flow control data is
  * prioritized and always comes first to avoid deadlocking.
@@ -33,9 +33,8 @@ public:
     /**
      * Constructor
      *
-     * @param protDom Protection domain to register buffers at
-     * @param outBufferSize Size of the buffer(s) for outgoing data
-     * @param bufferQueueSize Size of send queue
+     * @param recvBufferSize Size of the receive/incoming buffers
+     * @param buffers SendBuffers per connection
      * @param sendHandler Handler which allows the thread to access the jvm
      *          space to grab the next available data/work package to send
      * @param connectionManager Parent connection manager
@@ -43,6 +42,10 @@ public:
     SendThread(uint32_t recvBufferSize, std::shared_ptr<SendBuffers> buffers,
         std::shared_ptr<SendHandler>& sendHandler,
         std::shared_ptr<core::IbConnectionManager>& connectionManager);
+
+    /**
+     * Destructor
+     */
     ~SendThread(void);
 
     /**

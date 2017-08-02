@@ -20,11 +20,9 @@ namespace dx {
 /**
  * Dedicated thread for receiving data.
  *
- * The thread is polling the buffer and flow control data receive
- * queues. Furthermore, it tries to keep the queues busy by
- * polling for multiple work requests (if available) and also
- * adding new work requests once old ones are consumed. The received data
- * is forwarded to handlers in the jvm space.
+ * The thread is polling the buffer and flow control data (shared) receive
+ * queues. It adds new work requests once old ones are consumed. The received
+ * data is forwarded to handlers in the jvm space.
  *
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 02.06.2017
  */
@@ -40,8 +38,6 @@ public:
      *          queue to use
      * @param recvBufferPool Buffer pool to use to fill up the
      *          queues with new work requests
-     * @param recvFlowControlBufferPool Buffer pool for flow control
-     *          data requests to fill the queues
      * @param recvHandler Handler which forwards the received data
      */
     RecvThread(
@@ -50,6 +46,10 @@ public:
         std::shared_ptr<core::IbCompQueue>& sharedFlowControlRecvCQ,
         std::shared_ptr<RecvBufferPool>& recvBufferPool,
         std::shared_ptr<RecvHandler>& recvHandler);
+
+    /**
+     * Destructor
+     */
     ~RecvThread(void);
 
     /**

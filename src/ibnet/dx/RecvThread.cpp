@@ -83,14 +83,17 @@ void RecvThread::PrintStatistics(void)
 {
     std::cout << "ReceiveThread statistics:" <<
     std::endl <<
-    "Throughput: " << m_recvBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
+    "Throughput: " <<
+        m_recvBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
     " MB/sec" << std::endl <<
     "Recv data: " << m_recvBytes / 1024.0 / 1024.0 << " MB" << std::endl <<
     "Process buffer utilization: " << (double) m_timers[6].GetCounter() /
         (double) m_timers[5].GetCounter() << std::endl <<
-    "FC Throughput: " << m_recvFlowControlBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
+    "FC Throughput: " <<
+        m_recvFlowControlBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
     " MB/sec" << std::endl <<
-    "FC Recv data: " << m_recvFlowControlBytes / 1024.0 / 1024.0 << " MB" << std::endl;
+    "FC Recv data: " <<
+        m_recvFlowControlBytes / 1024.0 / 1024.0 << " MB" << std::endl;
 
     for (auto& it : m_timers) {
         std::cout << it << std::endl;

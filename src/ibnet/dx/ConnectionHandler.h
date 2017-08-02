@@ -22,7 +22,7 @@ public:
      *
      * @param env The java environment from a java thread
      * @param object Java object of the equivalent callback class in java
-     * @param recvThreads Vector with active receive threads
+     * @param recvThread Pointer to the receive thread
      */
     ConnectionHandler(JNIEnv* env, jobject object,
         std::shared_ptr<RecvThread>& recvThread);

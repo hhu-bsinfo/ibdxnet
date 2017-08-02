@@ -43,7 +43,8 @@ public:
         } else if (envStat == JNI_OK) {
             // already attached to environment
         } else if (envStat == JNI_EVERSION) {
-            throw std::runtime_error("Failed to attach to java vm, jni version not supported");
+            throw std::runtime_error(
+                "Failed to attach to java vm, jni version not supported");
         }
 
         return env;

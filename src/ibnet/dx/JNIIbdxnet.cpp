@@ -27,11 +27,6 @@
 #include "DebugThread.h"
 #include "DiscoveryHandler.h"
 
-// Notes about JNI performance:
-// CPU: Intel® Core™ i7-5820K CPU @ 3.30GHz × 12 
-// Avg. time per call from Java -> JNI: ~650 ns
-// Avg. time per call from JNI -> Java (callbacks): ~14 ns
-
 static std::unique_ptr<backward::SignalHandling> g_signalHandler;
 
 static std::shared_ptr<ibnet::dx::ConnectionHandler> g_connectionHandler;
@@ -43,9 +38,11 @@ static std::shared_ptr<ibnet::core::IbDevice> g_device;
 static std::shared_ptr<ibnet::core::IbProtDom> g_protDom;
 
 static std::shared_ptr<ibnet::core::IbSharedRecvQueue> g_sharedRecvQueue;
-static std::shared_ptr<ibnet::core::IbSharedRecvQueue> g_sharedFlowControlRecvQueue;
+static std::shared_ptr<ibnet::core::IbSharedRecvQueue>
+    g_sharedFlowControlRecvQueue;
 static std::shared_ptr<ibnet::core::IbCompQueue> g_sharedRecvCompQueue;
-static std::shared_ptr<ibnet::core::IbCompQueue> g_sharedFlowControlRecvCompQueue;
+static std::shared_ptr<ibnet::core::IbCompQueue>
+    g_sharedFlowControlRecvCompQueue;
 
 static std::shared_ptr<ibnet::core::IbDiscoveryManager> g_discoveryManager;
 static std::shared_ptr<ibnet::core::IbConnectionManager> g_connectionManager;
@@ -232,7 +229,8 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_addNode(
 {
     IBNET_LOG_TRACE_FUNC;
 
-    ibnet::core::IbNodeConf::Entry entry(ibnet::sys::AddressIPV4((uint32_t) p_ipv4));
+    ibnet::core::IbNodeConf::Entry entry(
+        ibnet::sys::AddressIPV4((uint32_t) p_ipv4));
     g_discoveryManager->AddNode(entry);
 }
 
@@ -240,7 +238,8 @@ JNIEXPORT jlong JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_getSendBufferAddres
         JNIEnv* p_env, jclass p_class, jshort p_targetNodeId)
 {
     std::shared_ptr<ibnet::core::IbConnection> connection =
-        g_connectionManager->GetConnection((uint16_t) (p_targetNodeId & 0xFFFF));
+        g_connectionManager->GetConnection(
+            (uint16_t) (p_targetNodeId & 0xFFFF));
 
     if (!connection) {
         return (jlong) -1;

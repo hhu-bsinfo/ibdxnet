@@ -18,6 +18,7 @@ SendThread::SendThread(uint32_t recvBufferSize,
     m_prevDataWritten(0),
     m_ibSendQueueBatchCount(0),
     m_ibSendQueueFullUtilizationCount(0),
+    m_noDataCounter(0),
     m_sentBytes(0),
     m_sentFlowControlBytes(0)
 {
@@ -78,9 +79,23 @@ void SendThread::_RunLoop(void)
 
     // nothing to process
     if (data == nullptr) {
-        std::this_thread::yield();
+        m_noDataCounter++;
+
+        // reduce cpu load on idle but keep latency low under heavy load
+        if (m_noDataCounter < 100) {
+            std::this_thread::yield();
+        } else if (m_noDataCounter < 1000) {
+            std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+        } else if (m_noDataCounter < 10000) {
+            std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+        } else {
+            std::this_thread::sleep_for(std::chrono::microseconds(10));
+        }
+
         return;
     }
+
+    m_noDataCounter = 0;
 
     // seems like we got something to process
     m_prevNodeIdWritten = data->m_nodeId;

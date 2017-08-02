@@ -79,6 +79,8 @@ private:
     uint64_t m_ibSendQueueBatchCount;
     uint64_t m_ibSendQueueFullUtilizationCount;
 
+    uint32_t m_noDataCounter;
+
 private:
     uint64_t m_sentBytes;
     uint64_t m_sentFlowControlBytes;

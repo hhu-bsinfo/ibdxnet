@@ -20,6 +20,7 @@ RecvThread::RecvThread(
     m_recvBufferPool(recvBufferPool),
     m_recvHandler(recvHandler),
     m_sharedQueueInitialFill(false),
+    m_noDataCounter(0),
     m_recvBytes(0),
     m_recvFlowControlBytes(0)
 {
@@ -105,7 +106,20 @@ void RecvThread::_RunLoop(void)
 {
     // flow control has higher priority, always try this queue first
     if (!__ProcessFlowControl() && !__ProcessBuffers()) {
-        std::this_thread::yield();
+        m_noDataCounter++;
+
+        // reduce cpu load on idle but keep latency low under heavy load
+        if (m_noDataCounter < 100) {
+            std::this_thread::yield();
+        } else if (m_noDataCounter < 1000) {
+            std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+        } else if (m_noDataCounter < 10000) {
+            std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+        } else {
+            std::this_thread::sleep_for(std::chrono::microseconds(10));
+        }
+    } else {
+        m_noDataCounter = 0;
     }
 }
 

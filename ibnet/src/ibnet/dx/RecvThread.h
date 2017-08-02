@@ -84,6 +84,7 @@ private:
 
 private:
     std::atomic<bool> m_sharedQueueInitialFill;
+    uint32_t m_noDataCounter;
     uint64_t m_recvBytes;
     uint64_t m_recvFlowControlBytes;
     std::vector<sys::ProfileTimer> m_timers;

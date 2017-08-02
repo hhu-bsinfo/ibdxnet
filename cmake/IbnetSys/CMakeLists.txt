@@ -6,7 +6,6 @@ include_directories(${IBNET_SRC_DIR})
 
 set(SOURCE_FILES
         ${IBNET_SRC_DIR}/ibnet/sys/AddressIPV4.cpp
-        ${IBNET_SRC_DIR}/ibnet/sys/Debug.cpp
         ${IBNET_SRC_DIR}/ibnet/sys/Logger.cpp
         ${IBNET_SRC_DIR}/ibnet/sys/Network.cpp
         ${IBNET_SRC_DIR}/ibnet/sys/Random.cpp

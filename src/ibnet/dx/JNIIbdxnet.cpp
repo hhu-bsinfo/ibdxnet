@@ -17,7 +17,6 @@
 
 #include <backwards/backward.hpp>
 
-#include "ibnet/sys/Debug.h"
 #include "ibnet/sys/Logger.h"
 #include "ibnet/sys/ProfileTimer.hpp"
 #include "ibnet/core/IbException.h"

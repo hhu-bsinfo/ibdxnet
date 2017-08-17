@@ -19,6 +19,7 @@
 #include "RecvBufferPool.h"
 
 #include "ibnet/sys/Logger.hpp"
+#include "DxnetException.h"
 
 namespace ibnet {
 namespace dx {
@@ -38,6 +39,13 @@ RecvBufferPool::RecvBufferPool(uint64_t initialTotalPoolSize,
 {
     IBNET_LOG_INFO("Alloc {} data buffers, size {} each",
         m_bufferPoolSize, recvBufferSize);
+
+    // to handle wrap around correctly
+    if (m_bufferPoolSize % 2 != 0) {
+        throw DxnetException("RecvBufferPool: Resulting pool size must be a "
+            "power of two, invalid value: " + m_bufferPoolSize);
+    }
+
     m_dataBuffers = new core::IbMemReg*[m_bufferPoolSize];
     for (uint32_t i = 0; i < m_bufferPoolSize; i++) {
         m_dataBuffers[i] = m_protDom->Register(

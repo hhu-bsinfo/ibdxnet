@@ -60,7 +60,7 @@ static std::shared_ptr<ibnet::dx::SendThread> g_sendThread;
 
 static std::unique_ptr<ibnet::dx::DebugThread> g_debugThread;
 
-JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
+JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init(
         JNIEnv* p_env, jclass p_class, jshort p_ownNodeId, jint p_inBufferSize,
         jint p_outBufferSize, jlong p_recvPoolSizeBytes, jint p_maxRecvReqs,
         jint p_maxSendReqs, jint p_flowControlMaxRecvReqs,
@@ -184,7 +184,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_init(
 	return (jboolean) 1;
 }
 
-JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_shutdown(
+JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_shutdown(
         JNIEnv* p_env, jclass p_class)
 {
     IBNET_LOG_TRACE_FUNC;
@@ -229,7 +229,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_shutdown(
     return res;
 }
 
-JNIEXPORT void JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_addNode(
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_addNode(
         JNIEnv* p_env, jclass p_class, jint p_ipv4)
 {
     IBNET_LOG_TRACE_FUNC;
@@ -239,7 +239,7 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_addNode(
     g_discoveryManager->AddNode(entry);
 }
 
-JNIEXPORT jlong JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_getSendBufferAddress(
+JNIEXPORT jlong JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_getSendBufferAddress(
         JNIEnv* p_env, jclass p_class, jshort p_targetNodeId)
 {
     std::shared_ptr<ibnet::core::IbConnection> connection =
@@ -258,7 +258,7 @@ JNIEXPORT jlong JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_getSendBufferAddres
     return (jlong) buffer->GetAddress();
 }
 
-JNIEXPORT void JNICALL Java_de_hhu_bsinfo_net_ib_JNIIbdxnet_returnRecvBuffer(
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_returnRecvBuffer(
         JNIEnv* p_env, jclass p_class, jlong p_bufferHandle)
 {
     ibnet::core::IbMemReg* mem = (ibnet::core::IbMemReg*) p_bufferHandle;

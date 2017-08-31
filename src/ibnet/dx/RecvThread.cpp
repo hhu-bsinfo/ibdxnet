@@ -130,13 +130,13 @@ void RecvThread::_RunLoop(void)
         m_noDataCounter++;
 
         // reduce cpu load on idle but keep latency low under heavy load
-        if (m_noDataCounter < 100) {
+        if (m_noDataCounter > 100 && m_noDataCounter <= 1000) {
             std::this_thread::yield();
-        } else if (m_noDataCounter < 1000) {
+        } else if (m_noDataCounter > 1000 && m_noDataCounter <= 10000) {
             std::this_thread::sleep_for(std::chrono::nanoseconds(100));
-        } else if (m_noDataCounter < 10000) {
+        } else if (m_noDataCounter > 10000 && m_noDataCounter <= 100000) {
             std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
-        } else {
+        } else if (m_noDataCounter > 100000 && m_noDataCounter <= 1000000) {
             std::this_thread::sleep_for(std::chrono::microseconds(10));
         }
     } else {

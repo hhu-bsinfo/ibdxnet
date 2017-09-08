@@ -130,6 +130,8 @@ void IbDiscoveryManager::_RunLoop(void)
     paketBuffer.m_magic = PAKET_MAGIC;
     paketBuffer.m_paketId = e_PaketIdReq;
 
+    m_lock.lock();
+
     IBNET_LOG_TRACE("Requesting node info of {} nodes", m_infoToGet.size());
 
     // request remote node's information if not received, yet
@@ -144,6 +146,8 @@ void IbDiscoveryManager::_RunLoop(void)
                     it->GetAddress().GetAddressStr());
         }
     }
+
+    m_lock.unlock();
 
     uint32_t recvAddr = 0;
 
@@ -171,8 +175,12 @@ void IbDiscoveryManager::_RunLoop(void)
                 m_socket->Send(&ownNodeInfo, sizeof(ownNodeInfo),
                         recvAddr, m_socketPort);
             } else if (paketBuffer.m_paketId == e_PaketIdInfo) {
+                bool removed = false;
+
                 IBNET_LOG_TRACE("Received node info RESP from {}",
                         sys::AddressIPV4(recvAddr));
+
+                m_lock.lock();
 
                 // remove from processing list
                 for (auto it = m_infoToGet.begin();
@@ -182,21 +190,20 @@ void IbDiscoveryManager::_RunLoop(void)
                                 (*it)->GetAddress().GetAddressStr(),
                                 paketBuffer.m_nodeId);
 
-                        m_lock.lock();
-
                         // store remote node information
                         m_nodeInfo[paketBuffer.m_nodeId] = *it;
 
                         it = m_infoToGet.erase(it);
-
-                        m_lock.unlock();
-
-                        if (m_listener) {
-                            m_listener->NodeDiscovered(paketBuffer.m_nodeId);
-                        }
+                        removed = true;
 
                         break;
                     }
+                }
+
+                m_lock.unlock();
+
+                if (removed && m_listener) {
+                    m_listener->NodeDiscovered(paketBuffer.m_nodeId);
                 }
             } else {
                 IBNET_LOG_ERROR("Received paket with unknown id {}",

@@ -74,7 +74,7 @@ int main(int argc, char** argv)
     std::cout << "Own node id: 0x" <<  std::hex << ownNodeId << std::endl;
     std::shared_ptr<ibnet::core::IbDiscoveryManager> discMan =
         std::make_shared<ibnet::core::IbDiscoveryManager>(ownNodeId, nodeConf,
-            5730, 1000);
+            5730);
 
     std::shared_ptr<ibnet::core::IbConnectionManager> conMan =
         std::make_shared<ibnet::core::IbConnectionManager>(ownNodeId, 5731, 100,

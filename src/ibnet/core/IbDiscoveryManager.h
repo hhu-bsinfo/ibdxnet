@@ -62,10 +62,9 @@ public:
      * @param ownNodeId Node id of the current node
      * @param nodeConf Node config to use for discovering further nodes
      * @param udpPort Port to run the UDP socket on
-     * @param discoveryIntervalMs Run the discovery process every X ms
      */
     IbDiscoveryManager(uint16_t ownNodeId, const IbNodeConf& nodeConf,
-        uint16_t udpPort, uint32_t discoveryIntervalMs);
+        uint16_t udpPort);
 
     /**
      * Destructor
@@ -111,6 +110,8 @@ protected:
     void _RunLoop(void) override;
 
 private:
+    const uint32_t m_discoveryIntervalMs;
+
     uint16_t m_ownNodeId;
     std::vector<std::shared_ptr<IbNodeConf::Entry>> m_infoToGet;
 
@@ -122,7 +123,6 @@ private:
 
     Listener* m_listener;
 
-    uint32_t m_discoveryIntervalMs;
     bool m_activePhase;
 
 private:

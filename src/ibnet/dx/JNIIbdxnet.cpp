@@ -131,7 +131,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init(
 
         g_discoveryManager = std::make_shared<ibnet::core::IbDiscoveryManager>(
             p_ownNodeId,
-            nodeConf, 5730, 500);
+            nodeConf, 5730);
 
         g_connectionManager = std::make_shared<ibnet::core::IbConnectionManager>(
             p_ownNodeId,

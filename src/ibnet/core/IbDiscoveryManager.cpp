@@ -33,16 +33,15 @@ namespace core {
 IbDiscoveryManager::IbDiscoveryManager(
         uint16_t ownNodeId,
         const IbNodeConf& nodeConf,
-        uint16_t udpPort,
-        uint32_t discoveryIntervalMs) :
+        uint16_t udpPort) :
     ThreadLoop("DiscoveryManager"),
+    m_discoveryIntervalMs(1000),
     m_ownNodeId(ownNodeId),
     m_infoToGet(),
     m_socketPort(udpPort),
     m_socket(std::make_unique<sys::SocketUDP>(m_socketPort)),
     m_nodeInfo(),
     m_listener(nullptr),
-    m_discoveryIntervalMs(discoveryIntervalMs),
     m_activePhase(false)
 {
     IBNET_LOG_TRACE_FUNC;

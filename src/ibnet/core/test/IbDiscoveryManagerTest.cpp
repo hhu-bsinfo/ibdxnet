@@ -48,7 +48,7 @@ int main(int argc, char** argv)
     ibnet::core::IbNodeConf nodeConf = nodeConfArgListReader.Read();
 
     uint16_t nodeId = ibnet::sys::Random::Generate16();
-    ibnet::core::IbDiscoveryManager discMan(nodeId, nodeConf, 5730, 1000);
+    ibnet::core::IbDiscoveryManager discMan(nodeId, nodeConf, 5730);
 
     std::cout << "Own node id: 0x" <<  std::hex << nodeId << std::endl;
     std::cout << "Running loop..." << std::endl;

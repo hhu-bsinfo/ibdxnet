@@ -152,7 +152,7 @@ void IbDiscoveryManager::_RunLoop(void)
     uint32_t recvAddr = 0;
 
     // listen for incoming responses, try this a few times
-    for (uint32_t i = 0; i < 5; i++) {
+    for (uint32_t i = 0; i < 20; i++) {
         ssize_t res = m_socket->Receive(&paketBuffer, length, &recvAddr);
 
         if (res > 0) {
@@ -193,7 +193,7 @@ void IbDiscoveryManager::_RunLoop(void)
                         // store remote node information
                         m_nodeInfo[paketBuffer.m_nodeId] = *it;
 
-                        it = m_infoToGet.erase(it);
+                        m_infoToGet.erase(it);
                         removed = true;
 
                         break;
@@ -204,12 +204,17 @@ void IbDiscoveryManager::_RunLoop(void)
 
                 if (removed && m_listener) {
                     m_listener->NodeDiscovered(paketBuffer.m_nodeId);
+
+                    // reset active phase to continue scanning
+                    i = 0;
                 }
             } else {
                 IBNET_LOG_ERROR("Received paket with unknown id {}",
                         paketBuffer.m_paketId);
                 continue;
             }
+        } else {
+            std::this_thread::yield();
         }
     }
 

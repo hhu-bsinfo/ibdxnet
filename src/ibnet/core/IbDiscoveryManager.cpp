@@ -35,7 +35,7 @@ IbDiscoveryManager::IbDiscoveryManager(
         const IbNodeConf& nodeConf,
         uint16_t udpPort) :
     ThreadLoop("DiscoveryManager"),
-    m_discoveryIntervalMs(1000),
+    m_discoveryIntervalMs(500),
     m_ownNodeId(ownNodeId),
     m_infoToGet(),
     m_socketPort(udpPort),
@@ -151,7 +151,7 @@ void IbDiscoveryManager::_RunLoop(void)
     uint32_t recvAddr = 0;
 
     // listen for incoming responses, try this a few times
-    for (uint32_t i = 0; i < 20; i++) {
+    for (uint32_t i = 0; i < 50; i++) {
         ssize_t res = m_socket->Receive(&paketBuffer, length, &recvAddr);
 
         if (res > 0) {

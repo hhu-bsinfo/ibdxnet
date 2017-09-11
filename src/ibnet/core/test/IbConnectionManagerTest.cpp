@@ -23,6 +23,7 @@
 #include <thread>
 
 #include "ibnet/sys/Logger.h"
+#include "ibnet/sys/Network.h"
 
 #include "ibnet/core/IbDiscoveryManager.h"
 #include "ibnet/core/IbConnectionCreatorSimple.h"
@@ -40,15 +41,12 @@ static void SignalHandler(int signal)
 
 int main(int argc, char** argv)
 {
-    if (argc < 3) {
-        printf("Usage: %s <node id> <remote node id> <hostnames nodes> ...\n", argv[0]);
+    if (argc < 2) {
+        printf("Usage: %s <hostnames nodes> ...\n", argv[0]);
         return 0;
     }
 
     backward::SignalHandling sh;
-
-    uint16_t ownNodeId = atoi(argv[1]);
-    uint16_t remoteNodeId = atoi(argv[2]);
 
     ibnet::sys::Logger::Setup();
 
@@ -67,9 +65,34 @@ int main(int argc, char** argv)
     std::shared_ptr<ibnet::core::IbCompQueue> compQueue =
         std::make_shared<ibnet::core::IbCompQueue>(device, 100);
 
+    std::vector<std::string> hostnamesSorted;
     ibnet::core::IbNodeConfArgListReader nodeConfArgListReader(
-        (uint32_t) (argc - 3), &argv[3]);
+        (uint32_t) (argc - 1), &argv[1]);
     ibnet::core::IbNodeConf nodeConf = nodeConfArgListReader.Read();
+
+    for (uint32_t i = 1; i < argc; i++) {
+        hostnamesSorted.push_back(std::string(argv[i]));
+    }
+    std::sort(hostnamesSorted.begin(), hostnamesSorted.end());
+
+    uint16_t ownNodeId = ibnet::core::IbNodeId::INVALID;
+    const std::string ownHostname = ibnet::sys::Network::GetHostname();
+
+    uint16_t counter = 0;
+    for (auto& it : hostnamesSorted) {
+        if (ownHostname == it) {
+            ownNodeId = counter;
+            break;
+        }
+
+        counter++;
+    }
+
+    if (ownNodeId == ibnet::core::IbNodeId::INVALID) {
+        std::cout << "ERROR Could not assign node id to current host " <<
+            ownHostname << ", not found in hostname nodes list" << std::endl;
+        return -1;
+    }
 
     std::cout << "Own node id: 0x" <<  std::hex << ownNodeId << std::endl;
     std::shared_ptr<ibnet::core::IbDiscoveryManager> discMan =
@@ -82,24 +105,44 @@ int main(int argc, char** argv)
         std::make_unique<ibnet::core::IbConnectionCreatorSimple>(10, 10,
             nullptr, compQueue));
 
+    bool nodesConnected[ibnet::core::IbNodeId::MAX_NUM_NODES];
+    memset(nodesConnected, false, sizeof(nodesConnected));
+
     std::cout << "Running loop..." << std::endl;
 
     while (g_loop) {
-        device->UpdateState();
-        std::cout << *device << std::endl;
-        std::cout << *conMan << std::endl;
+        // -1: don't count own node
+        uint16_t notConnected = hostnamesSorted.size() - 1;
+//        device->UpdateState();
+//        std::cout << *device << std::endl;
+//        std::cout << *conMan << std::endl;
 
-        try {
-            std::shared_ptr<ibnet::core::IbConnection> connection =
-                conMan->GetConnection(remoteNodeId);
+        for (uint16_t i = 0; i < hostnamesSorted.size(); i++) {
+            uint16_t remoteNodeId = i;
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            if (remoteNodeId == ownNodeId) {
+                continue;
+            }
 
-            conMan->ReturnConnection(connection);
-        } catch (const ibnet::core::IbException& e) {
-            std::cout << "!!!!!" << e.what() << std::endl;
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            continue;
+            try {
+                std::shared_ptr<ibnet::core::IbConnection> connection =
+                    conMan->GetConnection(remoteNodeId);
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+                conMan->ReturnConnection(connection);
+                notConnected--;
+            } catch (const ibnet::core::IbException& e) {
+//                std::cout << "!!!!!" << e.what() << std::endl;
+//                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+        }
+
+        if (notConnected == 0) {
+            std::cout << "***** ALL CONNECTED *****" << std::endl;
+        } else {
+            std::cout << "Waiting for " << std::dec << notConnected <<
+                " more node(s) to connect..." << std::endl;
         }
 
         std::this_thread::sleep_for(std::chrono::seconds(1));

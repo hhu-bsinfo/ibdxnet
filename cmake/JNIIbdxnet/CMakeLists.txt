@@ -29,7 +29,6 @@ set(SOURCE_FILES
         ${IBNET_SRC_DIR}/ibnet/dx/ConnectionCreator.cpp
         ${IBNET_SRC_DIR}/ibnet/dx/ConnectionHandler.cpp
         ${IBNET_SRC_DIR}/ibnet/dx/DebugThread.cpp
-        ${IBNET_SRC_DIR}/ibnet/dx/DiscoveryHandler.cpp
         ${IBNET_SRC_DIR}/ibnet/dx/JNIIbdxnet.cpp
         ${IBNET_SRC_DIR}/ibnet/dx/RecvBufferPool.cpp
         ${IBNET_SRC_DIR}/ibnet/dx/RecvHandler.cpp

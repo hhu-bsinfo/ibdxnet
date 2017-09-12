@@ -1,57 +1,216 @@
-/*
- * Copyright (C) 2017 Heinrich-Heine-Universitaet Duesseldorf,
- * Institute of Computer Science, Department Operating Systems
- *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- */
-
 #include "IbConnectionManager.h"
 
+#include "ibnet/sys/Network.h"
 #include "ibnet/sys/Random.h"
 
-#include "IbTimeoutException.h"
-
-#define PAKET_MAGIC 0xBEEFCA4E
+#include "ibnet/core/IbTimeoutException.h"
 
 namespace ibnet {
 namespace core {
 
-const uint32_t IbConnectionManager::CONNECT_RETRY_WAIT_MS = 20;
+#define PAKET_MAGIC 0xBEEFCA4E
 
-IbConnectionManager::IbConnectionManager(
-        uint16_t ownNodeId,
-        uint16_t socketPort,
-        uint32_t maxNumConnections,
-        std::shared_ptr<IbDevice>& device,
-        std::shared_ptr<IbProtDom>& protDom,
-        std::shared_ptr<IbDiscoveryManager>& discoveryManager,
+IbConnectionManager::IbConnectionManager(uint16_t ownNodeId,
+        const IbNodeConf& nodeConf, uint16_t socketPort,
+        uint32_t connectionCreationTimeoutMs, uint32_t maxNumConnections,
+        std::shared_ptr<IbDevice>& device, std::shared_ptr<IbProtDom>& protDom,
         std::unique_ptr<IbConnectionCreator> connectionCreator) :
-    ThreadLoop("ConnectionManager"),
-    m_socket(socketPort),
-    m_conManIdent(sys::Random::Generate32()),
-    m_maxNumConnections(maxNumConnections),
-    m_device(device),
-    m_protDom(protDom),
-    m_discoveryManager(discoveryManager),
-    m_connectionCreator(std::move(connectionCreator)),
-    m_ownNodeId(ownNodeId),
-    m_openConnections(0),
-    m_listener(nullptr),
-    m_buffer(nullptr)
+    m_discoveryContext(ownNodeId, nodeConf, m_exchangeThread, m_jobThread),
+    m_connectionContext(ownNodeId, connectionCreationTimeoutMs,
+        maxNumConnections, m_discoveryContext, m_exchangeThread, m_jobThread,
+        device, protDom, std::move(connectionCreator)),
+    m_exchangeThread(ownNodeId, socketPort, m_jobThread),
+    m_jobThread(m_discoveryContext, m_connectionContext)
+{
+    m_exchangeThread.Start();
+    m_jobThread.Start();
+
+    // add initial discovery job to get everything started
+    m_jobThread.AddDiscoverJob();
+}
+
+IbConnectionManager::~IbConnectionManager(void)
 {
     IBNET_LOG_TRACE_FUNC;
-    IBNET_LOG_INFO("Initializing connection manager, node 0x{:x}", ownNodeId);
+    IBNET_LOG_INFO("Shutting down connection manager...");
+
+    // close opened connections
+    for (uint32_t i = 0; i < IbNodeId::MAX_NUM_NODES; i++) {
+        m_jobThread.AddCloseJob(static_cast<uint16_t>(i), true);
+        std::this_thread::yield();
+    }
+
+    m_jobThread.Stop();
+    m_exchangeThread.Stop();
+
+    IBNET_LOG_DEBUG("Shutting down connection manager done");
+}
+
+void IbConnectionManager::AddNode(const IbNodeConf::Entry& entry)
+{
+    m_discoveryContext.AddNode(entry);
+}
+
+bool IbConnectionManager::IsConnectionAvailable(uint16_t nodeId)
+{
+    return m_connectionContext.IsConnectionAvailable(nodeId);
+}
+
+std::shared_ptr<IbConnection> IbConnectionManager::GetConnection(
+        uint16_t nodeId)
+{
+    return m_connectionContext.GetConnection(nodeId);
+}
+
+void IbConnectionManager::ReturnConnection(
+        std::shared_ptr<IbConnection>& connection)
+{
+    m_connectionContext.ReturnConnection(connection);
+}
+
+void IbConnectionManager::CloseConnection(uint16_t nodeId, bool force)
+{
+    m_connectionContext.CloseConnection(nodeId, force);
+}
+
+IbConnectionManager::DiscoveryContext::DiscoveryContext(uint16_t ownNodeId,
+        const IbNodeConf& nodeConf, ExchangeThread& exchangeThread,
+        JobThread& jobThread) :
+    m_ownNodeId(ownNodeId),
+    m_listener(nullptr),
+    m_exchangeThread(exchangeThread),
+    m_jobThread(jobThread)
+{
+    // TODO parse node config
+}
+
+IbConnectionManager::DiscoveryContext::~DiscoveryContext(void)
+{
+
+}
+
+void IbConnectionManager::DiscoveryContext::AddNode(
+        const IbNodeConf::Entry& entry)
+{
+    IBNET_LOG_TRACE_FUNC;
+
+    std::string ownHostname = sys::Network::GetHostname();
+
+    // don't add ourselves
+    if (entry.GetHostname() != ownHostname) {
+        IBNET_LOG_INFO("Adding node {}", entry);
+
+        std::lock_guard<std::mutex> l(m_lock);
+        m_infoToGet.push_back(std::make_shared<IbNodeConf::Entry>(entry));
+    }
+}
+
+std::shared_ptr<IbNodeConf::Entry>
+        IbConnectionManager::DiscoveryContext::GetNodeInfo(uint16_t nodeId)
+{
+    IBNET_LOG_TRACE_FUNC;
+
+    std::lock_guard<std::mutex> l(m_lock);
+
+    if (!m_nodeInfo[nodeId]) {
+        throw IbNodeNotAvailableException(nodeId);
+    }
+
+    return m_nodeInfo[nodeId];
+}
+
+void IbConnectionManager::DiscoveryContext::Discover(void)
+{
+    IBNET_LOG_TRACE("Requesting node info of {} nodes", m_infoToGet.size());
+
+    m_lock.lock();
+
+    // request remote node's information if not received, yet
+    for (auto& it : m_infoToGet) {
+        IBNET_LOG_TRACE("Requesting node info from {}:{}",
+            it->GetAddress().GetAddressStr(), m_socketPort);
+
+        m_exchangeThread.SendDiscoveryReq(m_ownNodeId,
+            it->GetAddress().GetAddress());
+    }
+
+    m_lock.unlock();
+
+    // there are more nodes to be discovered
+    if (m_infoToGet.size() != 0) {
+        m_jobThread.AddDiscoverJob();
+    }
+}
+
+void IbConnectionManager::DiscoveryContext::Discovered(uint16_t nodeId,
+        uint32_t remoteIpAddr)
+{
+    bool found = false;
+
+    m_lock.lock();
+
+    // remove from processing list
+    for (auto it = m_infoToGet.begin(); it != m_infoToGet.end(); it++) {
+        if ((*it)->GetAddress().GetAddress() == remoteIpAddr) {
+            IBNET_LOG_INFO("Discovered node {} as node id 0x{:x}",
+                (*it)->GetAddress().GetAddressStr(), nodeId);
+
+            // store remote node information
+            m_nodeInfo[nodeId] = *it;
+
+            m_infoToGet.erase(it);
+
+            m_lock.unlock();
+
+            found = true;
+
+            // don't lock call to listener
+            if (m_listener) {
+                m_listener->NodeDiscovered(nodeId);
+            }
+
+            break;
+        }
+    }
+
+    if (!found) {
+        m_lock.unlock();
+    }
+
+}
+
+void IbConnectionManager::DiscoveryContext::Invalidate(uint16_t nodeId)
+{
+    m_lock.lock();
+    m_infoToGet.push_back(m_nodeInfo[nodeId]);
+    m_nodeInfo[nodeId].reset();
+    m_lock.unlock();
+
+    // add job to re-discover
+    m_jobThread.AddDiscoverJob();
+    m_listener->NodeInvalidated(nodeId);
+}
+
+IbConnectionManager::ConnectionContext::ConnectionContext(uint16_t ownNodeId,
+        uint32_t connectionCreationTimeoutMs, uint32_t maxNumConnections,
+        DiscoveryContext& discoveryContext, ExchangeThread& exchangeThread,
+        JobThread& jobThread, std::shared_ptr<IbDevice> device,
+        std::shared_ptr<IbProtDom> protDom,
+        std::unique_ptr<IbConnectionCreator> connectionCreator) :
+    m_ownNodeId(ownNodeId),
+    m_connectionCtxIdent(sys::Random::Generate32()),
+    m_connectionCreationTimeoutMs(connectionCreationTimeoutMs),
+    m_maxNumConnections(maxNumConnections),
+    m_listener(nullptr),
+    m_discoveryContext(discoveryContext),
+    m_exchangeThread(exchangeThread),
+    m_jobThread(jobThread),
+    m_device(device),
+    m_protDom(protDom),
+    m_connectionCreator(std::move(connectionCreator)),
+    m_openConnections(0)
+{
+    IBNET_LOG_TRACE_FUNC;
 
     if (ownNodeId == IbNodeId::INVALID) {
         throw IbException("Invalid node id provided");
@@ -68,45 +227,40 @@ IbConnectionManager::IbConnectionManager(
         uint16_t tmp = (uint16_t) i;
         m_availableConnectionIds.push_back(tmp);
     }
-
-    Start();
 }
 
-IbConnectionManager::~IbConnectionManager(void)
+IbConnectionManager::ConnectionContext::~ConnectionContext(void)
 {
-    IBNET_LOG_TRACE_FUNC;
-    IBNET_LOG_INFO("Shutting down connection manager...");
 
-    Stop();
+}
 
-    // close opened connections
-    for (uint32_t i = 0; i < IbNodeId::MAX_NUM_NODES; i++) {
-        if (m_connections[i]) {
-            m_connections[i]->Close(true);
-            m_connections[i].reset();
-        }
+uint16_t IbConnectionManager::ConnectionContext::GetNodeIdForPhysicalQPNum(
+        uint32_t qpNum) {
+    auto it = m_qpNumToNodeIdMappings.find(qpNum);
+
+    if (it != m_qpNumToNodeIdMappings.end()) {
+        return it->second;
     }
 
-    m_connectionCreator.reset();
-
-    IBNET_LOG_DEBUG("Shutting down connection manager done");
+    return IbNodeId::INVALID;
 }
 
-bool IbConnectionManager::IsConnectionAvailable(uint16_t nodeId)
-{
+bool IbConnectionManager::ConnectionContext::IsConnectionAvailable(
+        uint16_t nodeId) {
     return m_connectionAvailable[nodeId].load(std::memory_order_relaxed) >=
-        CONNECTION_AVAILABLE;
+           CONNECTION_AVAILABLE;
 }
 
-std::shared_ptr<IbConnection> IbConnectionManager::GetConnection(
+std::shared_ptr<IbConnection> IbConnectionManager::ConnectionContext::GetConnection(
         uint16_t nodeId)
 {
     if (nodeId == IbNodeId::INVALID) {
         throw IbException("Invalid node id provided");
     }
 
+    // keep track of "handles" issued
     int32_t available = m_connectionAvailable[nodeId].fetch_add(1,
-        std::memory_order_relaxed);
+        std::memory_order_acquire);
 
     IBNET_LOG_TRACE("GetConnection: 0x{:x}, avail: {}", nodeId, available + 1);
 
@@ -114,37 +268,69 @@ std::shared_ptr<IbConnection> IbConnectionManager::GetConnection(
         return m_connections[nodeId];
     }
 
-    m_connectionMutex.lock();
+    std::chrono::high_resolution_clock::time_point start;
 
-    IBNET_LOG_TRACE("GetConnection (active create): 0x{:x}", nodeId);
+    while (std::chrono::high_resolution_clock::now() - start <
+            std::chrono::milliseconds(m_connectionCreationTimeoutMs)) {
+        if (m_connectionAvailable[nodeId].load(std::memory_order_acquire) >=
+                CONNECTION_AVAILABLE) {
+            available = m_connectionAvailable[nodeId].fetch_add(1,
+                std::memory_order_acquire);
 
-    // check if another thread was faster and created a connection while
-    // we tried to but got blocked by the lock
-    available += 1;
-    if (!m_connectionAvailable[nodeId].compare_exchange_strong(available,
-            CONNECTION_NOT_AVAILABLE, std::memory_order_relaxed)) {
-        if (available >= CONNECTION_AVAILABLE) {
-            m_connectionAvailable[nodeId].fetch_add(1,
-                std::memory_order_relaxed);
+            if (available >= CONNECTION_AVAILABLE) {
+                // sanity check
+                if (m_connections[nodeId] == nullptr) {
+                    throw IbException("Invalid connection state on "
+                        "GetConnection");
+                }
 
-            m_connectionMutex.unlock();
-            return m_connections[nodeId];
+                return m_connections[nodeId];
+            }
         }
+
+        std::this_thread::yield();
     }
 
-    std::shared_ptr<IbNodeConf::Entry> nodeInfo;
+    throw IbTimeoutException(nodeId, "Creating connection");
+}
+
+void IbConnectionManager::ConnectionContext::ReturnConnection(
+        std::shared_ptr<IbConnection>& connection)
+{
+    int32_t tmp = m_connectionAvailable[connection->GetRemoteNodeId()]
+        .fetch_sub(1, std::memory_order_relaxed);
+
+    IBNET_LOG_TRACE("ReturnConnection: 0x{:x}, avail {}",
+        connection->GetRemoteNodeId(), tmp - 1);
+}
+
+void IbConnectionManager::ConnectionContext::CloseConnection(uint16_t nodeId,
+        bool force)
+{
+    m_jobThread.AddCloseJob(nodeId, force);
+}
+
+void IbConnectionManager::ConnectionContext::Create(uint16_t nodeId)
+{
+    Create(nodeId, m_connectionCtxIdent, 0xFFFF, nullptr);
+}
+
+void IbConnectionManager::ConnectionContext::Create(uint16_t nodeId,
+        uint32_t ident, uint16_t lid, uint32_t* physicalQpIds)
+{
+    std::shared_ptr<IbNodeConf::Entry> remoteNodeInfo;
+
     try {
-        // get node connection information
-        nodeInfo = m_discoveryManager->GetNodeInfo(nodeId);
+        // get remote node connection information
+        remoteNodeInfo = m_discoveryContext.GetNodeInfo(nodeId);
     } catch (...) {
-        m_connectionMutex.unlock();
-        throw;
+        IBNET_LOG_ERROR("Cannot create connection to remote 0x{:X}, "
+            "not discovered, yet", nodeId);
+        return;
     }
 
-    // check first if creating a connection is already in progress
-    if (!m_connections[nodeId]) {
-        IBNET_LOG_DEBUG("Establish connection request to 0x{:x}", nodeId);
-
+    // allocate connection if necessary
+    if (m_connections[nodeId] == nullptr) {
         uint16_t connectionId = m_availableConnectionIds.back();
         m_availableConnectionIds.pop_back();
 
@@ -156,106 +342,69 @@ std::shared_ptr<IbConnection> IbConnectionManager::GetConnection(
                 it->GetPhysicalQpNum(), nodeId));
         }
 
-        m_connectionMutex.unlock();
-
         if (m_connections[nodeId]->GetQps().size() > MAX_QPS_PER_CONNECTION) {
             throw IbException("Exceeded max qps per connection limit");
         }
 
-        // send own qp info to remote to trigger remote qp creation
-        PaketNodeInfo paket;
+        IBNET_LOG_DEBUG("Allocated new connection to remote 0x{:X} with {} QPs",
+            nodeId, m_connections[nodeId]->GetQps().size());
+    }
 
-        paket.m_magic = PAKET_MAGIC;
-        paket.m_ident = m_conManIdent;
-        paket.m_info.m_nodeId = m_ownNodeId;
-        paket.m_info.m_lid = m_device->GetLid();
-        memset(paket.m_info.m_physicalQpId, 0xFF,
-            sizeof(uint32_t) * MAX_QPS_PER_CONNECTION);
-
-        uint32_t cnt = 0;
-        for (auto& it : m_connections[nodeId]->GetQps()) {
-            paket.m_info.m_physicalQpId[cnt++] = it->GetPhysicalQpNum();
-        }
-
-        uint32_t tryCounter = 0;
-
-        while (!m_connections[nodeId]->IsConnected()) {
-            IBNET_LOG_TRACE("Sending connection exchg information to {}",
-                    nodeInfo->GetAddress());
-            ssize_t ret = m_socket.Send(&paket, sizeof(PaketNodeInfo),
-                    nodeInfo->GetAddress().GetAddress(), m_socket.GetPort());
-
-            if (ret != sizeof(PaketNodeInfo)) {
-                IBNET_LOG_ERROR(
-                        "Trying to establish connection to node 0x{:x} failed,"
-                        " sending initial UDP paket failed",
-                        nodeId);
-            }
-            if (tryCounter > MAX_CONNECT_RETIRES) {
-                m_connectionMutex.lock();
-
-                // one last check
-                if (m_connections[nodeId]->IsConnected()) {
-                    m_connectionAvailable[nodeId].store(
-                        CONNECTION_AVAILABLE + 1, std::memory_order_relaxed);
-                    m_connectionMutex.unlock();
-                    // last minute success
-                    return m_connections[nodeId];
-                }
-
-                // FIXME don't remove because entries are replaced on new
-                // connection anyway? plus avoid race condition?
-//                for (auto& it : m_connections[nodeId]->GetQps()) {
-//                    m_qpNumToNodeIdMappings.erase(it->GetPhysicalQpNum());
-//                }
-
-                m_connections[nodeId].reset();
-
-                m_connectionMutex.unlock();
-
-                m_discoveryManager->InvalidateNodeInfo(nodeId);
-
-                throw IbTimeoutException(nodeId,
-                    "Connection retry count exceeded");
+    // not connected (yet) and remote QP ctx available -> finish connection
+    if (!m_connections[nodeId]->IsConnected() && physicalQpIds) {
+        std::vector<uint32_t> remotePhysicalQpIds;
+        for (uint32_t i = 0; i < MAX_QPS_PER_CONNECTION; i++) {
+            if (physicalQpIds[i] == 0xFFFFFFFF) {
+                break;
             }
 
-            tryCounter++;
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds(CONNECT_RETRY_WAIT_MS));
+            remotePhysicalQpIds.push_back(physicalQpIds[i]);
         }
 
-        m_connectionAvailable[nodeId].store(CONNECTION_AVAILABLE + 1,
-            std::memory_order_relaxed);
-    } else {
-        m_connectionAvailable[nodeId].store(CONNECTION_AVAILABLE + 1,
-            std::memory_order_relaxed);
+        IbRemoteInfo remoteInfo(nodeId, lid, ident, remotePhysicalQpIds);
 
-        m_connectionMutex.unlock();
+        m_connections[nodeId]->Connect(remoteInfo);
+        IBNET_LOG_INFO("Connected QP to remote {}", remoteInfo);
+        m_openConnections++;
 
-        // wait until we received the remote info and established the connection
-        while (!m_connections[nodeId]->IsConnected()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        if (m_listener) {
+            m_listener->NodeConnected(nodeId, *m_connections[nodeId]);
         }
     }
 
-    return m_connections[nodeId];
+    // check if the current node didn't figure out that the remote
+    // died and was restarted (current node acting as receiver only).
+    // this results in still owning old queue pair information
+    // which cannot be re-used with the new remote
+    if (m_connections[nodeId]->GetRemoteInfo().GetConManIdent() != ident) {
+        // different connection manager though same node id
+        // -> application restarted, kill old connection
+        IBNET_LOG_DEBUG("Detected zombie connection to node 0x{:x}, killing...",
+            nodeId);
+
+        m_jobThread.AddCloseJob(nodeId, true);
+        m_jobThread.AddCreateJob(nodeId);
+        return;
+    }
+
+    // send QP data to remote if connection established (remote might still
+    // have to do that) or if we are still lacking the data
+    uint32_t ownPhysicalQpIds[MAX_QPS_PER_CONNECTION];
+    memset(ownPhysicalQpIds, 0xFFFFFFFF, sizeof(ownPhysicalQpIds));
+
+    uint32_t cnt = 0;
+    for (auto& it : m_connections[nodeId]->GetQps()) {
+        ownPhysicalQpIds[cnt++] = it->GetPhysicalQpNum();
+    }
+
+    m_exchangeThread.SendExchgInfo(m_ownNodeId, m_connectionCtxIdent,
+        m_device->GetLid(), ownPhysicalQpIds,
+        remoteNodeInfo->GetAddress().GetAddress());
 }
 
-void IbConnectionManager::ReturnConnection(
-        std::shared_ptr<IbConnection>& connection)
-{
-    int32_t tmp = m_connectionAvailable[connection->GetRemoteNodeId()]
-        .fetch_sub(1, std::memory_order_relaxed);
-
-    IBNET_LOG_TRACE("ReturnConnection: 0x{:x}, avail {}",
-        connection->GetRemoteNodeId(), tmp - 1);
-}
-
-void IbConnectionManager::CloseConnection(uint16_t nodeId, bool force)
+void IbConnectionManager::ConnectionContext::Close(uint16_t nodeId, bool force)
 {
     IBNET_LOG_INFO("Closing connection of 0x{:x}, force {}", nodeId, force);
-
-    m_connectionMutex.lock();
 
     int32_t counter = m_connectionAvailable[nodeId].exchange(CONNECTION_CLOSING,
         std::memory_order_relaxed);
@@ -275,20 +424,13 @@ void IbConnectionManager::CloseConnection(uint16_t nodeId, bool force)
     }
 
     // remove connection
-    std::shared_ptr<core::IbConnection> connection = m_connections[nodeId];
+    std::shared_ptr<IbConnection> connection = m_connections[nodeId];
     m_connections[nodeId] = nullptr;
 
     // check if someone else was faster and removed it already
     if (connection == nullptr) {
-        m_connectionMutex.unlock();
         return;
     }
-
-    // FIXME don't remove because entries are replaced on new connection
-    // anyway? plus avoid race condition?
-//    for (auto& it : m_connections[nodeId]->GetQps()) {
-//        m_qpNumToNodeIdMappings.erase(it->GetPhysicalQpNum());
-//    }
 
     connection->Close(force);
 
@@ -302,9 +444,7 @@ void IbConnectionManager::CloseConnection(uint16_t nodeId, bool force)
     m_connectionAvailable[nodeId].store(CONNECTION_NOT_AVAILABLE,
         std::memory_order_relaxed);
 
-    m_connectionMutex.unlock();
-
-    m_discoveryManager->InvalidateNodeInfo(nodeId);
+    m_discoveryContext.Invalidate(nodeId);
 
     if (m_listener) {
         m_listener->NodeDisconnected(nodeId);
@@ -313,158 +453,223 @@ void IbConnectionManager::CloseConnection(uint16_t nodeId, bool force)
     IBNET_LOG_DEBUG("Connection of 0x{:x}, force {} closed", nodeId, force);
 }
 
-void IbConnectionManager::_BeforeRunLoop(void)
+IbConnectionManager::ExchangeThread::ExchangeThread(uint16_t ownNodeId,
+        uint16_t socketPort, JobThread& jobThread) :
+    ThreadLoop("IbConnectionManager-Exchange"),
+    m_ownNodeId(ownNodeId),
+    m_socket(std::move(std::make_unique<sys::SocketUDP>(socketPort))),
+    m_jobThread(jobThread)
 {
-    m_buffer = malloc(sizeof(PaketNodeInfo));
+
 }
 
-void IbConnectionManager::_RunLoop(void)
+IbConnectionManager::ExchangeThread::~ExchangeThread(void)
 {
-    const size_t bufferSize = sizeof(PaketNodeInfo);
-    uint32_t recvAddr = 0;
 
-    ssize_t res = m_socket.Receive(m_buffer, bufferSize, &recvAddr);
+}
 
-    if (res == bufferSize) {
-        PaketNodeInfo* paket = (PaketNodeInfo*) m_buffer;
+void IbConnectionManager::ExchangeThread::SendDiscoveryReq(uint16_t ownNodeId,
+        uint32_t destIp)
+{
+    Paket paket;
 
-        IBNET_LOG_TRACE(
-            "Received paket from {}, magic 0x{:x}, conManIdent 0x{:x}",
-                sys::AddressIPV4(recvAddr), paket->m_magic, paket->m_ident);
+    paket.m_magic = PAKET_MAGIC;
+    paket.m_type = PT_NODE_DISCOVERY_REQ;
+    paket.m_nodeId = ownNodeId;
 
-        if (paket->m_magic == PAKET_MAGIC) {
+    ssize_t ret = m_socket->Send(&paket, sizeof(Paket), destIp,
+        m_socket->GetPort());
 
-            uint16_t remoteNodeId = paket->m_info.m_nodeId;
-            IBNET_LOG_DEBUG("Received establish connection request by 0x{:x}",
-                    remoteNodeId);
-
-            m_connectionMutex.lock();
-
-            // check if the current node didn't figure out that the remote
-            // died and was restarted (current node acting as receiver only).
-            // this results in still owning old queue pair information
-            // which cannot be re-used with the new remote
-
-            if (m_connections[remoteNodeId] != nullptr &&
-                    m_connections[remoteNodeId]->IsConnected() &&
-                    m_connections[remoteNodeId]->GetRemoteInfo()
-                        .GetConManIdent() != paket->m_ident) {
-                // different connection manager though same node id
-                // -> application restarted, kill old connection
-                IBNET_LOG_DEBUG(
-                    "Detected zombie connection to node 0x{:x}, killing...",
-                    paket->m_info.m_nodeId);
-
-                m_connectionAvailable[remoteNodeId].exchange(
-                    CONNECTION_CLOSING, std::memory_order_relaxed);
-
-                // remove connection
-                std::shared_ptr<core::IbConnection> connection =
-                    m_connections[remoteNodeId];
-                m_connections[remoteNodeId] = nullptr;
-
-                // check if someone else was faster and removed it already
-                if (connection != nullptr) {
-                    connection->Close(true);
-
-                    // re-use connection id
-                    m_availableConnectionIds.push_back(
-                        connection->GetConnectionId());
-
-                    m_connectionAvailable[remoteNodeId].store(
-                        CONNECTION_NOT_AVAILABLE, std::memory_order_relaxed);
-                }
-            }
-
-            // check first if creating a connection is already in progress
-            if (m_connections[remoteNodeId] == nullptr) {
-                IBNET_LOG_TRACE("Creating new connection for node 0x{:X}",
-                        remoteNodeId);
-
-                uint16_t connectionId = m_availableConnectionIds.back();
-                m_availableConnectionIds.pop_back();
-
-                // create new connection for remote request
-                m_connections[remoteNodeId] =
-                    m_connectionCreator->CreateConnection(connectionId,
-                        m_device, m_protDom);
-
-                for (auto& it : m_connections[remoteNodeId]->GetQps()) {
-                    m_qpNumToNodeIdMappings.insert(std::make_pair(
-                        it->GetPhysicalQpNum(), remoteNodeId));
-                }
-            }
-
-            // check if the QP is already connected
-            if (!m_connections[remoteNodeId]->IsConnected()) {
-                std::vector<uint32_t> remotePhysicalQpIds;
-                for (uint32_t i = 0; i < MAX_QPS_PER_CONNECTION; i++) {
-                    if (paket->m_info.m_physicalQpId[i] == 0xFFFFFFFF) {
-                        break;
-                    }
-
-                    remotePhysicalQpIds.push_back(
-                        paket->m_info.m_physicalQpId[i]);
-                }
-
-                IbRemoteInfo remoteInfo(paket->m_info.m_nodeId,
-                    paket->m_info.m_lid, paket->m_ident, remotePhysicalQpIds);
-
-                m_connections[remoteNodeId]->Connect(remoteInfo);
-                IBNET_LOG_INFO("Connected QP to remote {}", remoteInfo);
-                m_openConnections++;
-
-                m_connectionMutex.unlock();
-
-                // listener _after_ unlock -> listener can call GetConnection
-                // => deadlock
-                if (m_listener) {
-                    m_listener->NodeConnected(remoteNodeId,
-                            *m_connections[remoteNodeId]);
-                }
-
-                // other QP sent request and is already connected,
-                // no need to reply
-
-                return;
-            }
-            // else: QP already connected concurrently by other
-            // thread
-
-            // reply with connection information to remote
-            paket->m_ident = m_conManIdent;
-            paket->m_info.m_nodeId = m_ownNodeId;
-            paket->m_info.m_lid = m_device->GetLid();
-
-            uint32_t cnt = 0;
-            for (auto& it : m_connections[remoteNodeId]->GetQps()) {
-                paket->m_info.m_physicalQpId[cnt++] = it->GetPhysicalQpNum();
-            }
-
-            m_connectionMutex.unlock();
-
-            IBNET_LOG_TRACE(
-                "Replying with connection exchg info to node 0x{:X}",
-                remoteNodeId);
-            res = m_socket.Send(m_buffer, bufferSize, recvAddr,
-                m_socket.GetPort());
-
-            if (res != bufferSize) {
-                IBNET_LOG_ERROR("Establishing connection with node 0x{:x}"
-                        " failed, sending response failed", remoteNodeId);
-            }
-        } else {
-            IBNET_LOG_TRACE("Received paket with invalid magic 0x{:x}",
-                    paket->m_magic);
-        }
-    } else {
-        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    if (ret != sizeof(Paket)) {
+        IBNET_LOG_ERROR("Sending discovery request to {} failed",
+            sys::AddressIPV4(destIp));
     }
 }
 
-void IbConnectionManager::_AfterRunLoop(void)
+void IbConnectionManager::ExchangeThread::SendExchgInfo(uint16_t nodeId,
+        uint32_t ident, uint16_t lid, uint32_t* physicalQpIds, uint32_t destIp)
 {
-    free(m_buffer);
+    Paket paket;
+
+    paket.m_magic = PAKET_MAGIC;
+    paket.m_type = PT_NODE_CON_INFO;
+    paket.m_nodeId = nodeId;
+    paket.m_ident = ident;
+    paket.m_lid = lid;
+    memcpy(paket.m_physicalQpId, physicalQpIds, sizeof(paket.m_physicalQpId));
+
+    ssize_t ret = m_socket->Send(&paket, sizeof(Paket), destIp,
+        m_socket->GetPort());
+
+    if (ret != sizeof(Paket)) {
+        IBNET_LOG_ERROR("Sending exchg infoto {} failed",
+            sys::AddressIPV4(destIp));
+    }
+}
+
+void IbConnectionManager::ExchangeThread::_RunLoop(void)
+{
+    const size_t bufferSize = sizeof(Paket);
+    uint32_t recvAddr = 0;
+
+    ssize_t res = m_socket->Receive(&m_recvPaket, bufferSize, &recvAddr);
+
+    if (res == bufferSize) {
+        IBNET_LOG_TRACE(
+            "Received paket from {}, magic 0x{:x}, type {}, nodeId 0x{:x}",
+            sys::AddressIPV4(recvAddr), paket->m_magic, type, paket->m_nodeId);
+
+        if (m_recvPaket.m_magic == PAKET_MAGIC) {
+            switch (m_recvPaket.m_nodeId) {
+                case PT_NODE_DISCOVERY_REQ:
+                    __SendDiscoveryResp(m_ownNodeId, recvAddr);
+                    break;
+
+                case PT_NODE_DISCOVERY_RESP:
+                    m_jobThread.AddDiscoveredJob(m_recvPaket.m_nodeId,
+                        recvAddr);
+                    break;
+
+                case PT_NODE_CON_INFO:
+                    m_jobThread.AddCreateJob(m_recvPaket.m_nodeId,
+                        m_recvPaket.m_ident,
+                        m_recvPaket.m_lid,
+                        m_recvPaket.m_physicalQpId);
+                    break;
+
+                default:
+                    IBNET_LOG_ERROR("Unknown paket type {} from {}",
+                        m_recvPaket.m_type, sys::AddressIPV4(recvAddr));
+                return;
+            }
+        }
+    }
+}
+
+bool IbConnectionManager::ExchangeThread::__SendDiscoveryResp(uint16_t ownNodeId,
+                                                               uint32_t destIp)
+{
+    Paket paket;
+
+    paket.m_magic = PAKET_MAGIC;
+    paket.m_type = PT_NODE_DISCOVERY_RESP;
+    paket.m_nodeId = ownNodeId;
+
+    ssize_t ret = m_socket->Send(&paket, sizeof(Paket), destIp,
+        m_socket->GetPort());
+
+    return ret == sizeof(Paket);
+}
+
+IbConnectionManager::JobThread::JobThread(DiscoveryContext& discoveryContext,
+        ConnectionContext& connectionContext) :
+    ThreadLoop("IbConnectionManager-Job"),
+    m_queue(1024),
+    m_discoveryContext(discoveryContext),
+    m_connectionContext(connectionContext)
+{
+
+}
+
+IbConnectionManager::JobThread::~JobThread(void)
+{
+
+}
+
+void IbConnectionManager::JobThread::AddCreateJob(uint16_t nodeId)
+{
+    IbConnectionManagerJobQueue::Job job;
+    job.m_type = IbConnectionManagerJobQueue::JT_CREATE;
+    job.m_nodeId = nodeId;
+    job.m_lid = 0xFFFF;
+    memset(job.m_physicalQpId, 0xFFFFFFFF, sizeof(job.m_physicalQpId));
+
+    __AddJob(job);
+}
+
+void IbConnectionManager::JobThread::AddCreateJob(uint16_t nodeId,
+        uint32_t ident, uint16_t lid, uint32_t* physicalQpIds)
+{
+    IbConnectionManagerJobQueue::Job job;
+    job.m_type = IbConnectionManagerJobQueue::JT_CREATE;
+    job.m_nodeId = nodeId;
+    job.m_ident = ident;
+    job.m_lid = lid;
+    memcpy(job.m_physicalQpId, physicalQpIds, sizeof(job.m_physicalQpId));
+
+    __AddJob(job);
+}
+
+void IbConnectionManager::JobThread::AddCloseJob(uint16_t nodeId, bool force)
+{
+    IbConnectionManagerJobQueue::Job job;
+    job.m_type = IbConnectionManagerJobQueue::JT_CLOSE;
+    job.m_nodeId = nodeId;
+    job.m_force = force;
+
+    __AddJob(job);
+}
+
+void IbConnectionManager::JobThread::AddDiscoverJob(void)
+{
+    IbConnectionManagerJobQueue::Job job;
+    job.m_type = IbConnectionManagerJobQueue::JT_DISCOVER;
+
+    __AddJob(job);
+}
+
+void IbConnectionManager::JobThread::AddDiscoveredJob(uint16_t nodeId,
+        uint32_t remoteIpAddr)
+{
+    IbConnectionManagerJobQueue::Job job;
+    job.m_type = IbConnectionManagerJobQueue::JT_DISCOVERED;
+    job.m_nodeId = nodeId;
+    job.m_ipAddr = remoteIpAddr;
+
+    __AddJob(job);
+}
+
+void IbConnectionManager::JobThread::_RunLoop(void)
+{
+    if (!m_queue.PopFront(m_job)) {
+        // TODO more sophisticated sleep strategy?
+        std::this_thread::yield();
+        return;
+    }
+
+    switch (m_job.m_type) {
+        case IbConnectionManagerJobQueue::JT_CREATE:
+            m_connectionContext.Create(m_job.m_nodeId, m_job.m_ident , m_job.m_lid,
+                m_job.m_physicalQpId);
+            break;
+
+        case IbConnectionManagerJobQueue::JT_CLOSE:
+            m_connectionContext.Close(m_job.m_nodeId, m_job.m_force);
+            break;
+
+        case IbConnectionManagerJobQueue::JT_DISCOVER:
+            m_discoveryContext.Discover();
+            break;
+
+        case IbConnectionManagerJobQueue::JT_DISCOVERED:
+            m_discoveryContext.Discovered(m_job.m_nodeId, m_job.m_ipAddr);
+            break;
+
+        default:
+            IBNET_LOG_ERROR("Cannot dispatch unknown job type {}",
+                m_job.m_type);
+            return;
+    }
+}
+
+void IbConnectionManager::JobThread::__AddJob(
+        IbConnectionManagerJobQueue::Job& job)
+{
+    while (!m_queue.PushBack(job)) {
+        IBNET_LOG_WARN("Job queue full, waiting...");
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(1));
+    }
 }
 
 }

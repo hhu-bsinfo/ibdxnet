@@ -48,7 +48,6 @@ endforeach (OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES)
 
 add_subdirectory(IbConnectionManagerTest)
 add_subdirectory(IbDeviceTest)
-add_subdirectory(IbDiscoveryManagerTest)
 add_subdirectory(IbnetCore)
 add_subdirectory(IbnetSys)
 add_subdirectory(JNIIbdxnet)

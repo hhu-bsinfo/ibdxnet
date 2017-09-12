@@ -65,7 +65,45 @@ public:
         __NodeDisconnected(nodeId);
     }
 
+    /**
+     * Override
+     */
+    void NodeDiscovered(uint16_t nodeId) override
+    {
+        __NodeDiscovered(nodeId);
+    }
+
+    /**
+     * Override
+     */
+    void NodeInvalidated(uint16_t nodeId) override
+    {
+        __NodeInvalidated(nodeId);
+    }
+
 private:
+    inline void __NodeDiscovered(uint16_t nodeId)
+    {
+        IBNET_LOG_TRACE_FUNC;
+
+        JNIEnv* env = JNIHelper::GetEnv(m_vm);
+        env->CallVoidMethod(m_object, m_midNodeDiscovered, nodeId);
+        JNIHelper::ReturnEnv(m_vm, env);
+
+        IBNET_LOG_TRACE_FUNC_EXIT;
+    }
+
+    inline void __NodeInvalidated(uint16_t nodeId)
+    {
+        IBNET_LOG_TRACE_FUNC;
+
+        JNIEnv* env = JNIHelper::GetEnv(m_vm);
+        env->CallVoidMethod(m_object, m_midNodeInvalidated, nodeId);
+        JNIHelper::ReturnEnv(m_vm, env);
+
+        IBNET_LOG_TRACE_FUNC_EXIT;
+    }
+
     inline void __NodeConnected(uint16_t nodeId)
     {
         IBNET_LOG_TRACE_FUNC;
@@ -94,6 +132,8 @@ private:
 
     std::shared_ptr<RecvThread>& m_recvThread;
 
+    jmethodID m_midNodeDiscovered;
+    jmethodID m_midNodeInvalidated;
     jmethodID m_midNodeConnected;
     jmethodID m_midNodeDisconnected;
 };

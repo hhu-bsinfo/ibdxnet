@@ -30,12 +30,10 @@
 #include "ConnectionCreator.h"
 #include "ConnectionHandler.h"
 #include "DebugThread.h"
-#include "DiscoveryHandler.h"
 
 static std::unique_ptr<backward::SignalHandling> g_signalHandler;
 
 static std::shared_ptr<ibnet::dx::ConnectionHandler> g_connectionHandler;
-static std::shared_ptr<ibnet::dx::DiscoveryHandler> g_discoveryHandler;
 static std::shared_ptr<ibnet::dx::RecvHandler> g_recvHandler;
 static std::shared_ptr<ibnet::dx::SendHandler> g_sendHandler;
 
@@ -49,7 +47,6 @@ static std::shared_ptr<ibnet::core::IbCompQueue> g_sharedRecvCompQueue;
 static std::shared_ptr<ibnet::core::IbCompQueue>
     g_sharedFlowControlRecvCompQueue;
 
-static std::shared_ptr<ibnet::core::IbDiscoveryManager> g_discoveryManager;
 static std::shared_ptr<ibnet::core::IbConnectionManager> g_connectionManager;
 
 static std::shared_ptr<ibnet::dx::SendBuffers> g_sendBuffers;
@@ -69,6 +66,9 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init(
         jobject p_connectionHandler, jboolean p_enableSignalHandler,
         jboolean p_enableDebugThread)
 {
+    // TODO have this parameter configurable
+    uint32_t p_connectionCreationTimeoutMs = 1000;
+
     // setup foundation
     if (p_enableSignalHandler) {
         g_signalHandler = std::make_unique<backward::SignalHandling>();
@@ -89,8 +89,6 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init(
     try {
         g_connectionHandler = std::make_shared<ibnet::dx::ConnectionHandler>(
             p_env, p_connectionHandler, g_recvThread);
-        g_discoveryHandler = std::make_shared<ibnet::dx::DiscoveryHandler>(
-            p_env, p_discoveryHandler);
         g_recvHandler = std::make_shared<ibnet::dx::RecvHandler>(p_env,
             p_recvHandler);
         g_sendHandler = std::make_shared<ibnet::dx::SendHandler>(p_env,
@@ -128,21 +126,15 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init(
         // add nodes later
         ibnet::core::IbNodeConf nodeConf;
 
-        g_discoveryManager = std::make_shared<ibnet::core::IbDiscoveryManager>(
-            p_ownNodeId,
-            nodeConf, 5730);
-
         g_connectionManager = std::make_shared<ibnet::core::IbConnectionManager>(
-            p_ownNodeId,
-            5731, p_maxNumConnections, g_device, g_protDom,
-            g_discoveryManager,
+            p_ownNodeId, nodeConf, 5731, p_connectionCreationTimeoutMs,
+            p_maxNumConnections, g_device, g_protDom,
             std::make_unique<ibnet::dx::ConnectionCreator>(p_maxSendReqs,
                 p_maxRecvReqs, p_flowControlMaxRecvReqs, g_sharedRecvQueue,
                 g_sharedRecvCompQueue, g_sharedFlowControlRecvQueue,
                 g_sharedFlowControlRecvCompQueue));
 
         g_connectionManager->SetNodeConnectedListener(g_connectionHandler.get());
-        g_discoveryManager->SetNodeDiscoveryListener(g_discoveryHandler.get());
 
         IBNET_LOG_INFO("Initializing buffer pools...");
 
@@ -204,7 +196,6 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_shutdown(
 
     try {
         g_connectionManager.reset();
-        g_discoveryManager.reset();
         g_sharedRecvCompQueue.reset();
         g_sharedRecvQueue.reset();
         g_protDom.reset();
@@ -214,7 +205,6 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_shutdown(
     }
 
     g_connectionHandler.reset();
-    g_discoveryHandler.reset();
     g_recvHandler.reset();
     g_sendHandler.reset();
 
@@ -235,7 +225,7 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_addNode(
 
     ibnet::core::IbNodeConf::Entry entry(
         ibnet::sys::AddressIPV4((uint32_t) p_ipv4));
-    g_discoveryManager->AddNode(entry);
+    g_connectionManager->AddNode(entry);
 }
 
 JNIEXPORT jlong JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_getSendBufferAddress(

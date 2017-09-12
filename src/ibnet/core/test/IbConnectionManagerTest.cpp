@@ -26,7 +26,6 @@
 #include "ibnet/sys/Network.h"
 #include "ibnet/sys/ThreadLoop.h"
 
-#include "ibnet/core/IbDiscoveryManager.h"
 #include "ibnet/core/IbConnectionCreatorSimple.h"
 #include "ibnet/core/IbConnectionManager.h"
 #include "ibnet/core/IbNodeConfArgListReader.h"
@@ -164,13 +163,9 @@ int main(int argc, char** argv)
     }
 
     std::cout << "Own node id: 0x" <<  std::hex << ownNodeId << std::endl;
-    std::shared_ptr<ibnet::core::IbDiscoveryManager> discMan =
-        std::make_shared<ibnet::core::IbDiscoveryManager>(ownNodeId, nodeConf,
-            5730);
-
     std::shared_ptr<ibnet::core::IbConnectionManager> conMan =
-        std::make_shared<ibnet::core::IbConnectionManager>(ownNodeId, 5731, 100,
-        device, protDom, discMan,
+        std::make_shared<ibnet::core::IbConnectionManager>(ownNodeId, nodeConf,
+            5731, 1000, 100, device, protDom,
         std::make_unique<ibnet::core::IbConnectionCreatorSimple>(10, 10,
             nullptr, compQueue));
 
@@ -198,7 +193,6 @@ int main(int argc, char** argv)
     g_clientThreads.clear();
 
     conMan.reset();
-    discMan.reset();
     compQueue.reset();
     protDom.reset();
     device.reset();

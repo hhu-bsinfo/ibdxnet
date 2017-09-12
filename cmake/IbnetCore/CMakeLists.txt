@@ -25,8 +25,8 @@ set(SOURCE_FILES
         ${IBNET_SRC_DIR}/ibnet/core/IbConnection.cpp
         ${IBNET_SRC_DIR}/ibnet/core/IbConnectionCreatorSimple.cpp
         ${IBNET_SRC_DIR}/ibnet/core/IbConnectionManager.cpp
+        ${IBNET_SRC_DIR}/ibnet/core/IbConnectionManagerJobQueue.cpp
         ${IBNET_SRC_DIR}/ibnet/core/IbDevice.cpp
-        ${IBNET_SRC_DIR}/ibnet/core/IbDiscoveryManager.cpp
         ${IBNET_SRC_DIR}/ibnet/core/IbNodeConf.cpp
         ${IBNET_SRC_DIR}/ibnet/core/IbNodeConfArgListReader.cpp
         ${IBNET_SRC_DIR}/ibnet/core/IbProtDom.cpp

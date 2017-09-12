@@ -81,8 +81,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init(
     // first, check if we are allowed to pin memory, otherwise we don't have
     // to continue. just check if we are root...
     if (getuid() != 0) {
-        IBNET_LOG_PANIC("Cannot run ib subsystem as non root user");
-        return (jboolean) 0;
+        IBNET_LOG_WARN("Running IB subsystem as NON ROOT USER!!!");
     }
 
     // callbacks to java vm

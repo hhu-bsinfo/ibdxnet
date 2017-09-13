@@ -85,7 +85,7 @@ private:
 
         void Discovered(uint16_t nodeId, uint32_t remoteIpAddr);
 
-        void Invalidate(uint16_t nodeId);
+        void Invalidate(uint16_t nodeId, bool shutdown);
 
     private:
         const uint16_t m_ownNodeId;
@@ -173,7 +173,7 @@ private:
         void Create(uint16_t nodeId, uint32_t ident, uint16_t lid,
                     uint32_t* physicalQpIds);
 
-        void Close(uint16_t nodeId, bool force);
+        void Close(uint16_t nodeId, bool force, bool shutdown);
 
     private:
         const uint16_t m_ownNodeId;
@@ -257,11 +257,13 @@ private:
         void AddCreateJob(uint16_t nodeId, uint32_t ident, uint16_t lid,
             uint32_t* physicalQpIds);
 
-        void AddCloseJob(uint16_t nodeId, bool force);
+        void AddCloseJob(uint16_t nodeId, bool force, bool shutdown);
 
         void AddDiscoverJob(void);
 
         void AddDiscoveredJob(uint16_t nodeId, uint32_t remoteIpAddr);
+
+        bool IsQueueEmpty(void);
 
     protected:
         void _RunLoop(void) override;

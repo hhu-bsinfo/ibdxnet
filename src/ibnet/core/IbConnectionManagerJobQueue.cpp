@@ -62,5 +62,13 @@ bool IbConnectionManagerJobQueue::PopFront(Job& job)
     return true;
 }
 
+bool IbConnectionManagerJobQueue::IsEmpty(void) const
+{
+    uint32_t front = m_front.load(std::memory_order_relaxed);
+    uint32_t back = m_back.load(std::memory_order_relaxed);
+
+    return front % m_size == back % m_size;
+}
+
 }
 }

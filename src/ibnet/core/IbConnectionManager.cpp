@@ -38,11 +38,17 @@ IbConnectionManager::~IbConnectionManager(void)
     IBNET_LOG_INFO("Shutting down connection manager...");
 
     // close opened connections
-    // FIXME cleanup open connections, only
-//    for (uint32_t i = 0; i < IbNodeId::MAX_NUM_NODES; i++) {
-//        m_jobThread.AddCloseJob(static_cast<uint16_t>(i), true);
-//        std::this_thread::yield();
-//    }
+    for (uint32_t i = 0; i < IbNodeId::MAX_NUM_NODES; i++) {
+        if (m_connectionContext.IsConnectionAvailable(
+                static_cast<uint16_t>(i))) {
+            m_jobThread.AddCloseJob(static_cast<uint16_t>(i), true, true);
+        }
+    }
+
+    // wait until all jobs are processed
+    while (!m_jobThread.IsQueueEmpty()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
 
     m_jobThread.Stop();
     m_exchangeThread.Stop();
@@ -197,16 +203,22 @@ void IbConnectionManager::DiscoveryContext::Discovered(uint16_t nodeId,
 
 }
 
-void IbConnectionManager::DiscoveryContext::Invalidate(uint16_t nodeId)
+void IbConnectionManager::DiscoveryContext::Invalidate(uint16_t nodeId,
+        bool shutdown)
 {
     m_lock.lock();
     m_infoToGet.push_back(m_nodeInfo[nodeId]);
     m_nodeInfo[nodeId].reset();
     m_lock.unlock();
 
-    // add job to re-discover
-    m_jobThread.AddDiscoverJob();
-    m_listener->NodeInvalidated(nodeId);
+    // add job to re-discover if system is not shutting down
+    if (!shutdown) {
+        m_jobThread.AddDiscoverJob();
+    }
+
+    if (m_listener) {
+        m_listener->NodeInvalidated(nodeId);
+    }
 }
 
 IbConnectionManager::ConnectionContext::ConnectionContext(uint16_t ownNodeId,
@@ -327,7 +339,7 @@ void IbConnectionManager::ConnectionContext::ReturnConnection(
 void IbConnectionManager::ConnectionContext::CloseConnection(uint16_t nodeId,
         bool force)
 {
-    m_jobThread.AddCloseJob(nodeId, force);
+    m_jobThread.AddCloseJob(nodeId, force, false);
 }
 
 void IbConnectionManager::ConnectionContext::Create(uint16_t nodeId,
@@ -341,7 +353,7 @@ void IbConnectionManager::ConnectionContext::Create(uint16_t nodeId,
         // get remote node connection information
         remoteNodeInfo = m_discoveryContext.GetNodeInfo(nodeId);
     } catch (...) {
-        IBNET_LOG_ERROR("Cannot create connection to remote 0x{:X}, "
+        IBNET_LOG_WARN("Cannot create connection to remote 0x{:X}, "
             "not discovered, yet", nodeId);
         return;
     }
@@ -404,7 +416,7 @@ void IbConnectionManager::ConnectionContext::Create(uint16_t nodeId,
             " ({} != {}), killing...", nodeId,
             m_connections[nodeId]->GetRemoteInfo().GetConManIdent(), ident);
 
-        m_jobThread.AddCloseJob(nodeId, true);
+        m_jobThread.AddCloseJob(nodeId, true, false);
         m_jobThread.AddCreateJob(nodeId);
         return;
     }
@@ -424,7 +436,8 @@ void IbConnectionManager::ConnectionContext::Create(uint16_t nodeId,
         remoteNodeInfo->GetAddress().GetAddress());
 }
 
-void IbConnectionManager::ConnectionContext::Close(uint16_t nodeId, bool force)
+void IbConnectionManager::ConnectionContext::Close(uint16_t nodeId, bool force,
+        bool shutdown)
 {
     IBNET_LOG_INFO("Closing connection of 0x{:x}, force {}", nodeId, force);
 
@@ -466,7 +479,7 @@ void IbConnectionManager::ConnectionContext::Close(uint16_t nodeId, bool force)
     m_connectionAvailable[nodeId].store(CONNECTION_NOT_AVAILABLE,
         std::memory_order_relaxed);
 
-    m_discoveryContext.Invalidate(nodeId);
+    m_discoveryContext.Invalidate(nodeId, shutdown);
 
     if (m_listener) {
         m_listener->NodeDisconnected(nodeId);
@@ -624,12 +637,14 @@ void IbConnectionManager::JobThread::AddCreateJob(uint16_t nodeId,
     __AddJob(job);
 }
 
-void IbConnectionManager::JobThread::AddCloseJob(uint16_t nodeId, bool force)
+void IbConnectionManager::JobThread::AddCloseJob(uint16_t nodeId, bool force,
+        bool shutdown)
 {
     IbConnectionManagerJobQueue::Job job;
     job.m_type = IbConnectionManagerJobQueue::JT_CLOSE;
     job.m_nodeId = nodeId;
     job.m_force = force;
+    job.m_shutdown = shutdown;
 
     __AddJob(job);
 }
@@ -653,6 +668,11 @@ void IbConnectionManager::JobThread::AddDiscoveredJob(uint16_t nodeId,
     __AddJob(job);
 }
 
+bool IbConnectionManager::JobThread::IsQueueEmpty(void)
+{
+    return m_queue.IsEmpty();
+}
+
 void IbConnectionManager::JobThread::_RunLoop(void)
 {
     if (!m_queue.PopFront(m_job)) {
@@ -670,7 +690,8 @@ void IbConnectionManager::JobThread::_RunLoop(void)
             break;
 
         case IbConnectionManagerJobQueue::JT_CLOSE:
-            m_connectionContext.Close(m_job.m_nodeId, m_job.m_force);
+            m_connectionContext.Close(m_job.m_nodeId, m_job.m_force,
+                m_job.m_shutdown);
             break;
 
         case IbConnectionManagerJobQueue::JT_DISCOVER:
@@ -691,6 +712,8 @@ void IbConnectionManager::JobThread::_RunLoop(void)
 void IbConnectionManager::JobThread::__AddJob(
         IbConnectionManagerJobQueue::Job& job)
 {
+    IBNET_LOG_TRACE("Add job {}", job.m_type);
+
     while (!m_queue.PushBack(job)) {
         IBNET_LOG_WARN("Job queue full, waiting...");
         std::this_thread::sleep_for(

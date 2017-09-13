@@ -52,6 +52,7 @@ public:
         uint16_t m_lid;
         uint32_t m_physicalQpId[MAX_QPS_PER_CONNECTION];
         bool m_force;
+        bool m_shutdown;
 
         Job(void) :
             m_type(JT_INVALID),
@@ -59,7 +60,8 @@ public:
             m_ident(0xFFFFFFFF),
             m_ipAddr(0xFFFFFFFF),
             m_lid(0xFFFF),
-            m_force(false)
+            m_force(false),
+            m_shutdown(false)
         {
             memset(m_physicalQpId, 0xFFFFFFFF,
                 sizeof(uint32_t) * MAX_QPS_PER_CONNECTION);
@@ -73,6 +75,8 @@ public:
     bool PushBack(const Job& job);
 
     bool PopFront(Job& job);
+
+    bool IsEmpty(void) const;
 
 private:
     const uint32_t m_size;

@@ -37,35 +37,29 @@ bool IbConnectionManagerJobQueue::PushBack(const Job& job)
 
             // wait for any preceding reservations to complete before updating
             // back
-            while (!m_backRes.compare_exchange_weak(backRes, backRes + 1,
+            while (!m_back.compare_exchange_weak(backRes, backRes + 1,
                 std::memory_order_release)) {
                 std::this_thread::yield();
             }
 
-            break;
+            return true;
         }
     }
-
-    return true;
 }
 
 bool IbConnectionManagerJobQueue::PopFront(Job& job)
 {
     uint32_t front = m_front.load(std::memory_order_relaxed);
-    uint32_t back;
+    uint32_t back = m_back.load(std::memory_order_relaxed);
 
-    while (true) {
-        back = m_back.load(std::memory_order_relaxed);
-
-        if (front % m_size == back % m_size) {
-            return false;
-        }
-
-        job = m_queue[front % m_size];
-
-        m_front.fetch_add(1, std::memory_order_release);
-        return true;
+    if (front % m_size == back % m_size) {
+        return false;
     }
+
+    job = m_queue[front % m_size];
+
+    m_front.fetch_add(1, std::memory_order_release);
+    return true;
 }
 
 }

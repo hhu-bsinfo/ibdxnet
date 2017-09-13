@@ -22,6 +22,9 @@ IbConnectionManager::IbConnectionManager(uint16_t ownNodeId,
     m_exchangeThread(ownNodeId, socketPort, m_jobThread),
     m_jobThread(m_discoveryContext, m_connectionContext)
 {
+    IBNET_LOG_TRACE_FUNC;
+    IBNET_LOG_INFO("Starting connection manager...");
+
     m_exchangeThread.Start();
     m_jobThread.Start();
 
@@ -35,10 +38,11 @@ IbConnectionManager::~IbConnectionManager(void)
     IBNET_LOG_INFO("Shutting down connection manager...");
 
     // close opened connections
-    for (uint32_t i = 0; i < IbNodeId::MAX_NUM_NODES; i++) {
-        m_jobThread.AddCloseJob(static_cast<uint16_t>(i), true);
-        std::this_thread::yield();
-    }
+    // FIXME cleanup open connections, only
+//    for (uint32_t i = 0; i < IbNodeId::MAX_NUM_NODES; i++) {
+//        m_jobThread.AddCloseJob(static_cast<uint16_t>(i), true);
+//        std::this_thread::yield();
+//    }
 
     m_jobThread.Stop();
     m_exchangeThread.Stop();
@@ -81,7 +85,18 @@ IbConnectionManager::DiscoveryContext::DiscoveryContext(uint16_t ownNodeId,
     m_exchangeThread(exchangeThread),
     m_jobThread(jobThread)
 {
-    // TODO parse node config
+    IBNET_LOG_INFO("Initializing node discovery list, own node id 0x{:x}...",
+        ownNodeId);
+
+    std::string ownHostname = sys::Network::GetHostname();
+
+    for (auto& it : nodeConf.GetEntries()) {
+
+        // don't add self
+        if (it.GetHostname() != ownHostname) {
+            m_infoToGet.push_back(std::make_shared<IbNodeConf::Entry>(it));
+        }
+    }
 }
 
 IbConnectionManager::DiscoveryContext::~DiscoveryContext(void)
@@ -127,8 +142,8 @@ void IbConnectionManager::DiscoveryContext::Discover(void)
 
     // request remote node's information if not received, yet
     for (auto& it : m_infoToGet) {
-        IBNET_LOG_TRACE("Requesting node info from {}:{}",
-            it->GetAddress().GetAddressStr(), m_socketPort);
+        IBNET_LOG_TRACE("Requesting node info from {}",
+            it->GetAddress().GetAddressStr());
 
         m_exchangeThread.SendDiscoveryReq(m_ownNodeId,
             it->GetAddress().GetAddress());
@@ -140,6 +155,9 @@ void IbConnectionManager::DiscoveryContext::Discover(void)
     if (m_infoToGet.size() != 0) {
         m_jobThread.AddDiscoverJob();
     }
+
+    // reduce cpu load
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
 }
 
 void IbConnectionManager::DiscoveryContext::Discovered(uint16_t nodeId,
@@ -262,11 +280,13 @@ std::shared_ptr<IbConnection> IbConnectionManager::ConnectionContext::GetConnect
     int32_t available = m_connectionAvailable[nodeId].fetch_add(1,
         std::memory_order_acquire);
 
-    IBNET_LOG_TRACE("GetConnection: 0x{:x}, avail: {}", nodeId, available + 1);
-
     if (available >= CONNECTION_AVAILABLE) {
         return m_connections[nodeId];
     }
+
+    IBNET_LOG_TRACE("GetConnection: 0x{:x}, avail: {}", nodeId, available + 1);
+
+    m_jobThread.AddCreateJob(nodeId);
 
     std::chrono::high_resolution_clock::time_point start;
 
@@ -310,14 +330,11 @@ void IbConnectionManager::ConnectionContext::CloseConnection(uint16_t nodeId,
     m_jobThread.AddCloseJob(nodeId, force);
 }
 
-void IbConnectionManager::ConnectionContext::Create(uint16_t nodeId)
-{
-    Create(nodeId, m_connectionCtxIdent, 0xFFFF, nullptr);
-}
-
 void IbConnectionManager::ConnectionContext::Create(uint16_t nodeId,
         uint32_t ident, uint16_t lid, uint32_t* physicalQpIds)
 {
+    IBNET_LOG_TRACE_FUNC;
+
     std::shared_ptr<IbNodeConf::Entry> remoteNodeInfo;
 
     try {
@@ -351,7 +368,7 @@ void IbConnectionManager::ConnectionContext::Create(uint16_t nodeId,
     }
 
     // not connected (yet) and remote QP ctx available -> finish connection
-    if (!m_connections[nodeId]->IsConnected() && physicalQpIds) {
+    if (!m_connections[nodeId]->IsConnected() && lid != 0xFFFF) {
         std::vector<uint32_t> remotePhysicalQpIds;
         for (uint32_t i = 0; i < MAX_QPS_PER_CONNECTION; i++) {
             if (physicalQpIds[i] == 0xFFFFFFFF) {
@@ -367,6 +384,9 @@ void IbConnectionManager::ConnectionContext::Create(uint16_t nodeId,
         IBNET_LOG_INFO("Connected QP to remote {}", remoteInfo);
         m_openConnections++;
 
+        m_connectionAvailable[nodeId].store(CONNECTION_AVAILABLE,
+            std::memory_order_relaxed);
+
         if (m_listener) {
             m_listener->NodeConnected(nodeId, *m_connections[nodeId]);
         }
@@ -376,11 +396,13 @@ void IbConnectionManager::ConnectionContext::Create(uint16_t nodeId,
     // died and was restarted (current node acting as receiver only).
     // this results in still owning old queue pair information
     // which cannot be re-used with the new remote
-    if (m_connections[nodeId]->GetRemoteInfo().GetConManIdent() != ident) {
+    if (m_connections[nodeId]->IsConnected() && lid != 0xFFFF &&
+            m_connections[nodeId]->GetRemoteInfo().GetConManIdent() != ident) {
         // different connection manager though same node id
         // -> application restarted, kill old connection
-        IBNET_LOG_DEBUG("Detected zombie connection to node 0x{:x}, killing...",
-            nodeId);
+        IBNET_LOG_DEBUG("Detected zombie connection to node 0x{:x}"
+            " ({} != {}), killing...", nodeId,
+            m_connections[nodeId]->GetRemoteInfo().GetConManIdent(), ident);
 
         m_jobThread.AddCloseJob(nodeId, true);
         m_jobThread.AddCreateJob(nodeId);
@@ -517,10 +539,11 @@ void IbConnectionManager::ExchangeThread::_RunLoop(void)
     if (res == bufferSize) {
         IBNET_LOG_TRACE(
             "Received paket from {}, magic 0x{:x}, type {}, nodeId 0x{:x}",
-            sys::AddressIPV4(recvAddr), paket->m_magic, type, paket->m_nodeId);
+            sys::AddressIPV4(recvAddr), m_recvPaket.m_magic,
+            m_recvPaket.m_type, m_recvPaket.m_nodeId);
 
         if (m_recvPaket.m_magic == PAKET_MAGIC) {
-            switch (m_recvPaket.m_nodeId) {
+            switch (m_recvPaket.m_type) {
                 case PT_NODE_DISCOVERY_REQ:
                     __SendDiscoveryResp(m_ownNodeId, recvAddr);
                     break;
@@ -581,6 +604,7 @@ void IbConnectionManager::JobThread::AddCreateJob(uint16_t nodeId)
     IbConnectionManagerJobQueue::Job job;
     job.m_type = IbConnectionManagerJobQueue::JT_CREATE;
     job.m_nodeId = nodeId;
+    job.m_ident = 0xFFFFFFFF;
     job.m_lid = 0xFFFF;
     memset(job.m_physicalQpId, 0xFFFFFFFF, sizeof(job.m_physicalQpId));
 
@@ -636,6 +660,8 @@ void IbConnectionManager::JobThread::_RunLoop(void)
         std::this_thread::yield();
         return;
     }
+
+    IBNET_LOG_TRACE("Dispatching job type {}", m_job.m_type);
 
     switch (m_job.m_type) {
         case IbConnectionManagerJobQueue::JT_CREATE:

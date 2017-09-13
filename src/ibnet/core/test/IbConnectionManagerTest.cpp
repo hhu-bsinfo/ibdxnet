@@ -52,6 +52,7 @@ protected:
         // -1: don't count own node
         uint16_t notConnected =
             static_cast<uint16_t>(m_hostnamesSorted.size() - 1);
+        uint16_t notConnectedPrev = notConnected;
 
         for (uint16_t i = 0; i < m_hostnamesSorted.size(); i++) {
             uint16_t remoteNodeId = i;
@@ -69,12 +70,12 @@ protected:
                 m_connectionManager->ReturnConnection(connection);
                 notConnected--;
             } catch (const ibnet::core::IbException& e) {
-//                std::cout << "!!!!!" << e.what() << std::endl;
-//                std::this_thread::sleep_for(std::chrono::seconds(1));
+                std::cout << "!!!!!" << e.what() << std::endl;
+                std::this_thread::sleep_for(std::chrono::seconds(1));
             }
         }
 
-        if (m_id == 0) {
+        if (m_id == 0 && notConnectedPrev > notConnected) {
             if (notConnected == 0) {
                 std::cout << "***** ALL CONNECTED *****" << std::endl;
             } else {

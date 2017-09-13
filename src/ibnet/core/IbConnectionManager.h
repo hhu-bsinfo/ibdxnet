@@ -170,9 +170,6 @@ private:
         void CloseConnection(uint16_t nodeId, bool force);
 
     public:
-
-        void Create(uint16_t nodeId);
-
         void Create(uint16_t nodeId, uint32_t ident, uint16_t lid,
                     uint32_t* physicalQpIds);
 

@@ -39,8 +39,7 @@ public:
         JT_INVALID = -1,
         JT_CREATE = 0,
         JT_CLOSE = 1,
-        JT_DISCOVER = 2,
-        JT_DISCOVERED = 3,
+        JT_DISCOVERED = 2,
     };
 
     struct Job

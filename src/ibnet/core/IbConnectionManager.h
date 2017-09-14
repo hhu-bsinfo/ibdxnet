@@ -273,6 +273,7 @@ private:
     private:
         IbConnectionManagerJobQueue m_queue;
         IbConnectionManagerJobQueue::Job m_job;
+        std::atomic<bool> m_runDiscovery;
 
         DiscoveryContext& m_discoveryContext;
         ConnectionContext& m_connectionContext;

@@ -304,9 +304,10 @@ std::shared_ptr<IbConnection> IbConnectionManager::ConnectionContext::GetConnect
     m_jobThread.AddCreateJob(nodeId);
 
     std::chrono::high_resolution_clock::time_point start;
+    std::chrono::high_resolution_clock::time_point end;
 
-    while (std::chrono::high_resolution_clock::now() - start <
-            std::chrono::milliseconds(m_connectionCreationTimeoutMs)) {
+    start = std::chrono::high_resolution_clock::now();
+    do {
         if (m_connectionAvailable[nodeId].load(std::memory_order_acquire) >=
                 CONNECTION_AVAILABLE) {
             available = m_connectionAvailable[nodeId].fetch_add(1,
@@ -324,9 +325,15 @@ std::shared_ptr<IbConnection> IbConnectionManager::ConnectionContext::GetConnect
         }
 
         std::this_thread::yield();
-    }
 
-    throw IbTimeoutException(nodeId, "Creating connection");
+        end = std::chrono::high_resolution_clock::now();
+    } while (end - start <
+        std::chrono::milliseconds(m_connectionCreationTimeoutMs));
+
+
+    std::chrono::duration<uint64_t, std::nano> delta(end - start);
+    throw IbTimeoutException(nodeId, "Creating connection: " +
+        std::to_string(delta.count() / 1000 / 1000) + " ms");
 }
 
 void IbConnectionManager::ConnectionContext::ReturnConnection(
@@ -613,6 +620,7 @@ IbConnectionManager::JobThread::JobThread(DiscoveryContext& discoveryContext,
         ConnectionContext& connectionContext) :
     ThreadLoop("IbConnectionManager-Job"),
     m_queue(1024),
+    m_runDiscovery(true),
     m_discoveryContext(discoveryContext),
     m_connectionContext(connectionContext)
 {
@@ -663,10 +671,7 @@ void IbConnectionManager::JobThread::AddCloseJob(uint16_t nodeId, bool force,
 
 void IbConnectionManager::JobThread::AddDiscoverJob(void)
 {
-    IbConnectionManagerJobQueue::Job job;
-    job.m_type = IbConnectionManagerJobQueue::JT_DISCOVER;
-
-    __AddJob(job);
+    m_runDiscovery.store(true, std::memory_order_relaxed);
 }
 
 void IbConnectionManager::JobThread::AddDiscoveredJob(uint16_t nodeId,
@@ -687,36 +692,41 @@ bool IbConnectionManager::JobThread::IsQueueEmpty(void)
 
 void IbConnectionManager::JobThread::_RunLoop(void)
 {
+    // run discovery if no other jobs are available, prioritizing connection
+    // creation and avoiding that discovery jobs are prioritized and cause
+    // connection creation timeouts
     if (!m_queue.PopFront(m_job)) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        return;
-    }
+        bool val = true;
 
-    IBNET_LOG_TRACE("Dispatching job type {}", m_job.m_type);
-
-    switch (m_job.m_type) {
-        case IbConnectionManagerJobQueue::JT_CREATE:
-            m_connectionContext.Create(m_job.m_nodeId, m_job.m_ident , m_job.m_lid,
-                m_job.m_physicalQpId);
-            break;
-
-        case IbConnectionManagerJobQueue::JT_CLOSE:
-            m_connectionContext.Close(m_job.m_nodeId, m_job.m_force,
-                m_job.m_shutdown);
-            break;
-
-        case IbConnectionManagerJobQueue::JT_DISCOVER:
+        if (m_runDiscovery.compare_exchange_strong(val, false,
+                std::memory_order_relaxed)) {
             m_discoveryContext.Discover();
-            break;
+        } else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    } else {
+        IBNET_LOG_TRACE("Dispatching job type {}", m_job.m_type);
 
-        case IbConnectionManagerJobQueue::JT_DISCOVERED:
-            m_discoveryContext.Discovered(m_job.m_nodeId, m_job.m_ipAddr);
-            break;
+        switch (m_job.m_type) {
+            case IbConnectionManagerJobQueue::JT_CREATE:
+                m_connectionContext.Create(m_job.m_nodeId, m_job.m_ident , m_job.m_lid,
+                    m_job.m_physicalQpId);
+                break;
 
-        default:
-            IBNET_LOG_ERROR("Cannot dispatch unknown job type {}",
-                m_job.m_type);
-            break;
+            case IbConnectionManagerJobQueue::JT_CLOSE:
+                m_connectionContext.Close(m_job.m_nodeId, m_job.m_force,
+                    m_job.m_shutdown);
+                break;
+
+            case IbConnectionManagerJobQueue::JT_DISCOVERED:
+                m_discoveryContext.Discovered(m_job.m_nodeId, m_job.m_ipAddr);
+                break;
+
+            default:
+                IBNET_LOG_ERROR("Cannot dispatch unknown job type {}",
+                    m_job.m_type);
+                break;
+        }
     }
 }
 

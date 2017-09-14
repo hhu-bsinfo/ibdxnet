@@ -21,6 +21,7 @@
 #include <memory>
 
 #include <backwards/backward.hpp>
+#include <ibnet/core/IbTimeoutException.h>
 
 #include "ibnet/sys/Logger.h"
 #include "ibnet/sys/ProfileTimer.hpp"
@@ -61,14 +62,11 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init(
         JNIEnv* p_env, jclass p_class, jshort p_ownNodeId, jint p_inBufferSize,
         jint p_outBufferSize, jlong p_recvPoolSizeBytes, jint p_maxRecvReqs,
         jint p_maxSendReqs, jint p_flowControlMaxRecvReqs,
-        jint p_maxNumConnections, jobject p_sendHandler,
-        jobject p_recvHandler, jobject p_discoveryHandler,
+        jint p_maxNumConnections, jint p_connectionCreationTimeoutMs,
+        jobject p_sendHandler, jobject p_recvHandler,
         jobject p_connectionHandler, jboolean p_enableSignalHandler,
         jboolean p_enableDebugThread)
 {
-    // TODO have this parameter configurable
-    uint32_t p_connectionCreationTimeoutMs = 1000;
-
     // setup foundation
     if (p_enableSignalHandler) {
         g_signalHandler = std::make_unique<backward::SignalHandling>();
@@ -231,9 +229,14 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_addNode(
 JNIEXPORT jlong JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_getSendBufferAddress(
         JNIEnv* p_env, jclass p_class, jshort p_targetNodeId)
 {
-    std::shared_ptr<ibnet::core::IbConnection> connection =
-        g_connectionManager->GetConnection(
-            (uint16_t) (p_targetNodeId & 0xFFFF));
+    try {
+        std::shared_ptr < ibnet::core::IbConnection > connection =
+            g_connectionManager->GetConnection(
+                (uint16_t) (p_targetNodeId & 0xFFFF));
+    } catch (ibnet::core::IbTimeoutException& e) {
+        IBNET_LOG_ERROR("{}", e);
+        return (jlong) -1;
+    }
 
     if (!connection) {
         return (jlong) -1;

@@ -9,6 +9,7 @@ IbConnectionManagerJobQueue::IbConnectionManagerJobQueue(uint32_t size) :
     m_size(size),
     m_front(0),
     m_back(0),
+    m_backRes(0),
     m_queue(new Job[size])
 {
 

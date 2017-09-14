@@ -124,6 +124,9 @@ void IbConnectionManager::DiscoveryContext::AddNode(
         std::lock_guard<std::mutex> l(m_lock);
         m_infoToGet.push_back(std::make_shared<IbNodeConf::Entry>(entry));
     }
+
+    // trigger discovery
+    m_jobThread.AddDiscoverJob();
 }
 
 std::shared_ptr<IbNodeConf::Entry>
@@ -713,7 +716,7 @@ void IbConnectionManager::JobThread::_RunLoop(void)
         default:
             IBNET_LOG_ERROR("Cannot dispatch unknown job type {}",
                 m_job.m_type);
-            return;
+            break;
     }
 }
 

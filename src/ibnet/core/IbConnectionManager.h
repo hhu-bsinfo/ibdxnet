@@ -241,6 +241,8 @@ private:
 
         JobThread& m_jobThread;
 
+        bool m_noDataAvailable;
+
     private:
         bool __SendDiscoveryResp(uint16_t ownNodeId, uint32_t destIp);
     };

@@ -163,7 +163,7 @@ void IbConnectionManager::DiscoveryContext::Discover(void)
     }
 
     // reduce cpu load
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
 void IbConnectionManager::DiscoveryContext::Discovered(uint16_t nodeId,
@@ -493,7 +493,8 @@ IbConnectionManager::ExchangeThread::ExchangeThread(uint16_t ownNodeId,
     ThreadLoop("IbConnectionManager-Exchange"),
     m_ownNodeId(ownNodeId),
     m_socket(std::move(std::make_unique<sys::SocketUDP>(socketPort))),
-    m_jobThread(jobThread)
+    m_jobThread(jobThread),
+    m_noDataAvailable(false)
 {
 
 }
@@ -550,6 +551,8 @@ void IbConnectionManager::ExchangeThread::_RunLoop(void)
     ssize_t res = m_socket->Receive(&m_recvPaket, bufferSize, &recvAddr);
 
     if (res == bufferSize) {
+        m_noDataAvailable = false;
+
         IBNET_LOG_TRACE(
             "Received paket from {}, magic 0x{:x}, type {}, nodeId 0x{:x}",
             sys::AddressIPV4(recvAddr), m_recvPaket.m_magic,
@@ -579,6 +582,12 @@ void IbConnectionManager::ExchangeThread::_RunLoop(void)
                 return;
             }
         }
+    } else {
+        m_noDataAvailable = true;
+    }
+
+    if (m_noDataAvailable) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
 
@@ -676,8 +685,7 @@ bool IbConnectionManager::JobThread::IsQueueEmpty(void)
 void IbConnectionManager::JobThread::_RunLoop(void)
 {
     if (!m_queue.PopFront(m_job)) {
-        // TODO more sophisticated sleep strategy?
-        std::this_thread::yield();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
         return;
     }
 

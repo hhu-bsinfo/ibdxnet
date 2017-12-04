@@ -178,6 +178,8 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_shutdown(
 {
     IBNET_LOG_TRACE_FUNC;
 
+    IBNET_LOG_INFO("Shutting down...");
+
     jboolean res = (jboolean) 1;
 
     // TODO cleanup outgoing msg queues, make sure everything's processed?
@@ -208,6 +210,8 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_shutdown(
 
     g_sendThread.reset();
     g_recvThread.reset();
+
+    IBNET_LOG_INFO("Finished shutdown");
 
     ibnet::sys::Logger::Shutdown();
 

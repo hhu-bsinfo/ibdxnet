@@ -53,6 +53,7 @@ void Logger::Setup(void)
 void Logger::Shutdown(void)
 {
     m_logger.reset();
+    spdlog::drop_all();
 }
 
 }

@@ -32,4 +32,4 @@ add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 
 target_link_libraries(${PROJECT_NAME} dl dw)
 
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -rdynamic -g -fpic -O3 -fno-strict-aliasing -march=native")
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -rdynamic -g -fpic -O3 -fno-strict-aliasing")

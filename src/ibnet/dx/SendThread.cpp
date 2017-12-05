@@ -212,8 +212,7 @@ uint32_t SendThread::__ProcessBuffer(
         return 0;
     }
 
-    // happens if another send thread was able to process everything while
-    // some application thread was still adding more to the queue
+    // no data to send but FC data should be available
     if (data->m_posFrontRel == data->m_posBackRel) {
         return 0;
     }
@@ -281,8 +280,11 @@ uint32_t SendThread::__ProcessBuffer(
         m_sentBytes += iterationBytesSent;
         totalBytesSent += iterationBytesSent;
 
-        m_ibSendQueueBatchCount += sliceCount;
-        m_ibSendQueueFullUtilizationCount += queueSize;
+        m_ibSendQueueBatchCount++;
+
+        if (sliceCount == queueSize) {
+            m_ibSendQueueFullUtilizationCount++;
+        }
     }
 
     return totalBytesSent;

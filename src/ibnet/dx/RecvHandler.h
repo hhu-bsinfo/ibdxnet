@@ -48,41 +48,27 @@ public:
     ~RecvHandler(void);
 
     /**
-     * Called when a new buffer was received
+     * Called when a new fc and/or data buffer was received
      *
-     * @param source The source node id
-     * @param mem Pointer to the IbMemReg object of the buffer
-     * @param buffer Pointer to the buffer with the received data
-     * @param length Number of bytes received
+     * @param fcSource Node id of the FC data source
+     * @param fcData FC data (or 0 if none)
+     * @param dataSource The source node id of the data
+     * @param dataMem Pointer to the IbMemReg object of the buffer or null if
+     *                no data available
+     * @param dataBuffer Pointer to the buffer with the received data
+     * @param dataLength Number of data bytes received
      */
-    inline void ReceivedBuffer(uint16_t source, core::IbMemReg* mem,
-            void* buffer, uint32_t length)
+    inline void Received(uint16_t fcSource, uint32_t fcData,
+            uint16_t dataSource, core::IbMemReg* dataMem, void* dataBuffer,
+            uint32_t dataLength)
     {
         IBNET_LOG_TRACE_FUNC;
 
         JNIEnv* env = JNIHelper::GetEnv(m_vm);
 
-        env->CallVoidMethod(m_object, m_midReceivedBuffer, source,
-            (uintptr_t) mem, buffer, length);
+        env->CallVoidMethod(m_object, m_midReceived, fcSource, fcData,
+            dataSource, (uintptr_t) dataMem, dataBuffer, dataLength);
 
-        JNIHelper::ReturnEnv(m_vm, env);
-
-        IBNET_LOG_TRACE_FUNC_EXIT;
-    }
-
-    /**
-     * Called when new flow control data was received
-     *
-     * @param source The source node id
-     * @param data Flow control data received
-     */
-    inline void ReceivedFlowControlData(uint16_t source, uint32_t data)
-    {
-        IBNET_LOG_TRACE_FUNC;
-
-        JNIEnv* env = JNIHelper::GetEnv(m_vm);
-        env->CallVoidMethod(m_object, m_midReceivedFlowControlData, source,
-            data);
         JNIHelper::ReturnEnv(m_vm, env);
 
         IBNET_LOG_TRACE_FUNC_EXIT;
@@ -92,8 +78,7 @@ private:
     JavaVM* m_vm;
     jobject m_object;
 
-    jmethodID m_midReceivedBuffer;
-    jmethodID m_midReceivedFlowControlData;
+    jmethodID m_midReceived;
 
     jfieldID m_directBufferAddressField;
 };

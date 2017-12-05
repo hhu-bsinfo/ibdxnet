@@ -91,8 +91,9 @@ protected:
     void _AfterRunLoop(void) override;
 
 private:
-    bool __ProcessFlowControl(void);
-    bool __ProcessBuffers(void);
+    uint32_t __ProcessFlowControl(uint16_t* sourceNodeId);
+    core::IbMemReg* __ProcessBuffers(uint16_t* sourceNodeId,
+        uint32_t* recvLength);
 
 private:
     std::shared_ptr<core::IbConnectionManager> m_connectionManager;

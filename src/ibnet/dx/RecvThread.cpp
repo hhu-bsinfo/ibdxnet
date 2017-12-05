@@ -204,7 +204,8 @@ retry:
     *sourceNodeId = m_connectionManager->GetNodeIdForPhysicalQPNum(qpNum);
     auto mem = (core::IbMemReg*) workReqId;
 
-    // FIXME very ugly hack to work around some visibility (?) issue
+    // Not actually a solution to a problem but at least we see something bad
+    // happens in the log: some visibility (?) issue
     // when the connection is created and the mapping inserted into the map
     // but not correctly returned here which results in having to drop
     // packages if we don't retry until we get something valid
@@ -271,7 +272,8 @@ retry:
 
     m_timers[5].Exit();
 
-    // FIXME very ugly hack to work around some visibility (?) issue
+    // Not actually a solution to a problem but at least we see something bad
+    // happens in the log: some visibility (?) issue
     // when the connection is created and the mapping inserted into the map
     // but not correctly returned here which results in having to drop
     // packages if we don't retry until we get something valid

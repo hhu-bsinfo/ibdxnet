@@ -35,7 +35,8 @@ RecvBufferPool::RecvBufferPool(uint64_t initialTotalPoolSize,
         (uint32_t) (initialTotalPoolSize / recvBufferSize - 1)),
     m_dataBuffersBackRes(
         (uint32_t) (initialTotalPoolSize / recvBufferSize - 1)),
-    m_protDom(protDom)
+    m_protDom(protDom),
+    m_insufficientBufferCounter(0)
 {
     IBNET_LOG_INFO("Alloc {} data buffers, size {} each",
         m_bufferPoolSize, recvBufferSize);
@@ -69,7 +70,6 @@ core::IbMemReg* RecvBufferPool::GetBuffer(void)
 {
     core::IbMemReg* buffer = NULL;
 
-    bool warnOnce = true;
     uint32_t front = m_dataBuffersFront.load(std::memory_order_relaxed);
     uint32_t back;
 
@@ -77,8 +77,8 @@ core::IbMemReg* RecvBufferPool::GetBuffer(void)
         back = m_dataBuffersBack.load(std::memory_order_relaxed);
 
         if (front % m_bufferPoolSize == back % m_bufferPoolSize) {
-            if (warnOnce) {
-                warnOnce = false;
+            if (m_insufficientBufferCounter.fetch_add(1,
+                    std::memory_order_relaxed) % 1000000 == 0) {
                 IBNET_LOG_WARN("Insufficient pooled incoming buffers... "
                     "waiting for buffers to get returned. If this warning "
                     "appears periodically and very frequently, consider "
@@ -92,10 +92,6 @@ core::IbMemReg* RecvBufferPool::GetBuffer(void)
         buffer = m_dataBuffers[front % m_bufferPoolSize];
 
         m_dataBuffersFront.fetch_add(1, std::memory_order_release);
-
-        if (!warnOnce) {
-            IBNET_LOG_WARN("Finally, got returned receive buffer");
-        }
 
         break;
     }

@@ -89,6 +89,8 @@ private:
     std::vector<core::IbMemReg*> m_flowControlBuffers;
 
     std::shared_ptr<core::IbProtDom> m_protDom;
+
+    std::atomic<uint64_t> m_insufficientBufferCounter;
 };
 
 }

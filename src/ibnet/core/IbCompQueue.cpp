@@ -85,8 +85,9 @@ uint32_t IbCompQueue::PollForCompletion(bool blocking, uint64_t* workReqId, uint
             switch (wc.status) {
                 // a previous work request failed and put the queue into error
                 // state
-//                case IBV_WC_WR_FLUSH_ERR:
-//                    return (uint32_t) -1;
+                //case IBV_WC_WR_FLUSH_ERR:
+                //    throw IbException("Work completion of recv queue failed, "
+                //        "flush err");
 
                 case IBV_WC_RETRY_EXC_ERR:
                     if (m_firstWc) {

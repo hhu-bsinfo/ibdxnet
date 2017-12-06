@@ -198,6 +198,10 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_shutdown(
         g_connectionManager.reset();
         g_sharedRecvCompQueue.reset();
         g_sharedRecvQueue.reset();
+        g_sharedFlowControlRecvCompQueue.reset();
+        g_sharedFlowControlRecvQueue.reset();
+        g_sendBuffers.reset();
+        g_recvBufferPool.reset();
         g_protDom.reset();
         g_device.reset();
     } catch (...) {

@@ -267,17 +267,6 @@ IbConnectionManager::ConnectionContext::~ConnectionContext(void)
 
 }
 
-uint16_t IbConnectionManager::ConnectionContext::GetNodeIdForPhysicalQPNum(
-        uint32_t qpNum) {
-    auto it = m_qpNumToNodeIdMappings.find(qpNum);
-
-    if (it != m_qpNumToNodeIdMappings.end()) {
-        return it->second;
-    }
-
-    return IbNodeId::INVALID;
-}
-
 bool IbConnectionManager::ConnectionContext::IsConnectionAvailable(
         uint16_t nodeId) {
     return m_connectionAvailable[nodeId].load(std::memory_order_relaxed) >=
@@ -377,11 +366,6 @@ void IbConnectionManager::ConnectionContext::Create(uint16_t nodeId,
 
         connection = m_connectionCreator->CreateConnection(
             connectionId, m_device, m_protDom);
-
-        for (auto& it : connection->GetQps()) {
-            m_qpNumToNodeIdMappings.insert(std::make_pair(
-                it->GetPhysicalQpNum(), nodeId));
-        }
 
         if (connection->GetQps().size() > MAX_QPS_PER_CONNECTION) {
             throw IbException("Exceeded max qps per connection limit");

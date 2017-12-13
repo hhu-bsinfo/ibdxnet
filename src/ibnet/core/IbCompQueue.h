@@ -92,10 +92,11 @@ public:
      *          of the completed work request to
      * @param recvLength Pointer to a variable to return the number of bytes
      *          transmitted with the completion of a work request
-     * @return The queue pair id of the successfully completed work request or
-     *          -1 if queue empty and no work request completed (non blocking)
+     * @return The node id of the source node of the successfully completed
+     *          work request or -1 if queue empty and no work request completed
+     *          (non blocking)
      */
-    uint32_t PollForCompletion(bool blocking = true,
+    uint16_t PollForCompletion(bool blocking = true,
         uint64_t* workReqId = nullptr, uint32_t* recvLength = nullptr);
 
     /**

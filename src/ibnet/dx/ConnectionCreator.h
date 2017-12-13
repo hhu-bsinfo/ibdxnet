@@ -39,6 +39,7 @@ public:
     /**
      * Constructor
      *
+     * @param ownNodeId Node id of the current instance
      * @param qpMaxSendReqs Size of the buffer send queue
      * @param qpMaxRecvReqs Size of the buffer receive queue
      * @param qpFlowControlMaxRecvReqs Size of the flow control receive queue
@@ -47,8 +48,8 @@ public:
      * @param sharedFlowControlRecvQueue Shared receive queue for FC data
      * @param sharedFlowControlRecvCompQueue Shared completion queue for FC data
      */
-    ConnectionCreator(uint16_t qpMaxSendReqs, uint16_t qpMaxRecvReqs,
-        uint16_t qpFlowControlMaxRecvReqs,
+    ConnectionCreator(uint16_t ownNodeId, uint16_t qpMaxSendReqs,
+        uint16_t qpMaxRecvReqs, uint16_t qpFlowControlMaxRecvReqs,
         std::shared_ptr<core::IbSharedRecvQueue> sharedRecvQueue,
         std::shared_ptr<core::IbCompQueue> sharedRecvCompQueue,
         std::shared_ptr<core::IbSharedRecvQueue> sharedFlowControlRecvQueue,

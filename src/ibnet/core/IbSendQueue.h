@@ -46,12 +46,13 @@ public:
     /**
      * Constructor
      *
+     * @param ownNodeId Node id of the current node
      * @param device Pointer to a device to create the queue for
      * @param parentQp Parent queue pair of this send queue
      * @param queueSize Size of the send queue
      */
-    IbSendQueue(std::shared_ptr<IbDevice>& device, IbQueuePair& parentQp,
-                uint16_t queueSize);
+    IbSendQueue(uint16_t ownNodeId, std::shared_ptr<IbDevice>& device,
+        IbQueuePair& parentQp, uint16_t queueSize);
 
     /**
      * Destructor
@@ -107,6 +108,7 @@ public:
     uint32_t Flush(void);
 
 private:
+    const uint16_t m_ownNodeID;
     IbQueuePair& m_parentQp;
     uint16_t m_queueSize;
     bool m_isClosed;

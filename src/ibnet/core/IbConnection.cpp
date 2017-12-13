@@ -24,9 +24,11 @@ namespace ibnet {
 namespace core {
 
 IbConnection::IbConnection(
+        uint16_t ownNodeId,
         uint16_t connectionId,
         std::shared_ptr<IbDevice>& device,
         std::shared_ptr<IbProtDom>& protDom) :
+    m_ownNodeId(ownNodeId),
     m_connectionId(connectionId),
     m_device(device),
     m_protDom(protDom),
@@ -48,8 +50,9 @@ void IbConnection::AddQp(std::shared_ptr<IbSharedRecvQueue>& sharedRecvQueue,
        std::shared_ptr<IbCompQueue>& sharedRecvCompQueue,
        uint16_t maxRecvReqs, uint16_t maxSendReqs)
 {
-    m_qps.push_back(std::make_shared<IbQueuePair>(m_device, m_protDom,
-        maxSendReqs, maxRecvReqs, sharedRecvCompQueue, sharedRecvQueue));
+    m_qps.push_back(std::make_shared<IbQueuePair>(m_ownNodeId, m_device,
+        m_protDom, maxSendReqs, maxRecvReqs, sharedRecvCompQueue,
+        sharedRecvQueue));
 }
 
 void IbConnection::Connect(const IbRemoteInfo& remoteInfo)

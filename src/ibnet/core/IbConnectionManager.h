@@ -118,14 +118,6 @@ private:
         }
 
         /**
-         * Get the (remote) node id of a node with a physical QP num
-         *
-         * @param qpNum QP num of the node to get the node id of
-         * @return Node id of the node owning the QP with the physical QP id
-         */
-        uint16_t GetNodeIdForPhysicalQPNum(uint32_t qpNum);
-
-        /**
          * Check if a connection is available (open and connected)
          *
          * @param destination Remote node id
@@ -196,8 +188,6 @@ private:
         uint32_t m_openConnections;
 
         std::vector<uint16_t> m_availableConnectionIds;
-
-        std::unordered_map<uint32_t, uint16_t> m_qpNumToNodeIdMappings;
     };
 
     class ExchangeThread : public sys::ThreadLoop
@@ -317,9 +307,9 @@ public:
      * @param qpNum QP num of the node to get the node id of
      * @return Node id of the node owning the QP with the physical QP id
      */
-    uint16_t GetNodeIdForPhysicalQPNum(uint32_t qpNum) {
-        return m_connectionContext.GetNodeIdForPhysicalQPNum(qpNum);
-    }
+//    uint16_t GetNodeIdForPhysicalQPNum(uint32_t qpNum) {
+//        return m_connectionContext.GetNodeIdForPhysicalQPNum(qpNum);
+//    }
 
     /**
      * Check if a connection is available (open and connected)

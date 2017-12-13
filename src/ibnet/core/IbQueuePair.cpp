@@ -26,13 +26,14 @@ namespace ibnet {
 namespace core {
 
 IbQueuePair::IbQueuePair(
+        uint16_t ownNodeId,
         std::shared_ptr<IbDevice>& device,
         std::shared_ptr<IbProtDom>& protDom,
         uint16_t maxSendReqs,
         uint16_t maxRecvReqs,
         std::shared_ptr<IbCompQueue>& sharedRecvCompQueue,
         std::shared_ptr<IbSharedRecvQueue>& sharedRecvQueue) :
-    m_sendQueue(std::make_unique<IbSendQueue>(device, *this, maxSendReqs)),
+    m_sendQueue(std::make_unique<IbSendQueue>(ownNodeId, device, *this, maxSendReqs)),
     m_recvQueue(std::make_unique<IbRecvQueue>(device, *this, maxRecvReqs,
         sharedRecvCompQueue, sharedRecvQueue)),
     m_ibQp(nullptr),

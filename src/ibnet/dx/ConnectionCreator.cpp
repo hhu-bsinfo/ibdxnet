@@ -21,12 +21,13 @@
 namespace ibnet {
 namespace dx {
 
-ConnectionCreator::ConnectionCreator(uint16_t qpMaxSendReqs,
+ConnectionCreator::ConnectionCreator(uint16_t ownNodeId, uint16_t qpMaxSendReqs,
         uint16_t qpMaxRecvReqs, uint16_t qpFlowControlMaxRecvReqs,
         std::shared_ptr<core::IbSharedRecvQueue> sharedRecvQueue,
         std::shared_ptr<core::IbCompQueue> sharedRecvCompQueue,
         std::shared_ptr<core::IbSharedRecvQueue> sharedFlowControlRecvQueue,
         std::shared_ptr<core::IbCompQueue> sharedFlowControlRecvCompQueue) :
+    core::IbConnectionCreator(ownNodeId),
     m_qpMaxSendReqs(qpMaxSendReqs),
     m_qpMaxRecvReqs(qpMaxRecvReqs),
     m_qpFlowControlMaxRecvReqs(qpFlowControlMaxRecvReqs),
@@ -48,8 +49,8 @@ std::shared_ptr<core::IbConnection> ConnectionCreator::CreateConnection(
     std::shared_ptr<core::IbDevice>& device,
     std::shared_ptr<core::IbProtDom>& protDom)
 {
-    auto ret = std::make_shared<core::IbConnection>(connectionId, device,
-        protDom);
+    auto ret = std::make_shared<core::IbConnection>(GetOwnNodeId(),
+        connectionId, device, protDom);
 
     ret->AddQp(m_sharedRecvQueue, m_sharedRecvCompQueue, m_qpMaxRecvReqs,
         m_qpMaxSendReqs);

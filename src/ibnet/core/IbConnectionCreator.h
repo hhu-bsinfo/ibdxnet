@@ -37,13 +37,24 @@ class IbConnectionCreator
 public:
     /**
      * Constructor
+     *
+     * @param ownNodeId Node id of the current instance
      */
-    IbConnectionCreator(void) {};
+    IbConnectionCreator(uint16_t ownNodeId) :
+        m_ownNodeId(ownNodeId)
+    {};
 
     /**
      * Destructor
      */
     virtual ~IbConnectionCreator(void) {};
+
+    /**
+     * Get the node id of the current instance
+     */
+    uint16_t GetOwnNodeId(void) const {
+        return m_ownNodeId;
+    }
 
     /**
      * Create a new connection
@@ -57,6 +68,9 @@ public:
         uint16_t connectionId,
         std::shared_ptr<IbDevice>& device,
         std::shared_ptr<IbProtDom>& protDom) = 0;
+
+private:
+    const uint16_t m_ownNodeId;
 };
 
 }

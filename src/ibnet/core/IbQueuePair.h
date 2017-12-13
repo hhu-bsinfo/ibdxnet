@@ -43,6 +43,7 @@ public:
      *
      * This creates a new separate send and receive queue
      *
+     * @param ownNodeId Node id of the current instance
      * @param device Pointer to a device to create the queue pair for
      * @param protDom Pointer to a protection domain to create the queue pair in
      * @param maxSendReqs Max num of send reqs for the send queue
@@ -53,6 +54,7 @@ public:
      * @param sharedRecvQueue Optional shared recv queue
      */
     IbQueuePair(
+        uint16_t ownNodeId,
         std::shared_ptr<IbDevice>& device,
         std::shared_ptr<IbProtDom>& protDom,
         uint16_t maxSendReqs,

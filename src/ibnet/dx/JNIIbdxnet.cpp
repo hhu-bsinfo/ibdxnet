@@ -127,9 +127,10 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init(
         g_connectionManager = std::make_shared<ibnet::core::IbConnectionManager>(
             p_ownNodeId, nodeConf, 5731, p_connectionCreationTimeoutMs,
             p_maxNumConnections, g_device, g_protDom,
-            std::make_unique<ibnet::dx::ConnectionCreator>(p_maxSendReqs,
-                p_maxRecvReqs, p_flowControlMaxRecvReqs, g_sharedRecvQueue,
-                g_sharedRecvCompQueue, g_sharedFlowControlRecvQueue,
+            std::make_unique<ibnet::dx::ConnectionCreator>(p_ownNodeId,
+                p_maxSendReqs, p_maxRecvReqs, p_flowControlMaxRecvReqs,
+                g_sharedRecvQueue, g_sharedRecvCompQueue,
+                g_sharedFlowControlRecvQueue,
                 g_sharedFlowControlRecvCompQueue));
 
         g_connectionManager->SetNodeConnectedListener(g_connectionHandler.get());

@@ -36,13 +36,15 @@ public:
     /**
      * Constructor
      *
+     * @param ownNodeId Node id of the current instance
      * @param qpMaxRecvReqs Size of the receive queue
      * @param qpMaxSendReqs Size of the send queue
      * @param sharedRecvQueue Shared receive queue to use (optional)
      * @param sharedRecvCompQueue Shared receive completion queue to use
      *          (optional)
      */
-    IbConnectionCreatorSimple(uint16_t qpMaxRecvReqs, uint16_t qpMaxSendReqs,
+    IbConnectionCreatorSimple(uint16_t ownNodeId, uint16_t qpMaxRecvReqs,
+        uint16_t qpMaxSendReqs,
         std::shared_ptr<IbSharedRecvQueue> sharedRecvQueue,
         std::shared_ptr<IbCompQueue> sharedRecvCompQueue);
 

@@ -26,8 +26,9 @@
 namespace ibnet {
 namespace core {
 
-IbSendQueue::IbSendQueue(std::shared_ptr<IbDevice>& device,
+IbSendQueue::IbSendQueue(uint16_t ownNodeId, std::shared_ptr<IbDevice>& device,
         IbQueuePair& parentQp, uint16_t queueSize) :
+    m_ownNodeID(ownNodeId),
     m_parentQp(parentQp),
     m_queueSize(queueSize),
     m_isClosed(false),
@@ -124,10 +125,14 @@ void IbSendQueue::Send(const IbMemReg* memReg, uint32_t offset, uint32_t size,
     wr.wr_id       			= workReqId;
     wr.sg_list     			= &sge_list;
     wr.num_sge     			= 1;
-    wr.opcode      			= IBV_WR_SEND;
+    wr.opcode      			= IBV_WR_SEND_WITH_IMM;
     // set completion notification
     wr.send_flags = IBV_SEND_SIGNALED;
     wr.next        			= NULL;
+
+    // send own node id with immediate data for fast dispatching on remote
+    // read
+    wr.imm_data = m_ownNodeID;
 
     int ret = ibv_post_send(m_parentQp.GetIbQp(), &wr, &bad_wr);
     if (ret != 0) {

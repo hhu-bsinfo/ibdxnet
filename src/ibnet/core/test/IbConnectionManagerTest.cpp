@@ -167,8 +167,8 @@ int main(int argc, char** argv)
     std::shared_ptr<ibnet::core::IbConnectionManager> conMan =
         std::make_shared<ibnet::core::IbConnectionManager>(ownNodeId, nodeConf,
             5731, 1000, 100, device, protDom,
-        std::make_unique<ibnet::core::IbConnectionCreatorSimple>(10, 10,
-            nullptr, compQueue));
+        std::make_unique<ibnet::core::IbConnectionCreatorSimple>(ownNodeId, 10,
+            10, nullptr, compQueue));
 
     for (uint32_t i = 0; i < clientThreads; i++) {
         auto thread = std::make_unique<ClientThread>(i, ownNodeId,

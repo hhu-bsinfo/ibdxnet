@@ -41,11 +41,13 @@ public:
     /**
      * Constructor
      *
+     * @param ownNodeId Node id of the current instance
      * @param connectionId Unique id assigned to the connection
      * @param device Device
      * @param protDom Protection domain
      */
     IbConnection(
+        uint16_t ownNodeId,
         uint16_t connectionId,
         std::shared_ptr<IbDevice>& device,
         std::shared_ptr<IbProtDom>& protDom);
@@ -144,6 +146,7 @@ public:
     }
 
 private:
+    const uint16_t m_ownNodeId;
     uint16_t m_connectionId;
     std::shared_ptr<IbDevice> m_device;
     std::shared_ptr<IbProtDom> m_protDom;

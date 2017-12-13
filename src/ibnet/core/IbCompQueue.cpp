@@ -50,7 +50,8 @@ IbCompQueue::~IbCompQueue(void)
     ibv_destroy_cq(m_cq);
 }
 
-uint32_t IbCompQueue::PollForCompletion(bool blocking, uint64_t* workReqId, uint32_t* recvLength)
+uint16_t IbCompQueue::PollForCompletion(bool blocking, uint64_t* workReqId,
+        uint32_t* recvLength)
 {
     struct ibv_wc wc;
     int ret;
@@ -69,7 +70,7 @@ uint32_t IbCompQueue::PollForCompletion(bool blocking, uint64_t* workReqId, uint
 
         // queue empty
         if (ret == 0) {
-            return (uint32_t) -1;
+            return (uint16_t) -1;
         }
     }
 
@@ -120,7 +121,8 @@ uint32_t IbCompQueue::PollForCompletion(bool blocking, uint64_t* workReqId, uint
         throw IbException("Outstanding queue underrun");
     }
 
-    return wc.qp_num;
+    // node id of source is sent as immediate data
+    return static_cast<uint16_t>(wc.imm_data);
 }
 
 uint32_t IbCompQueue::Flush(void)

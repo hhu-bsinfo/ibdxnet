@@ -141,7 +141,7 @@ void SendThread::_RunLoop(void)
         m_connectionManager->ReturnConnection(connection);
         // ignore
     } catch (core::IbDisconnectedException& e) {
-        IBNET_LOG_DEBUG("DisconnectedException on node %X",
+        IBNET_LOG_DEBUG("DisconnectedException on node {}",
             connection->GetRemoteNodeId());
 
         m_connectionManager->ReturnConnection(connection);

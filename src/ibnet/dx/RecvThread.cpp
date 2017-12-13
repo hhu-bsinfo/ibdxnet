@@ -172,7 +172,6 @@ void RecvThread::_AfterRunLoop(void)
 
 uint32_t RecvThread::__ProcessFlowControl(uint16_t* sourceNodeId)
 {
-    uint32_t qpNum;
     uint64_t workReqId = (uint64_t) -1;
     uint32_t recvLength = 0;
     uint32_t flowControlData;
@@ -181,8 +180,8 @@ uint32_t RecvThread::__ProcessFlowControl(uint16_t* sourceNodeId)
     m_timers[1].Enter();
 
     try {
-        qpNum = m_sharedFlowControlRecvCQ->PollForCompletion(false, &workReqId,
-            &recvLength);
+        *sourceNodeId = m_sharedFlowControlRecvCQ->PollForCompletion(false,
+            &workReqId, &recvLength);
     } catch (core::IbException& e) {
         m_timers[1].Exit();
         IBNET_LOG_ERROR("Polling for data buffer completion failed: {}",
@@ -193,33 +192,13 @@ uint32_t RecvThread::__ProcessFlowControl(uint16_t* sourceNodeId)
     m_timers[1].Exit();
 
     // no flow control data available
-    if (qpNum == -1) {
+    if (*sourceNodeId == core::IbNodeId::INVALID) {
         return 0;
     }
 
-
-retry:
-    m_timers[2].Enter();
-
-    *sourceNodeId = m_connectionManager->GetNodeIdForPhysicalQPNum(qpNum);
     auto mem = (core::IbMemReg*) workReqId;
-
-    // Not actually a solution to a problem but at least we see something bad
-    // happens in the log: some visibility (?) issue
-    // when the connection is created and the mapping inserted into the map
-    // but not correctly returned here which results in having to drop
-    // packages if we don't retry until we get something valid
-    if (*sourceNodeId == core::IbNodeId::INVALID) {
-        m_timers[2].Exit();
-        IBNET_LOG_PANIC("No node id mapping for qpNum 0x{:x} on FC data recv. "
-            "losing FC recv work requests (not added back to queue)", qpNum);
-        goto retry;
-    }
-
     m_recvFlowControlBytes += recvLength;
     flowControlData = *((uint32_t*) mem->GetAddress());
-
-    m_timers[2].Exit();
 
     m_timers[3].Enter();
 
@@ -239,7 +218,6 @@ retry:
 core::IbMemReg* RecvThread::__ProcessBuffers(uint16_t* sourceNodeId,
         uint32_t* recvLength)
 {
-    uint32_t qpNum;
     uint64_t workReqId = (uint64_t) -1;
     *sourceNodeId = static_cast<uint16_t>(-1);
     *recvLength = 0;
@@ -247,7 +225,7 @@ core::IbMemReg* RecvThread::__ProcessBuffers(uint16_t* sourceNodeId,
     m_timers[4].Enter();
 
     try {
-        qpNum = m_sharedRecvCQ->PollForCompletion(false, &workReqId,
+        *sourceNodeId = m_sharedRecvCQ->PollForCompletion(false, &workReqId,
             recvLength);
     } catch (core::IbException& e) {
         m_timers[4].Exit();
@@ -259,30 +237,12 @@ core::IbMemReg* RecvThread::__ProcessBuffers(uint16_t* sourceNodeId,
     m_timers[4].Exit();
 
     // no data available
-    if (qpNum == -1) {
+    if (*sourceNodeId == core::IbNodeId::INVALID) {
         return nullptr;
     }
 
-retry:
-    m_timers[5].Enter();
-
-    *sourceNodeId = m_connectionManager->GetNodeIdForPhysicalQPNum(qpNum);
     auto mem = (core::IbMemReg*) workReqId;
     m_recvBytes += *recvLength;
-
-    m_timers[5].Exit();
-
-    // Not actually a solution to a problem but at least we see something bad
-    // happens in the log: some visibility (?) issue
-    // when the connection is created and the mapping inserted into the map
-    // but not correctly returned here which results in having to drop
-    // packages if we don't retry until we get something valid
-    if (*sourceNodeId == core::IbNodeId::INVALID) {
-        IBNET_LOG_PANIC("No node id mapping for qpNum 0x{:x} on buffer data recv. "
-            "losing data recv work requests (not added back to queue)", qpNum);
-
-        goto retry;
-    }
 
     m_timers[6].Enter();
 

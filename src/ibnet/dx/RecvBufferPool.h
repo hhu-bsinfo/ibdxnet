@@ -28,7 +28,8 @@ namespace dx {
 
 /**
  * Buffer pool with buffers registered with a protection domain
- * for incoming data
+ * for incoming data. Implements a lock free 1:N (consumer:producer)
+ * ring buffer.
  *
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 02.06.2017
  */

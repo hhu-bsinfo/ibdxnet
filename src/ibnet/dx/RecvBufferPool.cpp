@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
+#include <ibnet/sys/Thread.h>
 #include "RecvBufferPool.h"
 
 #include "ibnet/sys/Logger.hpp"
@@ -41,6 +42,7 @@ RecvBufferPool::RecvBufferPool(uint64_t initialTotalPoolSize,
     IBNET_LOG_INFO("Alloc {} data buffers, size {} each",
         m_bufferPoolSize, recvBufferSize);
 
+    // FIXME this isn't required (?)
     // to handle wrap around correctly
     if (m_bufferPoolSize % 2 != 0) {
         throw DxnetException("RecvBufferPool: Resulting pool size must be a "
@@ -55,6 +57,7 @@ RecvBufferPool::RecvBufferPool(uint64_t initialTotalPoolSize,
 
     IBNET_LOG_INFO("Alloc {} fc buffers", m_numFlowControlBuffers);
 
+    // TODO use sizeof (uint32_t) instead of 4
     for (uint32_t i = 0; i < m_numFlowControlBuffers; i++) {
         m_flowControlBuffers.push_back(m_protDom->Register(
             malloc(4), 4, true));
@@ -86,6 +89,8 @@ core::IbMemReg* RecvBufferPool::GetBuffer(void)
                     "possible performance penalties");
             }
 
+            std::this_thread::yield();
+
             continue;
         }
 
@@ -107,7 +112,7 @@ void RecvBufferPool::ReturnBuffer(core::IbMemReg* buffer)
     while (true) {
         front = m_dataBuffersFront.load(std::memory_order_relaxed);
 
-        if (backRes + 1 % m_bufferPoolSize == front % m_bufferPoolSize) {
+        if ((backRes + 1) % m_bufferPoolSize == front % m_bufferPoolSize) {
             IBNET_LOG_PANIC("Pool overflow, this should not happen");
             break;
         }
@@ -139,6 +144,9 @@ core::IbMemReg* RecvBufferPool::GetFlowControlBuffer(void)
 {
     core::IbMemReg* buffer = NULL;
 
+    // FIXME this not just gets the buffer but also removes it from the pool
+    // but there is not return
+    // should use a pointer to the array instead and increase that
     if (!m_flowControlBuffers.empty()) {
         buffer = m_flowControlBuffers.back();
         m_flowControlBuffers.pop_back();

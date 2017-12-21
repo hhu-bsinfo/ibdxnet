@@ -71,15 +71,6 @@ private:
     void _RunLoop(void) override;
 
 private:
-    uint32_t __ProcessFlowControl(
-        std::shared_ptr<core::IbConnection>& connection,
-        SendHandler::NextWorkParameters* data);
-
-    uint32_t __ProcessBuffer(
-        std::shared_ptr<core::IbConnection>& connection,
-        SendHandler::NextWorkParameters* data);
-
-private:
     const uint32_t m_recvBufferSize;
     std::shared_ptr<SendBuffers> m_buffers;
     std::shared_ptr<SendHandler> m_sendHandler;
@@ -91,8 +82,7 @@ private:
 
 private:
     uint64_t m_sentBytes;
-    uint64_t m_sentFlowControlBytes;
-    sys::Timer m_waitTimer;
+    uint64_t m_sentFlowControlConfirms;
 };
 
 }

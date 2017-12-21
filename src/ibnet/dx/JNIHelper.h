@@ -80,14 +80,14 @@ public:
 
         // Don't check for exceptions because this is extremely expensive
         // and kills performance on recv callbacks
-        // if (env->ExceptionCheck()) {
-        //    env->ExceptionDescribe();
-        // }
+         if (env->ExceptionCheck()) {
+            env->ExceptionDescribe();
+         }
 
         // Don't detach. This is very expensive and increases the costs
         // for re-attaching a lot. The number of threads calling back to
         // the java context is limited, so we keep them attached
-        // vm->DetachCurrentThread();
+         vm->DetachCurrentThread();
     }
 
     /**

@@ -51,7 +51,7 @@ IbCompQueue::~IbCompQueue(void)
 }
 
 uint16_t IbCompQueue::PollForCompletion(bool blocking, uint64_t* workReqId,
-        uint32_t* recvLength)
+        uint32_t* recvLength, uint16_t* immedData)
 {
     struct ibv_wc wc;
     int ret;
@@ -119,6 +119,10 @@ uint16_t IbCompQueue::PollForCompletion(bool blocking, uint64_t* workReqId,
 
     if (!m_outstandingComps.SubOutstanding()) {
         throw IbException("Outstanding queue underrun");
+    }
+
+    if (immedData != nullptr) {
+        *immedData = static_cast<uint16_t>(wc.imm_data >> 16);
     }
 
     // node id of source is sent as immediate data

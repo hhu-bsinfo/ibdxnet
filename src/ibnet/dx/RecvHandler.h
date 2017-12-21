@@ -50,24 +50,22 @@ public:
     /**
      * Called when a new fc and/or data buffer was received
      *
-     * @param fcSource Node id of the FC data source
-     * @param fcData FC data (or 0 if none)
-     * @param dataSource The source node id of the data
+     * @param sourceNodeId The source node id of the data
+     * @param fcConfirm True if flow control confirmation, false for none
      * @param dataMem Pointer to the IbMemReg object of the buffer or null if
      *                no data available
      * @param dataBuffer Pointer to the buffer with the received data
      * @param dataLength Number of data bytes received
      */
-    inline void Received(uint16_t fcSource, uint32_t fcData,
-            uint16_t dataSource, core::IbMemReg* dataMem, void* dataBuffer,
-            uint32_t dataLength)
+    inline void Received(uint16_t sourceNodeId, bool fcConfirm,
+            core::IbMemReg* dataMem, void* dataBuffer, uint32_t dataLength)
     {
         IBNET_LOG_TRACE_FUNC;
 
         JNIEnv* env = JNIHelper::GetEnv(m_vm);
 
-        env->CallVoidMethod(m_object, m_midReceived, fcSource, fcData,
-            dataSource, (uintptr_t) dataMem, dataBuffer, dataLength);
+        env->CallVoidMethod(m_object, m_midReceived, sourceNodeId, fcConfirm,
+            (uintptr_t) dataMem, dataBuffer, dataLength);
 
         JNIHelper::ReturnEnv(m_vm, env);
 

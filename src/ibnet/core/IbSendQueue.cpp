@@ -100,8 +100,8 @@ void IbSendQueue::Close(bool force)
     m_isClosed = true;
 }
 
-void IbSendQueue::Send(const IbMemReg* memReg, uint32_t offset, uint32_t size,
-        uint64_t workReqId)
+void IbSendQueue::Send(const IbMemReg* memReg, uint16_t immedData,
+        uint32_t offset, uint32_t size, uint64_t workReqId)
 {
     struct ibv_sge sge_list;
     struct ibv_send_wr wr;
@@ -132,7 +132,7 @@ void IbSendQueue::Send(const IbMemReg* memReg, uint32_t offset, uint32_t size,
 
     // send own node id with immediate data for fast dispatching on remote
     // read
-    wr.imm_data = m_ownNodeID;
+    wr.imm_data = (((uint32_t) immedData) << 16) | m_ownNodeID;
 
     int ret = ibv_post_send(m_parentQp.GetIbQp(), &wr, &bad_wr);
     if (ret != 0) {

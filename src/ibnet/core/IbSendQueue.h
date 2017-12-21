@@ -83,12 +83,14 @@ public:
      * Posts a message send work request to the (parent) queue pair
      *
      * @param memReg Memory region with data to send
+     * @param immedData 2 bytes immediate data which are not part of the buffer
      * @param offset Start offset in memory region for data to send
      * @param size Number of bytes to send
      * @param workReqId Work request id to assign to the InfiniBand work request
      */
-    void Send(const IbMemReg* memReg, uint32_t offset = 0,
-              uint32_t size = (uint32_t) -1, uint64_t workReqId = 0);
+    void Send(const IbMemReg* memReg, uint16_t immedData = 0,
+        uint32_t offset = 0, uint32_t size = (uint32_t) -1,
+        uint64_t workReqId = 0);
 
     /**
      * Poll the next enqueued work request until it completed

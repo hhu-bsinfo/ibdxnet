@@ -25,7 +25,7 @@ RecvHandler::RecvHandler(JNIEnv* env, jobject object) :
     m_vm(nullptr),
     m_object(env->NewGlobalRef(object)),
     m_midReceived(JNIHelper::GetAndVerifyMethod(env, m_object,
-        "received", "(SISJJI)V")),
+        "received", "(SZJJI)V")),
     m_directBufferAddressField(env->GetFieldID(
         env->FindClass("java/nio/Buffer"), "address", "J"))
 {

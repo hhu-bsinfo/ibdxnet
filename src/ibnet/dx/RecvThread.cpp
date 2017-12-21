@@ -71,41 +71,64 @@ void RecvThread::NodeConnected(core::IbConnection& connection)
         // Use the pointer as the work req id
         connection.GetQp(0)->GetRecvQueue()->Receive(buf, (uint64_t) buf);
     }
-
-    // sanity check
-    if (!connection.GetQp(1)->GetRecvQueue()->IsRecvQueueShared()) {
-        throw DxnetException("Can't work with non shared FC recv queue(s)");
-    }
-
-    size = connection.GetQp(1)->GetRecvQueue()->GetQueueSize();
-    for (uint32_t i = 0; i < size; i++) {
-        core::IbMemReg* buf = m_recvBufferPool->GetFlowControlBuffer();
-
-        // Use the pointer as the work req id
-        connection.GetQp(1)->GetRecvQueue()->Receive(buf, (uint64_t) buf);
-    }
 }
 
 void RecvThread::_RunLoop(void)
 {
-    uint32_t fcData;
-    uint16_t fcSourceNodeId;
+    core::IbMemReg* dataMem = nullptr;
+    void* data = nullptr;
+    uint16_t sourceNodeId = static_cast<uint16_t>(-1);
+    uint32_t dataRecvLength = 0;
+    uint16_t immedData = 0;
+    bool fcConfirm = false;
 
-    core::IbMemReg* dataMem;
-    void* data;
-    uint16_t dataSourceNodeId;
-    uint32_t dataRecvLength;
+    while (true) {
+        uint64_t workReqId = (uint64_t) -1;
 
-    fcData = __ProcessFlowControl(&fcSourceNodeId);
-    dataMem = __ProcessBuffers(&dataSourceNodeId, &dataRecvLength);
+        try {
+            sourceNodeId = m_sharedRecvCQ->PollForCompletion(false,
+                &workReqId, &dataRecvLength, &immedData);
+        } catch (core::IbException &e) {
+            IBNET_LOG_ERROR("Polling for flow control completion failed: {}",
+                e.what());
+            break;
+        }
 
-    if (dataMem) {
-        data = dataMem->GetAddress();
-    } else {
-        data = nullptr;
+        // no data available
+        if (sourceNodeId == core::IbNodeId::INVALID) {
+            break;
+        }
+
+        printf(">>> received: %d\n", dataRecvLength);
+
+        auto mem = (core::IbMemReg*) workReqId;
+        m_recvBytes += dataRecvLength;
+
+        std::shared_ptr < core::IbConnection > connection =
+            m_connectionManager->GetConnection(sourceNodeId);
+
+        // keep the recv queue filled, using a shared recv queue here
+        // get another buffer from the pool
+        core::IbMemReg* buf = m_recvBufferPool->GetBuffer();
+
+        // Use the pointer as the work req id
+        connection->GetQp(0)->GetRecvQueue()->Receive(buf,
+            (uint64_t) buf);
+
+        m_connectionManager->ReturnConnection(connection);
+
+        // buffer is return to the pool async
+        data = buf->GetAddress();
+
+        // eval immediate data containing flow control confirmation
+        if (immedData) {
+            fcConfirm = true;
+        }
+
+        break;
     }
 
-    if (!fcData && !dataMem) {
+    if (!data) {
         if (!m_waitTimer.IsRunning()) {
             m_waitTimer.Start();
         }
@@ -119,86 +142,9 @@ void RecvThread::_RunLoop(void)
         m_waitTimer.Stop();
 
         // pass data to jvm space
-        m_recvHandler->Received(fcSourceNodeId, fcData, dataSourceNodeId,
-            dataMem, data, dataRecvLength);
+        m_recvHandler->Received(sourceNodeId, fcConfirm, dataMem, data,
+            dataRecvLength);
     }
-}
-
-uint32_t RecvThread::__ProcessFlowControl(uint16_t* sourceNodeId)
-{
-    uint64_t workReqId = (uint64_t) -1;
-    uint32_t recvLength = 0;
-    uint32_t flowControlData;
-    *sourceNodeId = static_cast<uint16_t>(-1);
-
-    try {
-        *sourceNodeId = m_sharedFlowControlRecvCQ->PollForCompletion(false,
-            &workReqId, &recvLength);
-    } catch (core::IbException& e) {
-        IBNET_LOG_ERROR("Polling for data buffer completion failed: {}",
-            e.what());
-        return 0;
-    }
-
-    // no flow control data available
-    if (*sourceNodeId == core::IbNodeId::INVALID) {
-        return 0;
-    }
-
-    auto mem = (core::IbMemReg*) workReqId;
-    m_recvFlowControlBytes += recvLength;
-    flowControlData = *((uint32_t*) mem->GetAddress());
-
-    std::shared_ptr<core::IbConnection> connection =
-        m_connectionManager->GetConnection(*sourceNodeId);
-
-    // keep the recv queue filled, using a shared recv queue here
-    connection->GetQp(1)->GetRecvQueue()->Receive(mem, (uint64_t) mem);
-
-    m_connectionManager->ReturnConnection(connection);
-
-    return flowControlData;
-}
-
-core::IbMemReg* RecvThread::__ProcessBuffers(uint16_t* sourceNodeId,
-        uint32_t* recvLength)
-{
-    uint64_t workReqId = (uint64_t) -1;
-    *sourceNodeId = static_cast<uint16_t>(-1);
-    *recvLength = 0;
-
-    try {
-        *sourceNodeId = m_sharedRecvCQ->PollForCompletion(false, &workReqId,
-            recvLength);
-    } catch (core::IbException& e) {
-        IBNET_LOG_ERROR("Polling for flow control completion failed: {}",
-            e.what());
-        return nullptr;
-    }
-
-    // no data available
-    if (*sourceNodeId == core::IbNodeId::INVALID) {
-        return nullptr;
-    }
-
-    auto mem = (core::IbMemReg*) workReqId;
-    m_recvBytes += *recvLength;
-
-    std::shared_ptr<core::IbConnection> connection =
-        m_connectionManager->GetConnection(*sourceNodeId);
-
-    // keep the recv queue filled, using a shared recv queue here
-    // get another buffer from the pool
-    core::IbMemReg* buf = m_recvBufferPool->GetBuffer();
-
-    // Use the pointer as the work req id
-    connection->GetQp(0)->GetRecvQueue()->Receive(buf,
-        (uint64_t) buf);
-
-    m_connectionManager->ReturnConnection(connection);
-
-    // buffer is return to the pool async
-    return mem;
 }
 
 }

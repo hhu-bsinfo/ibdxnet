@@ -82,11 +82,6 @@ protected:
     void _RunLoop(void) override;
 
 private:
-    uint32_t __ProcessFlowControl(uint16_t* sourceNodeId);
-    core::IbMemReg* __ProcessBuffers(uint16_t* sourceNodeId,
-        uint32_t* recvLength);
-
-private:
     std::shared_ptr<core::IbConnectionManager> m_connectionManager;
     std::shared_ptr<core::IbCompQueue> m_sharedRecvCQ;
     std::shared_ptr<core::IbCompQueue> m_sharedFlowControlRecvCQ;

@@ -34,21 +34,11 @@ SendThread::SendThread(uint32_t recvBufferSize,
     m_connectionManager(connectionManager),
     m_prevNodeIdWritten(core::IbNodeId::INVALID),
     m_prevDataWritten(0),
-    m_ibSendQueueBatchCount(0),
-    m_ibSendQueueFullUtilizationCount(0),
     m_sentBytes(0),
     m_sentFlowControlBytes(0),
     m_waitTimer()
 {
-    m_timers.push_back(sys::ProfileTimer("Total"));
-    m_timers.push_back(sys::ProfileTimer("GetNextDataToSend"));
-    m_timers.push_back(sys::ProfileTimer("GetConnection"));
-    m_timers.push_back(sys::ProfileTimer("FCGetBufferAndCpy"));
-    m_timers.push_back(sys::ProfileTimer("FCSend"));
-    m_timers.push_back(sys::ProfileTimer("FCPoll"));
-    m_timers.push_back(sys::ProfileTimer("DataGetBuffer"));
-    m_timers.push_back(sys::ProfileTimer("DataSend"));
-    m_timers.push_back(sys::ProfileTimer("DataPoll"));
+
 }
 
 SendThread::~SendThread(void)
@@ -56,43 +46,10 @@ SendThread::~SendThread(void)
 
 }
 
-void SendThread::PrintStatistics(void)
-{
-    std::cout << "SendThread statistics:" <<
-    std::endl <<
-    "Throughput: " <<
-        m_sentBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
-    " MB/sec" << std::endl <<
-    "Sent data: " << m_sentBytes / 1024.0 / 1024.0 << " MB" << std::endl <<
-    "Full send queue utilization: " <<
-        (double) m_ibSendQueueBatchCount /
-        (double) m_ibSendQueueFullUtilizationCount << std::endl <<
-    "Process buffer utilization: " << (double) m_timers[6].GetCounter() /
-        (double) m_timers[1].GetCounter() << std::endl <<
-    "FC Throughput: " <<
-        m_sentFlowControlBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
-    " MB/sec" << std::endl <<
-    "FC Sent data: " <<
-        m_sentFlowControlBytes / 1024.0 / 1024.0 << " MB" << std::endl;
-
-    for (auto& it : m_timers) {
-        std::cout << it << std::endl;
-    }
-}
-
-void SendThread::_BeforeRunLoop(void)
-{
-    m_timers[0].Enter();
-}
-
 void SendThread::_RunLoop(void)
 {
-    m_timers[1].Enter();
-
     SendHandler::NextWorkParameters* data = m_sendHandler->GetNextDataToSend(
         m_prevNodeIdWritten, m_prevDataWritten);
-
-    m_timers[1].Exit();
 
     // reset previous state
     m_prevNodeIdWritten = core::IbNodeId::INVALID;
@@ -118,12 +75,8 @@ void SendThread::_RunLoop(void)
     // seems like we got something to process
     m_prevNodeIdWritten = data->m_nodeId;
 
-    m_timers[2].Enter();
-
     std::shared_ptr<core::IbConnection> connection =
         m_connectionManager->GetConnection(data->m_nodeId);
-
-    m_timers[2].Exit();
 
     // connection closed in the meantime
     if (!connection) {
@@ -150,12 +103,6 @@ void SendThread::_RunLoop(void)
     }
 }
 
-void SendThread::_AfterRunLoop(void)
-{
-    m_timers[0].Exit();
-    PrintStatistics();
-}
-
 uint32_t SendThread::__ProcessFlowControl(
         std::shared_ptr<core::IbConnection>& connection,
         SendHandler::NextWorkParameters* data)
@@ -166,31 +113,14 @@ uint32_t SendThread::__ProcessFlowControl(
         return 0;
     }
 
-    m_timers[3].Enter();
-
     core::IbMemReg* mem = m_buffers->GetFlowControlBuffer(
         connection->GetConnectionId());
 
     memcpy(mem->GetAddress(), &data->m_flowControlData, numBytesToSend);
 
-    m_timers[3].Exit();
-
-    m_timers[4].Enter();
-
     connection->GetQp(1)->GetSendQueue()->Send(mem, 0, numBytesToSend);
 
-    m_timers[4].Exit();
-
-    m_timers[5].Enter();
-
-    try {
-        connection->GetQp(1)->GetSendQueue()->PollCompletion(true);
-    } catch (...) {
-        m_timers[5].Exit();
-        throw;
-    }
-
-    m_timers[5].Exit();
+    connection->GetQp(1)->GetSendQueue()->PollCompletion(true);
 
     m_sentFlowControlBytes += numBytesToSend;
 
@@ -217,12 +147,8 @@ uint32_t SendThread::__ProcessBuffer(
         return 0;
     }
 
-    m_timers[6].Enter();
-
     core::IbMemReg* sendBuffer =
         m_buffers->GetBuffer(connection->GetConnectionId());
-
-    m_timers[6].Exit();
 
     uint16_t queueSize = connection->GetQp(0)->GetSendQueue()->GetQueueSize();
     uint32_t posFront = data->m_posFrontRel;
@@ -236,25 +162,17 @@ uint32_t SendThread::__ProcessBuffer(
         while (sliceCount < queueSize && posFront != posBack) {
             // fits a full receive buffer
             if (posFront + m_recvBufferSize <= posBack) {
-                m_timers[7].Enter();
-
                 connection->GetQp(0)->GetSendQueue()->Send(sendBuffer,
                     posFront, m_recvBufferSize);
-
-                m_timers[7].Exit();
 
                 posFront += m_recvBufferSize;
                 iterationBytesSent += m_recvBufferSize;
             } else {
                 // smaller than a receive buffer
-                m_timers[7].Enter();
-
                 uint32_t size = posBack - posFront;
 
                 connection->GetQp(0)->GetSendQueue()->Send(sendBuffer,
                     posFront, size);
-
-                m_timers[7].Exit();
 
                 posFront += size;
                 iterationBytesSent += size;
@@ -265,26 +183,11 @@ uint32_t SendThread::__ProcessBuffer(
 
         // poll completions
         for (uint16_t i = 0; i < sliceCount; i++) {
-            m_timers[8].Enter();
-
-            try {
-                connection->GetQp(0)->GetSendQueue()->PollCompletion(true);
-            } catch (...) {
-                m_timers[8].Exit();
-                throw;
-            }
-
-            m_timers[8].Exit();
+            connection->GetQp(0)->GetSendQueue()->PollCompletion(true);
         }
 
         m_sentBytes += iterationBytesSent;
         totalBytesSent += iterationBytesSent;
-
-        m_ibSendQueueBatchCount++;
-
-        if (sliceCount == queueSize) {
-            m_ibSendQueueFullUtilizationCount++;
-        }
     }
 
     return totalBytesSent;

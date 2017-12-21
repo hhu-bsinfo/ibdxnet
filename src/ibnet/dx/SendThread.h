@@ -67,17 +67,8 @@ public:
      */
     ~SendThread(void);
 
-    /**
-     * Print statistics/performance data
-     */
-    void PrintStatistics(void);
-
 private:
-    void _BeforeRunLoop(void) override;
-
     void _RunLoop(void) override;
-
-    void _AfterRunLoop(void) override;
 
 private:
     uint32_t __ProcessFlowControl(
@@ -98,13 +89,9 @@ private:
     uint16_t m_prevNodeIdWritten;
     uint32_t m_prevDataWritten;
 
-    uint64_t m_ibSendQueueBatchCount;
-    uint64_t m_ibSendQueueFullUtilizationCount;
-
 private:
     uint64_t m_sentBytes;
     uint64_t m_sentFlowControlBytes;
-    std::vector<sys::ProfileTimer> m_timers;
     sys::Timer m_waitTimer;
 };
 

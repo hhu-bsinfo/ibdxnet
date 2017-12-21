@@ -30,7 +30,8 @@
 
 #include "ConnectionCreator.h"
 #include "ConnectionHandler.h"
-#include "DebugThread.h"
+#include "SendThread.h"
+#include "RecvThread.h"
 
 static std::unique_ptr<backward::SignalHandling> g_signalHandler;
 
@@ -56,8 +57,6 @@ static std::shared_ptr<ibnet::dx::RecvBufferPool> g_recvBufferPool;
 static std::shared_ptr<ibnet::dx::RecvThread> g_recvThread;
 static std::shared_ptr<ibnet::dx::SendThread> g_sendThread;
 
-static std::unique_ptr<ibnet::dx::DebugThread> g_debugThread;
-
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init(
         JNIEnv* p_env, jclass p_class, jshort p_ownNodeId, jint p_inBufferSize,
         jint p_outBufferSize, jlong p_recvPoolSizeBytes, jint p_maxRecvReqs,
@@ -67,6 +66,8 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init(
         jobject p_connectionHandler, jboolean p_enableSignalHandler,
         jboolean p_enableDebugThread)
 {
+    // TODO remove obsolete parameter p_enableDebugThread
+
     // setup foundation
     if (p_enableSignalHandler) {
         g_signalHandler = std::make_unique<backward::SignalHandling>();
@@ -163,12 +164,6 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init(
         return (jboolean) 0;
     }
 
-    if (p_enableDebugThread) {
-        g_debugThread = std::make_unique<ibnet::dx::DebugThread>(
-            g_recvThread, g_sendThread);
-        g_debugThread->Start();
-    }
-
     IBNET_LOG_INFO("Initializing ibdxnet subsystem done");
 
 	return (jboolean) 1;
@@ -186,11 +181,6 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_shutdown(
     // TODO cleanup outgoing msg queues, make sure everything's processed?
     // TODO don't allow any new messages to be put to the send queue
     // wait until everything on the send queues is sent?
-
-    if (g_debugThread) {
-        g_debugThread->Stop();
-        g_debugThread.reset();
-    }
 
     g_sendThread->Stop();
     g_recvThread->Stop();

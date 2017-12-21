@@ -78,17 +78,8 @@ public:
      */
     void NodeConnected(core::IbConnection& connection);
 
-    /**
-     * Print statistics/performance data of the receiver thread
-     */
-    void PrintStatistics(void);
-
 protected:
-    void _BeforeRunLoop(void) override;
-
     void _RunLoop(void) override;
-
-    void _AfterRunLoop(void) override;
 
 private:
     uint32_t __ProcessFlowControl(uint16_t* sourceNodeId);
@@ -106,7 +97,6 @@ private:
     std::atomic<bool> m_sharedQueueInitialFill;
     uint64_t m_recvBytes;
     uint64_t m_recvFlowControlBytes;
-    std::vector<sys::ProfileTimer> m_timers;
     sys::Timer m_waitTimer;
 
 };

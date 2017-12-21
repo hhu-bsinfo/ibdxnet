@@ -42,17 +42,7 @@ RecvThread::RecvThread(
     m_recvFlowControlBytes(0),
     m_waitTimer()
 {
-    m_timers.push_back(sys::ProfileTimer("Total"));
-    m_timers.push_back(sys::ProfileTimer("FCPoll"));
-    m_timers.push_back(sys::ProfileTimer("FCGetNodeIdForQp"));
-    m_timers.push_back(sys::ProfileTimer("FCPostWRQ"));
-    m_timers.push_back(sys::ProfileTimer("BufferPoll"));
-    m_timers.push_back(sys::ProfileTimer("BufferGetNodeIdForQp"));
-    m_timers.push_back(sys::ProfileTimer("BufferGetConnection"));
-    m_timers.push_back(sys::ProfileTimer("BufferGetBuffer"));
-    m_timers.push_back(sys::ProfileTimer("BufferPostWRQ"));
-    m_timers.push_back(sys::ProfileTimer("BufferReturnConnection"));
-    m_timers.push_back(sys::ProfileTimer("FCAndDataHandle"));
+
 }
 
 RecvThread::~RecvThread(void)
@@ -96,32 +86,6 @@ void RecvThread::NodeConnected(core::IbConnection& connection)
     }
 }
 
-void RecvThread::PrintStatistics(void)
-{
-    std::cout << "ReceiveThread statistics:" <<
-    std::endl <<
-    "Throughput: " <<
-        m_recvBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
-    " MB/sec" << std::endl <<
-    "Recv data: " << m_recvBytes / 1024.0 / 1024.0 << " MB" << std::endl <<
-    "Process buffer utilization: " << (double) m_timers[7].GetCounter() /
-        (double) m_timers[4].GetCounter() << std::endl <<
-    "FC Throughput: " <<
-        m_recvFlowControlBytes / m_timers[0].GetTotalTime() / 1024.0 / 1024.0 <<
-    " MB/sec" << std::endl <<
-    "FC Recv data: " <<
-        m_recvFlowControlBytes / 1024.0 / 1024.0 << " MB" << std::endl;
-
-    for (auto& it : m_timers) {
-        std::cout << it << std::endl;
-    }
-}
-
-void RecvThread::_BeforeRunLoop(void)
-{
-    m_timers[0].Enter();
-}
-
 void RecvThread::_RunLoop(void)
 {
     uint32_t fcData;
@@ -154,20 +118,10 @@ void RecvThread::_RunLoop(void)
     } else {
         m_waitTimer.Stop();
 
-        m_timers[10].Enter();
-
         // pass data to jvm space
         m_recvHandler->Received(fcSourceNodeId, fcData, dataSourceNodeId,
             dataMem, data, dataRecvLength);
-
-        m_timers[10].Exit();
     }
-}
-
-void RecvThread::_AfterRunLoop(void)
-{
-    m_timers[0].Exit();
-    PrintStatistics();
 }
 
 uint32_t RecvThread::__ProcessFlowControl(uint16_t* sourceNodeId)
@@ -177,19 +131,14 @@ uint32_t RecvThread::__ProcessFlowControl(uint16_t* sourceNodeId)
     uint32_t flowControlData;
     *sourceNodeId = static_cast<uint16_t>(-1);
 
-    m_timers[1].Enter();
-
     try {
         *sourceNodeId = m_sharedFlowControlRecvCQ->PollForCompletion(false,
             &workReqId, &recvLength);
     } catch (core::IbException& e) {
-        m_timers[1].Exit();
         IBNET_LOG_ERROR("Polling for data buffer completion failed: {}",
             e.what());
         return 0;
     }
-
-    m_timers[1].Exit();
 
     // no flow control data available
     if (*sourceNodeId == core::IbNodeId::INVALID) {
@@ -200,8 +149,6 @@ uint32_t RecvThread::__ProcessFlowControl(uint16_t* sourceNodeId)
     m_recvFlowControlBytes += recvLength;
     flowControlData = *((uint32_t*) mem->GetAddress());
 
-    m_timers[3].Enter();
-
     std::shared_ptr<core::IbConnection> connection =
         m_connectionManager->GetConnection(*sourceNodeId);
 
@@ -209,8 +156,6 @@ uint32_t RecvThread::__ProcessFlowControl(uint16_t* sourceNodeId)
     connection->GetQp(1)->GetRecvQueue()->Receive(mem, (uint64_t) mem);
 
     m_connectionManager->ReturnConnection(connection);
-
-    m_timers[3].Exit();
 
     return flowControlData;
 }
@@ -222,19 +167,14 @@ core::IbMemReg* RecvThread::__ProcessBuffers(uint16_t* sourceNodeId,
     *sourceNodeId = static_cast<uint16_t>(-1);
     *recvLength = 0;
 
-    m_timers[4].Enter();
-
     try {
         *sourceNodeId = m_sharedRecvCQ->PollForCompletion(false, &workReqId,
             recvLength);
     } catch (core::IbException& e) {
-        m_timers[4].Exit();
         IBNET_LOG_ERROR("Polling for flow control completion failed: {}",
             e.what());
         return nullptr;
     }
-
-    m_timers[4].Exit();
 
     // no data available
     if (*sourceNodeId == core::IbNodeId::INVALID) {
@@ -244,34 +184,18 @@ core::IbMemReg* RecvThread::__ProcessBuffers(uint16_t* sourceNodeId,
     auto mem = (core::IbMemReg*) workReqId;
     m_recvBytes += *recvLength;
 
-    m_timers[6].Enter();
-
     std::shared_ptr<core::IbConnection> connection =
         m_connectionManager->GetConnection(*sourceNodeId);
-
-    m_timers[6].Exit();
-
-    m_timers[7].Enter();
 
     // keep the recv queue filled, using a shared recv queue here
     // get another buffer from the pool
     core::IbMemReg* buf = m_recvBufferPool->GetBuffer();
 
-    m_timers[7].Exit();
-
-    m_timers[8].Enter();
-
     // Use the pointer as the work req id
     connection->GetQp(0)->GetRecvQueue()->Receive(buf,
         (uint64_t) buf);
 
-    m_timers[8].Exit();
-
-    m_timers[9].Enter();
-
     m_connectionManager->ReturnConnection(connection);
-
-    m_timers[9].Exit();
 
     // buffer is return to the pool async
     return mem;

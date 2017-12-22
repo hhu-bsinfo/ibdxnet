@@ -54,14 +54,10 @@ void SendThread::_RunLoop(void)
     m_prevNodeIdWritten = core::IbNodeId::INVALID;
     m_prevDataWritten = 0;
 
-//    if (data != nullptr) {
-//        printf("to send %d %d\n", data->m_posFrontRel, data->m_posBackRel);
-//    }
-//    // if nothing to process, thread should wait in java space but might
-//    // return on shutdown to allow this thread to join
-    // TODO
+    // if nothing to process, thread should wait in java space but might
+    // return sometimes to allow this thread to join on shutdown
     if (data == nullptr) {
-        printf("to send after null\n");
+        return;
     }
 
     // seems like we got something to process
@@ -121,7 +117,6 @@ void SendThread::_RunLoop(void)
                     // and gets translated to 2^31 bytes length
                     // use a flag to indicate 0 length payloads
                     if (size == 0) {
-                        printf("zero length data\n");
                         immedData |= (1 << 1);
                         // send some dummy data which is ignored on incoming
                         size = 1;

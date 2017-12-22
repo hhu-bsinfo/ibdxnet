@@ -75,15 +75,16 @@ void RecvThread::NodeConnected(core::IbConnection& connection)
 
 void RecvThread::_RunLoop(void)
 {
+    uint16_t sourceNodeId = static_cast<uint16_t>(-1);
+    bool fcConfirm = false;
     core::IbMemReg* dataMem = nullptr;
     void* data = nullptr;
-    uint16_t sourceNodeId = static_cast<uint16_t>(-1);
     uint32_t dataRecvLength = 0;
-    uint16_t immedData = 0;
-    bool fcConfirm = false;
 
     while (true) {
         uint64_t workReqId = (uint64_t) -1;
+        uint16_t immedData = 0;
+        bool zeroLengthPackage = false;
 
         try {
             sourceNodeId = m_sharedRecvCQ->PollForCompletion(false,
@@ -99,36 +100,46 @@ void RecvThread::_RunLoop(void)
             break;
         }
 
-        printf(">>> received: %d\n", dataRecvLength);
+        // eval immediate data containing flow control confirmation
+        if (immedData & (1 << 0)) {
+            fcConfirm = true;
+        }
 
-        auto mem = (core::IbMemReg*) workReqId;
-        m_recvBytes += dataRecvLength;
+        // check for zero length package which can't be indicated by setting
+        // the size to 0 on send (which gets translated to 2^31 instead)
+        if (immedData & (1 << 1)) {
+            zeroLengthPackage = true;
+        }
+
+        if (!zeroLengthPackage) {
+            // pointer to memory with received data is stored os the work req id
+            dataMem = (core::IbMemReg*) workReqId;
+            m_recvBytes += dataRecvLength;
+
+            // buffer is return to the pool async from java space
+            data = dataMem->GetAddress();
+        } else {
+            // set length to actual value
+            dataRecvLength = 0;
+        }
 
         std::shared_ptr < core::IbConnection > connection =
             m_connectionManager->GetConnection(sourceNodeId);
 
         // keep the recv queue filled, using a shared recv queue here
         // get another buffer from the pool
-        core::IbMemReg* buf = m_recvBufferPool->GetBuffer();
+        core::IbMemReg* newRecvMem = m_recvBufferPool->GetBuffer();
 
         // Use the pointer as the work req id
-        connection->GetQp(0)->GetRecvQueue()->Receive(buf,
-            (uint64_t) buf);
+        connection->GetQp(0)->GetRecvQueue()->Receive(newRecvMem,
+            (uint64_t) newRecvMem);
 
         m_connectionManager->ReturnConnection(connection);
-
-        // buffer is return to the pool async
-        data = buf->GetAddress();
-
-        // eval immediate data containing flow control confirmation
-        if (immedData) {
-            fcConfirm = true;
-        }
 
         break;
     }
 
-    if (!data) {
+    if (!data && !fcConfirm) {
         if (!m_waitTimer.IsRunning()) {
             m_waitTimer.Start();
         }

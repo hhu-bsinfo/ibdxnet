@@ -54,18 +54,15 @@ void SendThread::_RunLoop(void)
     m_prevNodeIdWritten = core::IbNodeId::INVALID;
     m_prevDataWritten = 0;
 
-    printf("!!!!!!!!!!!!!!\n");
-
-    if (data != nullptr) {
-        printf("to send %d %d\n", data->m_posFrontRel, data->m_posBackRel);
-    }
-    // if nothing to process, thread should wait in java space but might
-    // return on shutdown to allow this thread to join
+//    if (data != nullptr) {
+//        printf("to send %d %d\n", data->m_posFrontRel, data->m_posBackRel);
+//    }
+//    // if nothing to process, thread should wait in java space but might
+//    // return on shutdown to allow this thread to join
+    // TODO
     if (data == nullptr) {
-        return;
+        printf("to send after null\n");
     }
-
-    printf("to send after null\n");
 
     // seems like we got something to process
     m_prevNodeIdWritten = data->m_nodeId;
@@ -94,12 +91,9 @@ void SendThread::_RunLoop(void)
         core::IbMemReg* sendBuffer =
             m_buffers->GetBuffer(connection->GetConnectionId());
 
+        // set first bit to indicate FC confirmation
         uint16_t immedData =
             static_cast<uint16_t>(data->m_flowControlData > 0 ? 1 : 0);
-
-        if (immedData) {
-            printf(">>> FC\n");
-        }
 
         uint16_t queueSize = connection->GetQp(0)->GetSendQueue()->GetQueueSize();
         uint32_t posFront = data->m_posFrontRel;
@@ -109,13 +103,10 @@ void SendThread::_RunLoop(void)
             uint16_t sliceCount = 0;
             uint32_t iterationBytesSent = 0;
 
-            printf("posfront %d, posback %d\n", posFront, posBack);
-
             // slice area of send buffer into slices fitting receive buffers
             while (sliceCount < queueSize && posFront != posBack || immedData) {
                 // fits a full receive buffer
                 if (posFront + m_recvBufferSize <= posBack) {
-                    printf(">>> send1 (fc %d): %d", immedData, m_recvBufferSize);
                     connection->GetQp(0)->GetSendQueue()->Send(sendBuffer,
                         immedData, posFront, m_recvBufferSize);
 
@@ -124,16 +115,29 @@ void SendThread::_RunLoop(void)
                 } else {
                     // smaller than a receive buffer
                     uint32_t size = posBack - posFront;
+                    bool zeroLength = false;
 
-                    printf(">>> send2 (fc %d): %d", immedData, size);
+                    // don't send packages with size 0 which is a special value
+                    // and gets translated to 2^31 bytes length
+                    // use a flag to indicate 0 length payloads
+                    if (size == 0) {
+                        printf("zero length data\n");
+                        immedData |= (1 << 1);
+                        // send some dummy data which is ignored on incoming
+                        size = 1;
+                        zeroLength = true;
+                    }
+
                     connection->GetQp(0)->GetSendQueue()->Send(sendBuffer,
                         immedData, posFront, size);
 
-                    posFront += size;
-                    iterationBytesSent += size;
+                    if (!zeroLength) {
+                        posFront += size;
+                        iterationBytesSent += size;
+                    }
                 }
 
-                // send fc confirmation once
+                // send fc confirmation once and clear when done
                 if (immedData) {
                     immedData = 0;
                     m_sentFlowControlConfirms++;

@@ -87,7 +87,7 @@ public:
         // Don't detach. This is very expensive and increases the costs
         // for re-attaching a lot. The number of threads calling back to
         // the java context is limited, so we keep them attached
-         vm->DetachCurrentThread();
+        // vm->DetachCurrentThread();
     }
 
     /**

@@ -81,7 +81,6 @@ public:
             // odd: 0xFFFF is not reinterpreted as -1 when assigned to a jshort
             prevNodeIdWritten == core::IbNodeId::INVALID ? -1 : prevNodeIdWritten,
             prevDataWrittenLen);
-        printf("#############\n");
         JNIHelper::ReturnEnv(m_vm, env);
 
         // IBNET_LOG_TRACE_FUNC_EXIT;

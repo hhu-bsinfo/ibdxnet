@@ -118,6 +118,11 @@ void RecvThread::_RunLoop(void)
         } else {
             // set length to actual value
             dataRecvLength = 0;
+
+            // return buffer to pool, don't care about any dummy data
+            // otherwise, the pool runs dry after a while
+            // pointer to memory with received data is stored os the work req id
+            m_recvBufferPool->ReturnBuffer((core::IbMemReg*) workReqId);
         }
 
         std::shared_ptr < core::IbConnection > connection =

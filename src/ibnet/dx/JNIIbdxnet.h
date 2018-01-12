@@ -28,13 +28,13 @@ extern "C" {
 /*
  * Class:     de_hhu_bsinfo_dxnet_ib_JNIIdxbnet
  * Method:    init
- * Signature: (SIIJIIIIILde/hhu/bsinfo/net/ib/JNIIbdxnet/SendHandler;
+ * Signature: (SIIJIIIILde/hhu/bsinfo/net/ib/JNIIbdxnet/SendHandler;
  * Lde/hhu/bsinfo/net/ib/JNIIbdxnet/RecvHandler;
- * Lde/hhu/bsinfo/net/ib/JNIIbdxnet/ConnectionHandler;ZZ)Z
+ * Lde/hhu/bsinfo/net/ib/JNIIbdxnet/ConnectionHandler;Z)Z
  */
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init
-    (JNIEnv *, jclass, jshort, jint, jint, jlong, jint, jint, jint, jint, jint,
-     jobject, jobject, jobject, jboolean, jboolean);
+    (JNIEnv *, jclass, jshort, jint, jint, jlong, jint, jint, jint, jint,
+     jobject, jobject, jobject, jboolean);
 
 /*
  * Class:     de_hhu_bsinfo_dxnet_ib_JNIIbdxnet

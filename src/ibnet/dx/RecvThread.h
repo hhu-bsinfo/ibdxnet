@@ -53,8 +53,6 @@ public:
 
      * @param connectionManager The parent connection manager
      * @param sharedRecvCQ Shared receive buffer queue to use
-     * @param sharedFlowControlRecvCQ  Shared receive flow control
-     *          queue to use
      * @param recvBufferPool Buffer pool to use to fill up the
      *          queues with new work requests
      * @param recvHandler Handler which forwards the received data
@@ -62,7 +60,6 @@ public:
     RecvThread(
         std::shared_ptr<core::IbConnectionManager>& connectionManager,
         std::shared_ptr<core::IbCompQueue>& sharedRecvCQ,
-        std::shared_ptr<core::IbCompQueue>& sharedFlowControlRecvCQ,
         std::shared_ptr<RecvBufferPool>& recvBufferPool,
         std::shared_ptr<RecvHandler>& recvHandler);
 
@@ -84,14 +81,12 @@ protected:
 private:
     std::shared_ptr<core::IbConnectionManager> m_connectionManager;
     std::shared_ptr<core::IbCompQueue> m_sharedRecvCQ;
-    std::shared_ptr<core::IbCompQueue> m_sharedFlowControlRecvCQ;
     std::shared_ptr<RecvBufferPool> m_recvBufferPool;
     std::shared_ptr<RecvHandler> m_recvHandler;
 
 private:
     std::atomic<bool> m_sharedQueueInitialFill;
     uint64_t m_recvBytes;
-    uint64_t m_recvFlowControlBytes;
     sys::Timer m_waitTimer;
 
 };

@@ -28,18 +28,15 @@ namespace dx {
 RecvThread::RecvThread(
         std::shared_ptr<core::IbConnectionManager>& connectionManager,
         std::shared_ptr<core::IbCompQueue>& sharedRecvCQ,
-        std::shared_ptr<core::IbCompQueue>& sharedFlowControlRecvCQ,
         std::shared_ptr<RecvBufferPool>& recvBufferPool,
         std::shared_ptr<RecvHandler>& recvHandler) :
     ThreadLoop("RecvThread"),
     m_connectionManager(connectionManager),
     m_sharedRecvCQ(sharedRecvCQ),
-    m_sharedFlowControlRecvCQ(sharedFlowControlRecvCQ),
     m_recvBufferPool(recvBufferPool),
     m_recvHandler(recvHandler),
     m_sharedQueueInitialFill(false),
     m_recvBytes(0),
-    m_recvFlowControlBytes(0),
     m_waitTimer()
 {
 

@@ -26,11 +26,9 @@ namespace ibnet {
 namespace dx {
 
 RecvBufferPool::RecvBufferPool(uint64_t initialTotalPoolSize,
-        uint32_t recvBufferSize, uint32_t flowControlQueueSize,
-        std::shared_ptr<core::IbProtDom>& protDom) :
+        uint32_t recvBufferSize, std::shared_ptr<core::IbProtDom>& protDom) :
     m_bufferPoolSize(initialTotalPoolSize / recvBufferSize),
     m_bufferSize(recvBufferSize),
-    m_numFlowControlBuffers(flowControlQueueSize),
     m_dataBuffersFront(0),
     m_dataBuffersBack(
         (uint32_t) (initialTotalPoolSize / recvBufferSize - 1)),
@@ -53,14 +51,6 @@ RecvBufferPool::RecvBufferPool(uint64_t initialTotalPoolSize,
     for (uint32_t i = 0; i < m_bufferPoolSize; i++) {
         m_dataBuffers[i] = m_protDom->Register(
             malloc(recvBufferSize), recvBufferSize, true);
-    }
-
-    IBNET_LOG_INFO("Alloc {} fc buffers", m_numFlowControlBuffers);
-
-    // TODO use sizeof (uint32_t) instead of 4
-    for (uint32_t i = 0; i < m_numFlowControlBuffers; i++) {
-        m_flowControlBuffers.push_back(m_protDom->Register(
-            malloc(4), 4, true));
     }
 }
 
@@ -138,23 +128,6 @@ void RecvBufferPool::ReturnBuffer(core::IbMemReg* buffer)
             break;
         }
     }
-}
-
-core::IbMemReg* RecvBufferPool::GetFlowControlBuffer(void)
-{
-    core::IbMemReg* buffer = NULL;
-
-    // FIXME this not just gets the buffer but also removes it from the pool
-    // but there is not return
-    // should use a pointer to the array instead and increase that
-    if (!m_flowControlBuffers.empty()) {
-        buffer = m_flowControlBuffers.back();
-        m_flowControlBuffers.pop_back();
-    } else {
-        IBNET_LOG_ERROR("Out of flow control buffers");
-    }
-
-    return buffer;
 }
 
 }

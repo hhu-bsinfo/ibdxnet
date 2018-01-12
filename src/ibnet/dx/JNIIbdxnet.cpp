@@ -43,11 +43,7 @@ static std::shared_ptr<ibnet::core::IbDevice> g_device;
 static std::shared_ptr<ibnet::core::IbProtDom> g_protDom;
 
 static std::shared_ptr<ibnet::core::IbSharedRecvQueue> g_sharedRecvQueue;
-static std::shared_ptr<ibnet::core::IbSharedRecvQueue>
-    g_sharedFlowControlRecvQueue;
 static std::shared_ptr<ibnet::core::IbCompQueue> g_sharedRecvCompQueue;
-static std::shared_ptr<ibnet::core::IbCompQueue>
-    g_sharedFlowControlRecvCompQueue;
 
 static std::shared_ptr<ibnet::core::IbConnectionManager> g_connectionManager;
 
@@ -60,14 +56,11 @@ static std::shared_ptr<ibnet::dx::SendThread> g_sendThread;
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init(
         JNIEnv* p_env, jclass p_class, jshort p_ownNodeId, jint p_inBufferSize,
         jint p_outBufferSize, jlong p_recvPoolSizeBytes, jint p_maxRecvReqs,
-        jint p_maxSendReqs, jint p_flowControlMaxRecvReqs,
-        jint p_maxNumConnections, jint p_connectionCreationTimeoutMs,
-        jobject p_sendHandler, jobject p_recvHandler,
-        jobject p_connectionHandler, jboolean p_enableSignalHandler,
-        jboolean p_enableDebugThread)
+        jint p_maxSendReqs, jint p_maxNumConnections,
+        jint p_connectionCreationTimeoutMs, jobject p_sendHandler,
+        jobject p_recvHandler, jobject p_connectionHandler,
+        jboolean p_enableSignalHandler)
 {
-    // TODO remove obsolete parameter p_enableDebugThread
-
     // setup foundation
     if (p_enableSignalHandler) {
         g_signalHandler = std::make_unique<backward::SignalHandling>();
@@ -111,16 +104,10 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init(
         g_sharedRecvQueue = std::make_shared<ibnet::core::IbSharedRecvQueue>(
             g_protDom,
             p_maxRecvReqs);
-        g_sharedFlowControlRecvQueue =
-            std::make_shared<ibnet::core::IbSharedRecvQueue>(g_protDom,
-                p_flowControlMaxRecvReqs);
 
         g_sharedRecvCompQueue = std::make_shared<ibnet::core::IbCompQueue>(
             g_device,
             p_maxRecvReqs);
-        g_sharedFlowControlRecvCompQueue =
-            std::make_shared<ibnet::core::IbCompQueue>(g_device,
-                p_flowControlMaxRecvReqs);
 
         // add nodes later
         ibnet::core::IbNodeConf nodeConf;
@@ -129,10 +116,8 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init(
             p_ownNodeId, nodeConf, 5731, p_connectionCreationTimeoutMs,
             p_maxNumConnections, g_device, g_protDom,
             std::make_unique<ibnet::dx::ConnectionCreator>(p_ownNodeId,
-                p_maxSendReqs, p_maxRecvReqs, p_flowControlMaxRecvReqs,
-                g_sharedRecvQueue, g_sharedRecvCompQueue,
-                g_sharedFlowControlRecvQueue,
-                g_sharedFlowControlRecvCompQueue));
+                p_maxSendReqs, p_maxRecvReqs, g_sharedRecvQueue,
+                g_sharedRecvCompQueue));
 
         g_connectionManager->SetNodeConnectedListener(g_connectionHandler.get());
 
@@ -141,14 +126,12 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_init(
         g_sendBuffers = std::make_shared<ibnet::dx::SendBuffers>(
             p_outBufferSize, p_maxNumConnections, g_protDom);
         g_recvBufferPool = std::make_shared<ibnet::dx::RecvBufferPool>(
-            p_recvPoolSizeBytes, p_inBufferSize, p_flowControlMaxRecvReqs,
-            g_protDom);
+            p_recvPoolSizeBytes, p_inBufferSize, g_protDom);
 
         IBNET_LOG_INFO("Initializing send and recv thread...");
 
         g_recvThread = std::make_shared<ibnet::dx::RecvThread>(
-            g_connectionManager, g_sharedRecvCompQueue,
-            g_sharedFlowControlRecvCompQueue, g_recvBufferPool,
+            g_connectionManager, g_sharedRecvCompQueue, g_recvBufferPool,
             g_recvHandler);
         g_recvThread->Start();
 
@@ -189,8 +172,6 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_shutdown(
         g_connectionManager.reset();
         g_sharedRecvCompQueue.reset();
         g_sharedRecvQueue.reset();
-        g_sharedFlowControlRecvCompQueue.reset();
-        g_sharedFlowControlRecvQueue.reset();
         g_sendBuffers.reset();
         g_recvBufferPool.reset();
         g_protDom.reset();

@@ -22,19 +22,14 @@ namespace ibnet {
 namespace dx {
 
 ConnectionCreator::ConnectionCreator(uint16_t ownNodeId, uint16_t qpMaxSendReqs,
-        uint16_t qpMaxRecvReqs, uint16_t qpFlowControlMaxRecvReqs,
+        uint16_t qpMaxRecvReqs,
         std::shared_ptr<core::IbSharedRecvQueue> sharedRecvQueue,
-        std::shared_ptr<core::IbCompQueue> sharedRecvCompQueue,
-        std::shared_ptr<core::IbSharedRecvQueue> sharedFlowControlRecvQueue,
-        std::shared_ptr<core::IbCompQueue> sharedFlowControlRecvCompQueue) :
+        std::shared_ptr<core::IbCompQueue> sharedRecvCompQueue) :
     core::IbConnectionCreator(ownNodeId),
     m_qpMaxSendReqs(qpMaxSendReqs),
     m_qpMaxRecvReqs(qpMaxRecvReqs),
-    m_qpFlowControlMaxRecvReqs(qpFlowControlMaxRecvReqs),
     m_sharedRecvQueue(sharedRecvQueue),
-    m_sharedRecvCompQueue(sharedRecvCompQueue),
-    m_sharedFlowControlRecvQueue(sharedFlowControlRecvQueue),
-    m_sharedFlowControlRecvCompQueue(sharedFlowControlRecvCompQueue)
+    m_sharedRecvCompQueue(sharedRecvCompQueue)
 {
 
 }
@@ -54,9 +49,6 @@ std::shared_ptr<core::IbConnection> ConnectionCreator::CreateConnection(
 
     ret->AddQp(m_sharedRecvQueue, m_sharedRecvCompQueue, m_qpMaxRecvReqs,
         m_qpMaxSendReqs);
-    // a single work request is enough because we sum up flow control data
-    ret->AddQp(m_sharedFlowControlRecvQueue, m_sharedFlowControlRecvCompQueue,
-        m_qpFlowControlMaxRecvReqs, 1);
 
     return ret;
 }

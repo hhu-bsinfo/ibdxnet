@@ -37,6 +37,8 @@ IbConnectionManager::~IbConnectionManager(void)
     IBNET_LOG_TRACE_FUNC;
     IBNET_LOG_INFO("Shutting down connection manager...");
 
+    m_jobThread.FlagShutdown();
+
     // close opened connections
     for (uint32_t i = 0; i < IbNodeId::MAX_NUM_NODES; i++) {
         if (m_connectionContext.IsConnectionAvailable(
@@ -608,6 +610,7 @@ bool IbConnectionManager::ExchangeThread::__SendDiscoveryResp(uint16_t ownNodeId
 IbConnectionManager::JobThread::JobThread(DiscoveryContext& discoveryContext,
         ConnectionContext& connectionContext) :
     ThreadLoop("IbConnectionManager-Job"),
+    m_flagShutdown(false),
     m_queue(1024),
     m_runDiscovery(true),
     m_discoveryContext(discoveryContext),
@@ -698,17 +701,31 @@ void IbConnectionManager::JobThread::_RunLoop(void)
 
         switch (m_job.m_type) {
             case IbConnectionManagerJobQueue::JT_CREATE:
-                m_connectionContext.Create(m_job.m_nodeId, m_job.m_ident , m_job.m_lid,
-                    m_job.m_physicalQpId);
+                // don't process connection create jobs if not flagged for
+                // shutdown (i.e. currently shutting down the subsystem)
+                if (!m_flagShutdown.load(std::memory_order_relaxed)) {
+                    m_connectionContext.Create(m_job.m_nodeId, m_job.m_ident,
+                        m_job.m_lid,
+                        m_job.m_physicalQpId);
+                }
+
                 break;
 
             case IbConnectionManagerJobQueue::JT_CLOSE:
+                // always process connection close jobs especially during
+                // subsystem shutdown (m_flagShutdown)
                 m_connectionContext.Close(m_job.m_nodeId, m_job.m_force,
                     m_job.m_shutdown);
                 break;
 
             case IbConnectionManagerJobQueue::JT_DISCOVERED:
-                m_discoveryContext.Discovered(m_job.m_nodeId, m_job.m_ipAddr);
+                // don't process discover jobs if not flagged for
+                // shutdown (i.e. currently shutting down the subsystem)
+                if (!m_flagShutdown.load(std::memory_order_relaxed)) {
+                    m_discoveryContext.Discovered(m_job.m_nodeId,
+                        m_job.m_ipAddr);
+                }
+
                 break;
 
             default:

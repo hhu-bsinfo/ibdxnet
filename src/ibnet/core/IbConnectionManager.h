@@ -244,6 +244,10 @@ private:
                   ConnectionContext& conncectionContext);
         ~JobThread(void);
 
+        void FlagShutdown(void) {
+            m_flagShutdown.store(true, std::memory_order_relaxed);
+        }
+
         void AddCreateJob(uint16_t nodeId);
 
         void AddCreateJob(uint16_t nodeId, uint32_t ident, uint16_t lid,
@@ -261,6 +265,8 @@ private:
         void _RunLoop(void) override;
 
     private:
+        std::atomic<bool> m_flagShutdown;
+
         IbConnectionManagerJobQueue m_queue;
         IbConnectionManagerJobQueue::Job m_job;
         std::atomic<bool> m_runDiscovery;

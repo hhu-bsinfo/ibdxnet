@@ -161,14 +161,11 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_JNIIbdxnet_shutdown(
 
     jboolean res = (jboolean) 1;
 
-    // TODO cleanup outgoing msg queues, make sure everything's processed?
-    // TODO don't allow any new messages to be put to the send queue
-    // wait until everything on the send queues is sent?
-
     g_sendThread->Stop();
     g_recvThread->Stop();
 
     try {
+        g_connectionManager->SetNodeConnectedListener(nullptr);
         g_connectionManager.reset();
         g_sharedRecvCompQueue.reset();
         g_sharedRecvQueue.reset();

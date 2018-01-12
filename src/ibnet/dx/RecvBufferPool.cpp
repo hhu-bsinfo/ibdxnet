@@ -70,13 +70,14 @@ core::IbMemReg* RecvBufferPool::GetBuffer(void)
         back = m_dataBuffersBack.load(std::memory_order_relaxed);
 
         if (front % m_bufferPoolSize == back % m_bufferPoolSize) {
-            if (m_insufficientBufferCounter.fetch_add(1,
-                    std::memory_order_relaxed) % 1000000 == 0) {
+            uint64_t counter = m_insufficientBufferCounter.fetch_add(1,
+                std::memory_order_relaxed);
+            if (counter % 1000000 == 0) {
                 IBNET_LOG_WARN("Insufficient pooled incoming buffers... "
                     "waiting for buffers to get returned. If this warning "
                     "appears periodically and very frequently, consider "
                     "increasing the receive pool's total size to avoid "
-                    "possible performance penalties");
+                    "possible performance penalties, counter: {}", counter);
             }
 
             std::this_thread::yield();

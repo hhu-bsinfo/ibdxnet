@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Run with: qsub -q Devel hilbert_build.job
+
 # job attributes
 #PBS -l select=1:ncpus=4:mem=2GB
 #:arch=ivybridge

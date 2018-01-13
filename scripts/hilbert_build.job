@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # job attributes
-#PBS -l select=1:ncpus=4:mem=2GB:arch=ivybridge
+#PBS -l select=1:ncpus=4:mem=2GB
+#:arch=ivybridge
 #PBS -l place=scatter
 #PBS -l walltime=00:05:00
 #PBS -r n
@@ -13,6 +14,15 @@ module load cmake/3.5.1
 module load Java/1.8.0
 
 cd ~/ibdxnet
+
+# Add further include paths if not already inserted
+# Required on hilbert environment with module system
+if [ ! "$(grep "/software/java" cmake/JNIIbdxnet/CMakeLists.txt)" ]; then
+        sed -i -e 
+'s/include_directories(${IBNET_SRC_DIR})/include_directories(${IBNET_SRC_DIR\})\ninclude_directories(\/software\/java\/1\.8\.0_25\/include)\ninclude_directories(\/software\/java\/1.8.0_25\/include\/linux)/g' 
+cmake/JNIIbdxnet/CMakeLists.txt
+fi
+
 rm -r build
 mkdir build
 cd build/

@@ -118,13 +118,6 @@ void IbRecvQueue::Open(uint16_t remoteQpLid, uint32_t remoteQpPhysicalId)
 
 void IbRecvQueue::Close(bool force)
 {
-    if (!force) {
-        // wait until outstanding completions are finished
-        while (m_compQueue->GetCurrentOutstandingCompletions() > 0) {
-            std::this_thread::yield();
-        }
-    }
-
     m_isClosed = true;
 }
 
@@ -169,8 +162,6 @@ void IbRecvQueue::Receive(const IbMemReg* memReg, uint64_t workReqId)
                     std::to_string(ret) + ", mem: " + memReg->ToString());
         }
     }
-
-    m_compQueue->AddOutstandingCompletion();
 }
 
 uint32_t IbRecvQueue::PollCompletion(bool blocking)
@@ -180,15 +171,6 @@ uint32_t IbRecvQueue::PollCompletion(bool blocking)
     }
 
     return m_compQueue->PollForCompletion(blocking);
-}
-
-uint32_t IbRecvQueue::Flush(void)
-{
-    if (m_isClosed) {
-        throw IbQueueClosedException();
-    }
-
-    return m_compQueue->Flush();
 }
 
 }

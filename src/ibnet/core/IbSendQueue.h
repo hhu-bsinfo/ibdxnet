@@ -102,13 +102,6 @@ public:
      */
     uint32_t PollCompletion(bool blocking = true);
 
-    /**
-     * Blocking poll all remaining work requests until they completed
-     *
-     * @return Number of remaining work requests completed
-     */
-    uint32_t Flush(void);
-
 private:
     const uint16_t m_ownNodeID;
     IbQueuePair& m_parentQp;

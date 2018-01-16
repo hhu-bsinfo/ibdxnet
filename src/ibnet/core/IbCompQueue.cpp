@@ -28,8 +28,7 @@ namespace core {
 IbCompQueue::IbCompQueue(std::shared_ptr<IbDevice>& device, uint16_t size) :
     m_size(size),
     m_cq(nullptr),
-    m_firstWc(true),
-    m_outstandingComps(size)
+    m_firstWc(true)
 {
     IBNET_LOG_TRACE("ibv_create_cq, size {}", size);
     m_cq = ibv_create_cq(
@@ -117,30 +116,12 @@ uint16_t IbCompQueue::PollForCompletion(bool blocking, uint64_t* workReqId,
 
     m_firstWc = false;
 
-    if (!m_outstandingComps.SubOutstanding()) {
-        throw IbException("Outstanding queue underrun");
-    }
-
     if (immedData != nullptr) {
         *immedData = static_cast<uint16_t>(wc.imm_data >> 16);
     }
 
     // node id of source is sent as immediate data
     return static_cast<uint16_t>(wc.imm_data);
-}
-
-uint32_t IbCompQueue::Flush(void)
-{
-    uint32_t count = 0;
-
-    // poll off outstanding completions
-
-    while (m_outstandingComps.GetCurrent() > 0) {
-        PollForCompletion(true);
-        count++;
-    }
-
-    return count;
 }
 
 }

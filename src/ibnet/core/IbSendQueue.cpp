@@ -90,13 +90,6 @@ void IbSendQueue::Open(void)
 
 void IbSendQueue::Close(bool force)
 {
-    if (!force) {
-        // wait until outstanding completions are finished
-        while (m_compQueue->GetCurrentOutstandingCompletions() > 0) {
-            std::this_thread::yield();
-        }
-    }
-
     m_isClosed = true;
 }
 
@@ -138,10 +131,7 @@ void IbSendQueue::Send(const IbMemReg* memReg, uint16_t immedData,
     if (ret != 0) {
         switch (ret) {
             case ENOMEM:
-                throw IbQueueFullException(
-                    "Send queue full, compQueue outstanding: " +
-                        std::to_string(
-                            m_compQueue->GetCurrentOutstandingCompletions()));
+                throw IbQueueFullException("Send queue full");
             default:
                 throw IbException(
                     "Posting work request to send to queue failed (" +
@@ -149,8 +139,6 @@ void IbSendQueue::Send(const IbMemReg* memReg, uint16_t immedData,
                     memReg->ToString());
         }
     }
-
-    m_compQueue->AddOutstandingCompletion();
 }
 
 uint32_t IbSendQueue::PollCompletion(bool blocking)
@@ -160,15 +148,6 @@ uint32_t IbSendQueue::PollCompletion(bool blocking)
     }
 
     return m_compQueue->PollForCompletion(blocking);
-}
-
-uint32_t IbSendQueue::Flush(void)
-{
-    if (m_isClosed) {
-        throw IbQueueClosedException();
-    }
-
-    return m_compQueue->Flush();
 }
 
 }

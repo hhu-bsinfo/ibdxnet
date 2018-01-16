@@ -81,13 +81,6 @@ void IbConnection::Close(bool force)
 {
     IBNET_LOG_TRACE_FUNC;
 
-    // flush outstanding sends on qps
-    if (!force) {
-        for (auto& it : m_qps) {
-            it->GetSendQueue()->Flush();
-        }
-    }
-
     for (auto& it : m_qps) {
         it->Close(force);
         it.reset();

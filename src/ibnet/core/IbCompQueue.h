@@ -64,25 +64,6 @@ public:
     ibv_cq* GetCQ(void) const {
         return m_cq;
     }
-
-    /**
-     * Increase the outstanding completion counter keeping track of work
-     * request completions
-     *
-     * @return True if adding successful, false if failed because queue size
-     *          exceeded
-     */
-    inline bool AddOutstandingCompletion(void) {
-        return m_outstandingComps.AddOutstanding();
-    }
-
-    /**
-     * Get the number of currently outstanding work completions
-     */
-    inline uint16_t GetCurrentOutstandingCompletions(void) {
-        return m_outstandingComps.GetCurrent();
-    }
-
     /**
      * Poll for a work completion
      *
@@ -101,19 +82,11 @@ public:
         uint64_t* workReqId = nullptr, uint32_t* recvLength = nullptr,
         uint16_t* immedData = nullptr);
 
-    /**
-     * Blocking poll all remaining work requests
-     *
-     * @return Number of remaining work requests completed
-     */
-    uint32_t Flush(void);
-
 private:
     uint32_t m_size;
     ibv_cq* m_cq;
 
     bool m_firstWc;
-    IbQueueTracker m_outstandingComps;
 };
 
 }

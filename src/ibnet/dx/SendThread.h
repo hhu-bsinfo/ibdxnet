@@ -72,6 +72,8 @@ private:
 
     void _RunLoop(void) override;
 
+    void _AfterRunLoop(void) override;
+
 private:
     const uint32_t m_recvBufferSize;
     std::shared_ptr<SendBuffers> m_buffers;
@@ -85,6 +87,13 @@ private:
 private:
     uint64_t m_sentBytes;
     uint64_t m_sentFlowControlConfirms;
+
+    uint64_t m_sendCounter;
+    uint64_t m_pollCompCounter;
+
+    sys::ProfileTimer m_timer;
+    sys::ProfileTimer m_timer2;
+    sys::ProfileTimer m_timer3;
 };
 
 }

@@ -35,7 +35,9 @@ SendThread::SendThread(uint32_t recvBufferSize,
     m_prevNodeIdWritten(core::IbNodeId::INVALID),
     m_prevDataWritten(0),
     m_sentBytes(0),
-    m_sentFlowControlConfirms(0)
+    m_sentFlowControlConfirms(0),
+    m_sendCounter(0),
+    m_pollCompCounter(0)
 {
 
 }
@@ -108,9 +110,13 @@ void SendThread::_RunLoop(void)
         uint32_t posFront = data->m_posFrontRel;
         uint32_t posBack = data->m_posBackRel;
 
+        m_timer.Enter();
+
         while (posFront != posBack || immedData) {
             uint16_t sliceCount = 0;
             uint32_t iterationBytesSent = 0;
+
+            m_timer2.Enter();
 
             // slice area of send buffer into slices fitting receive buffers
             while (sliceCount < queueSize && posFront != posBack || immedData) {
@@ -154,18 +160,28 @@ void SendThread::_RunLoop(void)
                 sliceCount++;
             }
 
+            m_timer2.Exit();
+
+            m_timer3.Enter();
+
             // poll completions
             for (uint16_t i = 0; i < sliceCount; i++) {
                 connection->GetQp(0)->GetSendQueue()->PollCompletion(true);
+                m_pollCompCounter++;
             }
+
+            m_timer3.Exit();
 
             m_sentBytes += iterationBytesSent;
             totalBytesSent += iterationBytesSent;
         }
 
+        m_timer.Exit();
+
         m_connectionManager->ReturnConnection(connection);
 
         m_prevDataWritten = totalBytesSent;
+        m_sendCounter++;
     } catch (core::IbQueueClosedException& e) {
         m_connectionManager->ReturnConnection(connection);
         // ignore
@@ -177,6 +193,29 @@ void SendThread::_RunLoop(void)
         m_connectionManager->CloseConnection(connection->GetRemoteNodeId(),
             true);
     }
+}
+
+void SendThread::_AfterRunLoop(void)
+{
+    IBNET_LOG_INFO(
+        "Send Thread statistics:\n"
+        "Total sent: {} GB\n"
+        "In total chunks: {}\n"
+        "Flow control confirms: {}\n"
+        "Average chunk send size: {} MB\n"
+        "Time for sending one chunk: {} ms\n"
+        "Throughput: {} MB/sec\n"
+        "Slice and send data avarage time: {} ms\n"
+        "Poll completion total time: {} ms, count {}\n"
+        "Time per completion: {} ms\n",
+            ((double) m_sentBytes) / 1024 / 1024 / 1024, m_sendCounter,
+            m_sentFlowControlConfirms,
+            ((double) m_sentBytes) / m_sendCounter / 1024 / 1024,
+            m_timer.GetAvarageTime() * 1000,
+            ((double) m_sentBytes) / 1024 / 1024 / m_timer.GetTotalTime(),
+            m_timer2.GetAvarageTime() * 1000,
+            m_timer3.GetTotalTime() * 1000, m_pollCompCounter,
+            m_timer3.GetTotalTime() * 1000 / m_pollCompCounter);
 }
 
 }

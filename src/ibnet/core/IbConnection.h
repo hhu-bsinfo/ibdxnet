@@ -57,6 +57,10 @@ public:
      */
     ~IbConnection(void);
 
+    uint16_t GetSourceNodeId() const {
+        return m_ownNodeId;
+    }
+
     /**
      * Get the connection id
      */

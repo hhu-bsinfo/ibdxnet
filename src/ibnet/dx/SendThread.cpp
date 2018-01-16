@@ -20,6 +20,9 @@
 
 #include "ibnet/core/IbDisconnectedException.h"
 
+#include "ibnet/core/IbQueueFullException.h"
+#include "ibnet/core/IbQueuePair.h"
+
 namespace ibnet {
 namespace dx {
 
@@ -110,6 +113,12 @@ void SendThread::_RunLoop(void)
         uint32_t posFront = data->m_posFrontRel;
         uint32_t posBack = data->m_posBackRel;
 
+        // TODO allocate these as cache aligned buffers
+        ibv_sge sge_list[queueSize];
+        ibv_send_wr wr[queueSize];
+        // first failed work request
+        ibv_send_wr* bad_wr;
+
         m_timer.Enter();
 
         while (posFront != posBack || immedData) {
@@ -122,8 +131,18 @@ void SendThread::_RunLoop(void)
             while (sliceCount < queueSize && posFront != posBack || immedData) {
                 // fits a full receive buffer
                 if (posFront + m_recvBufferSize <= posBack) {
-                    connection->GetQp(0)->GetSendQueue()->Send(sendBuffer,
-                        immedData, posFront, m_recvBufferSize);
+                    sge_list[sliceCount].addr = (uintptr_t) sendBuffer->GetAddress() + posFront;
+                    sge_list[sliceCount].length = m_recvBufferSize;
+                    sge_list[sliceCount].lkey = sendBuffer->GetLKey();
+
+                    wr[sliceCount].wr_id = 0;
+                    wr[sliceCount].sg_list = &sge_list[sliceCount];
+                    wr[sliceCount].num_sge = 1;
+                    wr[sliceCount].opcode = IBV_WR_SEND_WITH_IMM;
+                    wr[sliceCount].send_flags = 0;
+                    wr[sliceCount].next = nullptr;
+
+                    wr[sliceCount].imm_data = (((uint32_t) immedData) << 16) | connection->GetSourceNodeId();
 
                     posFront += m_recvBufferSize;
                     iterationBytesSent += m_recvBufferSize;
@@ -142,8 +161,18 @@ void SendThread::_RunLoop(void)
                         zeroLength = true;
                     }
 
-                    connection->GetQp(0)->GetSendQueue()->Send(sendBuffer,
-                        immedData, posFront, size);
+                    sge_list[sliceCount].addr = (uintptr_t) sendBuffer->GetAddress() + posFront;
+                    sge_list[sliceCount].length = size;
+                    sge_list[sliceCount].lkey = sendBuffer->GetLKey();
+
+                    wr[sliceCount].wr_id = 0;
+                    wr[sliceCount].sg_list = &sge_list[sliceCount];
+                    wr[sliceCount].num_sge = 1;
+                    wr[sliceCount].opcode = IBV_WR_SEND_WITH_IMM;
+                    wr[sliceCount].send_flags = 0;
+                    wr[sliceCount].next = nullptr;
+
+                    wr[sliceCount].imm_data = (((uint32_t) immedData) << 16) | connection->GetSourceNodeId();
 
                     if (!zeroLength) {
                         posFront += size;
@@ -160,14 +189,83 @@ void SendThread::_RunLoop(void)
                 sliceCount++;
             }
 
+            // connect all work requests
+            for (uint16_t i = 0; i < sliceCount - 1; i++) {
+                wr[i].next = &wr[i + 1];
+            }
+
+            // make only the last one yield a completion
+            wr[sliceCount - 1].send_flags = IBV_SEND_SIGNALED;
+
+            int ret = ibv_post_send(connection->GetQp(0)->GetIbQp(), &wr[0], &bad_wr);
+            if (ret != 0) {
+                switch (ret) {
+                    case ENOMEM:
+                        throw core::IbQueueFullException("Send queue full");
+                    default:
+                        throw core::IbException(
+                            "Posting work request to send to queue failed (" +
+                            std::string(strerror(ret)));
+                }
+            }
+
             m_timer2.Exit();
 
             m_timer3.Enter();
 
-            // poll completions
-            for (uint16_t i = 0; i < sliceCount; i++) {
-                connection->GetQp(0)->GetSendQueue()->PollCompletion(true);
-                m_pollCompCounter++;
+            // TODO allocate these as cache aligned buffers
+            ibv_wc wc[sliceCount];
+
+            uint32_t remaining = sliceCount;
+            static bool m_firstWc = true;
+
+            while (sliceCount > 0) {
+                int ret = ibv_poll_cq(connection->GetQp(0)->GetSendQueue()->GetCompQueue()->GetCQ(), 1, wc);
+                if (ret < 0) {
+                    throw core::IbException("Polling completion queue failed: " +
+                                      std::to_string(ret));
+                }
+
+                if (ret == 0) {
+                    continue;
+                }
+
+                for (int i = 0; i < ret; i++) {
+                    if (wc[i].status != IBV_WC_SUCCESS) {
+                        if (wc[i].status) {
+                            switch (wc[i].status) {
+                                // a previous work request failed and put the queue into error
+                                // state
+                                //case IBV_WC_WR_FLUSH_ERR:
+                                //    throw IbException("Work completion of recv queue failed, "
+                                //        "flush err");
+
+                                case IBV_WC_RETRY_EXC_ERR:
+                                    if (m_firstWc) {
+                                        throw core::IbException(
+                                            "First work completion of queue "
+                                                "failed, it's very likely your connection "
+                                                "attributes are wrong or the remote site isn't in "
+                                                "a state to respond");
+                                    } else {
+                                        throw core::IbDisconnectedException();
+                                    }
+
+                                default:
+                                    throw core::IbException(
+                                        "Found failed work completion, status " +
+                                        std::to_string(wc[i].status));
+                            }
+                        }
+                    }
+
+                    m_firstWc= false;
+                }
+
+                m_pollCompCounter += sliceCount;
+                sliceCount -= sliceCount;
+
+                break;
             }
 
             m_timer3.Exit();

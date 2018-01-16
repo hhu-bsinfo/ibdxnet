@@ -59,6 +59,10 @@ public:
      */
     ~IbSendQueue();
 
+    IbCompQueue* GetCompQueue() const {
+        return m_compQueue.get();
+    }
+
     /**
      * Get the size of the queue
      */

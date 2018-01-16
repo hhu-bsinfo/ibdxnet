@@ -76,6 +76,8 @@ public:
     void NodeConnected(core::IbConnection& connection);
 
 protected:
+    void _BeforeRunLoop(void) override;
+
     void _RunLoop(void) override;
 
 private:

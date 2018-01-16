@@ -68,6 +68,8 @@ public:
     ~SendThread(void);
 
 private:
+    void _BeforeRunLoop(void) override;
+
     void _RunLoop(void) override;
 
 private:

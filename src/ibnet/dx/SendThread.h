@@ -94,6 +94,12 @@ private:
     sys::ProfileTimer m_timer;
     sys::ProfileTimer m_timer2;
     sys::ProfileTimer m_timer3;
+
+private:
+    ibv_sge* m_sgeLists;
+    ibv_send_wr* m_sendWrs;
+    ibv_wc* m_workComps;
+    bool m_firstWc;
 };
 
 }

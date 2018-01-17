@@ -40,7 +40,13 @@ SendThread::SendThread(uint32_t recvBufferSize,
     m_sentBytes(0),
     m_sentFlowControlConfirms(0),
     m_sendCounter(0),
-    m_pollCompCounter(0)
+    m_pollCompCounter(0),
+    // cache line alignment
+    // TODO we need the queue size parameter here *20 hardcoded
+    m_sgeLists(static_cast<ibv_sge*>(aligned_alloc(64, sizeof(ibv_sge) * 20))),
+    m_sendWrs(static_cast<ibv_send_wr*>(aligned_alloc(64, sizeof(ibv_send_wr) * 20))),
+    m_workComps(static_cast<ibv_wc*>(aligned_alloc(64, sizeof(ibv_wc) * 20))),
+    m_firstWc(true)
 {
 
 }
@@ -93,16 +99,7 @@ void SendThread::_RunLoop(void)
     try {
         uint32_t totalBytesSent = 0;
 
-        // we are expecting the ring buffer (in java) to handle overflows
-        // and slice them correctly, i.e. posFrontRel <= posBackRel, always
-        // sanity check that
-        if (data->m_posFrontRel > data->m_posBackRel) {
-            IBNET_LOG_PANIC("posFrontRel {} > posBackRel {} not allowed",
-                data->m_posFrontRel, data->m_posBackRel);
-            return;
-        }
-
-        core::IbMemReg* sendBuffer =
+         core::IbMemReg* sendBuffer =
             m_buffers->GetBuffer(connection->GetConnectionId());
 
         // set first bit to indicate FC confirmation
@@ -110,45 +107,75 @@ void SendThread::_RunLoop(void)
             static_cast<uint16_t>(data->m_flowControlData > 0 ? 1 : 0);
 
         uint16_t queueSize = connection->GetQp(0)->GetSendQueue()->GetQueueSize();
-        uint32_t posFront = data->m_posFrontRel;
         uint32_t posBack = data->m_posBackRel;
+        uint32_t posFront = data->m_posFrontRel;
 
-        // TODO allocate these as cache aligned buffers
-        ibv_sge sge_list[queueSize];
-        ibv_send_wr wr[queueSize];
-        // first failed work request
-        ibv_send_wr* bad_wr;
+
+
+
+// TODO for debugging, remove later
+//        uint32_t ssize = 0;
+//        if (posBack < posFront) {
+//            ssize = posFront - posBack;
+//        } else {
+//            ssize = sendBuffer->GetSize() - posBack + posFront;
+//        }
+//
+//        IBNET_LOG_ERROR(">>> {} | {} | {} | {}", data->m_nodeId, ((double) ssize) / 1024 / 1024, data->m_posBackRel, data->m_posFrontRel);
+
+
+
+
 
         m_timer.Enter();
 
-        while (posFront != posBack || immedData) {
+        while (posBack != posFront || immedData) {
             uint16_t sliceCount = 0;
             uint32_t iterationBytesSent = 0;
 
             m_timer2.Enter();
 
             // slice area of send buffer into slices fitting receive buffers
-            while (sliceCount < queueSize && posFront != posBack || immedData) {
+            while (sliceCount < queueSize && posBack != posFront || immedData) {
+                uint32_t posEnd = posFront;
+
+                // ring buffer wrap around detected: first, send everything
+                // up to the end of the buffer (size)
+                if (posBack > posFront) {
+                    // go to end of buffer, first
+                    posEnd = sendBuffer->GetSize();
+                }
+
+                // end of buffer reached, wrap around to beginning of buffer
+                // and continue
+                if (posBack == posEnd) {
+                    posBack = 0;
+                    posEnd = posFront;
+                }
+
+
                 // fits a full receive buffer
-                if (posFront + m_recvBufferSize <= posBack) {
-                    sge_list[sliceCount].addr = (uintptr_t) sendBuffer->GetAddress() + posFront;
-                    sge_list[sliceCount].length = m_recvBufferSize;
-                    sge_list[sliceCount].lkey = sendBuffer->GetLKey();
+                if (posBack + m_recvBufferSize <= posEnd) {
+                    m_sgeLists[sliceCount].addr = (uintptr_t) sendBuffer->GetAddress() + posBack;
+                    m_sgeLists[sliceCount].length = m_recvBufferSize;
+                    m_sgeLists[sliceCount].lkey = sendBuffer->GetLKey();
 
-                    wr[sliceCount].wr_id = 0;
-                    wr[sliceCount].sg_list = &sge_list[sliceCount];
-                    wr[sliceCount].num_sge = 1;
-                    wr[sliceCount].opcode = IBV_WR_SEND_WITH_IMM;
-                    wr[sliceCount].send_flags = 0;
-                    wr[sliceCount].next = nullptr;
+                    m_sendWrs[sliceCount].wr_id = 0;
+                    m_sendWrs[sliceCount].sg_list = &m_sgeLists[sliceCount];
+                    m_sendWrs[sliceCount].num_sge = 1;
+                    m_sendWrs[sliceCount].opcode = IBV_WR_SEND_WITH_IMM;
+                    m_sendWrs[sliceCount].send_flags = 0;
+                    // list is connected further down
+                    m_sendWrs[sliceCount].next = nullptr;
 
-                    wr[sliceCount].imm_data = (((uint32_t) immedData) << 16) | connection->GetSourceNodeId();
+                    m_sendWrs[sliceCount].imm_data = (((uint32_t) immedData) << 16) | connection->GetSourceNodeId();
 
-                    posFront += m_recvBufferSize;
+                    posBack += m_recvBufferSize;
                     iterationBytesSent += m_recvBufferSize;
                 } else {
                     // smaller than a receive buffer
-                    uint32_t size = posBack - posFront;
+                    uint32_t size = posEnd - posBack;
+
                     bool zeroLength = false;
 
                     // don't send packages with size 0 which is a special value
@@ -161,21 +188,22 @@ void SendThread::_RunLoop(void)
                         zeroLength = true;
                     }
 
-                    sge_list[sliceCount].addr = (uintptr_t) sendBuffer->GetAddress() + posFront;
-                    sge_list[sliceCount].length = size;
-                    sge_list[sliceCount].lkey = sendBuffer->GetLKey();
+                    m_sgeLists[sliceCount].addr = (uintptr_t) sendBuffer->GetAddress() + posBack;
+                    m_sgeLists[sliceCount].length = size;
+                    m_sgeLists[sliceCount].lkey = sendBuffer->GetLKey();
 
-                    wr[sliceCount].wr_id = 0;
-                    wr[sliceCount].sg_list = &sge_list[sliceCount];
-                    wr[sliceCount].num_sge = 1;
-                    wr[sliceCount].opcode = IBV_WR_SEND_WITH_IMM;
-                    wr[sliceCount].send_flags = 0;
-                    wr[sliceCount].next = nullptr;
+                    m_sendWrs[sliceCount].wr_id = 0;
+                    m_sendWrs[sliceCount].sg_list = &m_sgeLists[sliceCount];
+                    m_sendWrs[sliceCount].num_sge = 1;
+                    m_sendWrs[sliceCount].opcode = IBV_WR_SEND_WITH_IMM;
+                    m_sendWrs[sliceCount].send_flags = 0;
+                    // list is connected further down
+                    m_sendWrs[sliceCount].next = nullptr;
 
-                    wr[sliceCount].imm_data = (((uint32_t) immedData) << 16) | connection->GetSourceNodeId();
+                    m_sendWrs[sliceCount].imm_data = (((uint32_t) immedData) << 16) | connection->GetSourceNodeId();
 
                     if (!zeroLength) {
-                        posFront += size;
+                        posBack += size;
                         iterationBytesSent += size;
                     }
                 }
@@ -191,13 +219,15 @@ void SendThread::_RunLoop(void)
 
             // connect all work requests
             for (uint16_t i = 0; i < sliceCount - 1; i++) {
-                wr[i].next = &wr[i + 1];
+                m_sendWrs[i].next = &m_sendWrs[i + 1];
             }
 
             // make only the last one yield a completion
-            wr[sliceCount - 1].send_flags = IBV_SEND_SIGNALED;
+            m_sendWrs[sliceCount - 1].send_flags = IBV_SEND_SIGNALED;
 
-            int ret = ibv_post_send(connection->GetQp(0)->GetIbQp(), &wr[0], &bad_wr);
+            ibv_send_wr* firstBadWr;
+
+            int ret = ibv_post_send(connection->GetQp(0)->GetIbQp(), &m_sendWrs[0], &firstBadWr);
             if (ret != 0) {
                 switch (ret) {
                     case ENOMEM:
@@ -213,14 +243,9 @@ void SendThread::_RunLoop(void)
 
             m_timer3.Enter();
 
-            // TODO allocate these as cache aligned buffers
-            ibv_wc wc[sliceCount];
-
-            uint32_t remaining = sliceCount;
-            static bool m_firstWc = true;
-
             while (sliceCount > 0) {
-                int ret = ibv_poll_cq(connection->GetQp(0)->GetSendQueue()->GetCompQueue()->GetCQ(), 1, wc);
+                // TODO 20: hardcoded queue size, needs to be passed to constructor already
+                int ret = ibv_poll_cq(connection->GetQp(0)->GetSendQueue()->GetCompQueue()->GetCQ(), 20, m_workComps);
                 if (ret < 0) {
                     throw core::IbException("Polling completion queue failed: " +
                                       std::to_string(ret));
@@ -231,9 +256,9 @@ void SendThread::_RunLoop(void)
                 }
 
                 for (int i = 0; i < ret; i++) {
-                    if (wc[i].status != IBV_WC_SUCCESS) {
-                        if (wc[i].status) {
-                            switch (wc[i].status) {
+                    if (m_workComps[i].status != IBV_WC_SUCCESS) {
+                        if (m_workComps[i].status) {
+                            switch (m_workComps[i].status) {
                                 // a previous work request failed and put the queue into error
                                 // state
                                 //case IBV_WC_WR_FLUSH_ERR:
@@ -254,16 +279,16 @@ void SendThread::_RunLoop(void)
                                 default:
                                     throw core::IbException(
                                         "Found failed work completion, status " +
-                                        std::to_string(wc[i].status));
+                                        std::to_string(m_workComps[i].status));
                             }
                         }
                     }
 
-                    m_firstWc= false;
+                    m_firstWc = false;
                 }
 
-                m_pollCompCounter += sliceCount;
-                sliceCount -= sliceCount;
+                m_pollCompCounter += ret;
+                sliceCount -= ret;
 
                 break;
             }

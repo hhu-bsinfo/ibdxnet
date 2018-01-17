@@ -41,8 +41,8 @@ public:
      */
     struct NextWorkParameters
     {
-        uint32_t m_posFrontRel;
         uint32_t m_posBackRel;
+        uint32_t m_posFrontRel;
         uint32_t m_flowControlData;
         uint16_t m_nodeId;
     } __attribute__((packed));

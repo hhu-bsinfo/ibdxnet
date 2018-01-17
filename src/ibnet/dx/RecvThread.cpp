@@ -100,7 +100,7 @@ void RecvThread::_RunLoop(void)
             sourceNodeId = m_sharedRecvCQ->PollForCompletion(false,
                 &workReqId, &dataRecvLength, &immedData);
         } catch (core::IbException &e) {
-            IBNET_LOG_ERROR("Polling for flow control completion failed: {}",
+            IBNET_LOG_ERROR("Polling for completion failed: {}",
                 e.what());
             break;
         }

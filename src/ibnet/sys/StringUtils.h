@@ -93,10 +93,11 @@ public:
                                    bool hexNumberIdent = true);
 
 private:
-    StringUtils(void) {};
-    ~StringUtils(void) {};
+    StringUtils() = default;
+    ~StringUtils() = default;
 
-    static std::string __ToHexString(uint64_t value, uint32_t fillZerosCount, bool hexNumberIdent);
+    static std::string __ToHexString(uint64_t value, uint32_t fillZerosCount,
+        bool hexNumberIdent);
 };
 
 }

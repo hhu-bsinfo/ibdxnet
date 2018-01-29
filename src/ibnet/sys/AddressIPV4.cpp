@@ -20,13 +20,13 @@
 
 #include <arpa/inet.h>
 
-#include "ibnet/sys/StringUtils.h"
-#include "ibnet/sys/SystemException.h"
+#include "StringUtils.h"
+#include "SystemException.h"
 
 namespace ibnet {
 namespace sys {
 
-AddressIPV4::AddressIPV4(void) :
+AddressIPV4::AddressIPV4() :
     m_address(INVALID_ADDRESS),
     m_port(INVALID_PORT)
 {
@@ -47,14 +47,11 @@ AddressIPV4::AddressIPV4(uint32_t address, uint16_t port) :
     __ToString(m_address);
 }
 
-AddressIPV4::AddressIPV4(const std::string& address)
+AddressIPV4::AddressIPV4(const std::string& address) :
+    m_address(),
+    m_port()
 {
     __ToAddressAndPort(address);
-}
-
-AddressIPV4::~AddressIPV4(void)
-{
-
 }
 
 void AddressIPV4::__ToString(uint32_t address)
@@ -70,7 +67,8 @@ void AddressIPV4::__ToAddressAndPort(const std::string& address)
     std::vector<std::string> tokens = StringUtils::Split(address, ":");
 
     if (tokens.size() > 2) {
-        throw SystemException("Invalid address format: " + address);
+        throw SystemException::Create<SystemException>(
+            "Invalid address format: %s", address);
     }
 
     if (tokens.size() == 0) {
@@ -79,10 +77,11 @@ void AddressIPV4::__ToAddressAndPort(const std::string& address)
         return;
     }
 
-    struct in_addr addr;
+    in_addr addr = {};
 
     if (!inet_pton(AF_INET, tokens[0].c_str(), &addr)) {
-        throw SystemException("Invalid address format: " + address);
+        throw SystemException::Create<SystemException>(
+            "Invalid address format: %s", address);
     }
 
     m_address = ntohl(addr.s_addr);

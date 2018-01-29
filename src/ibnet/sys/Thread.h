@@ -41,7 +41,7 @@ public:
      *
      * @param name Name of the thread (for debugging)
      */
-    Thread(const std::string& name = "") :
+    explicit Thread(const std::string& name = "") :
         m_name(name),
         m_thread(nullptr)
     {}
@@ -49,46 +49,41 @@ public:
     /**
      * Destructor
      */
-    virtual ~Thread(void)
-    {
-
-    }
+    virtual ~Thread() = default;
 
     /**
      * Get the thread name
      */
-    const std::string& GetName(void) const {
+    const std::string& GetName() const {
         return m_name;
     }
 
     /**
-     * Start the thread. A thread can be restarted if it finished execution
+     * Start the thread. A thread can be restarted once it finished execution
      */
-    void Start(void)
-    {
-        m_thread = std::make_unique<std::thread>(&Thread::__Run, this);
+    void Start() {
+        m_thread = new std::thread(&Thread::__Run, this);
     }
 
     /**
      * Join the started thread
      */
-    void Join(void)
+    void Join()
     {
         m_thread->join();
-        m_thread.reset();
+        delete m_thread;
     }
 
 protected:
     /**
      * Method executed by new thread. Implement this
      */
-    virtual void _Run(void) = 0;
+    virtual void _Run() = 0;
 
     /**
      * Yield this thread
      */
-    void _Yield(void)
-    {
+    void _Yield() {
         std::this_thread::yield();
     }
 
@@ -96,16 +91,15 @@ protected:
      * Put thread to sleep
      * @param timeMs Number of ms to sleep
      */
-    void _Sleep(uint32_t timeMs)
-    {
+    void _Sleep(uint32_t timeMs) {
         std::this_thread::sleep_for(std::chrono::milliseconds(timeMs));
     }
 
 private:
     const std::string m_name;
-    std::unique_ptr<std::thread> m_thread;
+    std::thread* m_thread;
 
-    void __Run(void)
+    void __Run()
     {
         try {
             IBNET_LOG_INFO("Started thread {}", m_name);

@@ -37,10 +37,10 @@ public:
      *
      * @param start True to start the timer immediately after construction
      */
-    Timer(bool start = false) :
-        m_running(false),
-        m_start(),
-        m_accuNs(0)
+    explicit Timer(bool start = false) :
+            m_running(false),
+            m_start(),
+            m_accuNs(0)
     {
         if (start) {
             m_running = true;
@@ -51,13 +51,13 @@ public:
     /**
      * Destructor
      */
-    ~Timer(void) {};
+    ~Timer() = default;
 
     /**
      * Start the timer. If the timer was already started, this causes a
      * reset/restart
      */
-    void Start(void)
+    void Start()
     {
         m_running = true;
         m_start = std::chrono::high_resolution_clock::now();
@@ -67,7 +67,7 @@ public:
     /**
      * Resume a timer after it was stopped
      */
-    void Resume(void)
+    void Resume()
     {
         if (!m_running) {
             m_start = std::chrono::high_resolution_clock::now();
@@ -78,12 +78,14 @@ public:
     /**
      * Stop the timer after it was started
      */
-    void Stop(void)
+    void Stop()
     {
         if (m_running) {
             m_running = false;
-            std::chrono::high_resolution_clock::time_point stop = std::chrono::high_resolution_clock::now();
-            m_accuNs += std::chrono::duration<uint64_t, std::nano>(stop - m_start).count();
+            std::chrono::high_resolution_clock::time_point stop =
+                std::chrono::high_resolution_clock::now();
+            m_accuNs += std::chrono::duration<uint64_t, std::nano>(
+                stop - m_start).count();
         }
     }
 
@@ -92,15 +94,14 @@ public:
      *
      * @return True if running, false otherwise
      */
-    bool IsRunning(void) const
-    {
+    bool IsRunning() const {
         return m_running;
     }
 
     /**
      * Get the measured time in seconds
      */
-    double GetTimeSec(void)
+    double GetTimeSec()
     {
         if (m_running) {
             return (m_accuNs + std::chrono::duration<uint64_t, std::nano>(
@@ -114,7 +115,7 @@ public:
     /**
      * Get the measured time in milliseconds
      */
-    double GetTimeMs(void)
+    double GetTimeMs()
     {
         if (m_running) {
             return (m_accuNs + std::chrono::duration<uint64_t, std::nano>(
@@ -128,7 +129,8 @@ public:
     /**
      * Get the measured time in microseconds
      */
-    double GetTimeUs(void) {
+    double GetTimeUs()
+    {
         if (m_running) {
             return (m_accuNs + std::chrono::duration<uint64_t, std::nano>(
                     std::chrono::high_resolution_clock::now() -
@@ -141,7 +143,8 @@ public:
     /**
      * Get the measured time in nanoseconds
      */
-    double GetTimeNs(void) {
+    double GetTimeNs()
+    {
         if (m_running) {
             return (m_accuNs + std::chrono::duration<uint64_t, std::nano>(
                     std::chrono::high_resolution_clock::now() -

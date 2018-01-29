@@ -19,9 +19,9 @@
 #ifndef IBNET_SYS_ASSERT_H
 #define IBNET_SYS_ASSERT_H
 
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cassert>
+#include <cstdlib>
+#include <cstdio>
 
 #ifndef ASSERT_MODULE
 #define ASSERT_MODULE __FILE__
@@ -44,12 +44,12 @@
  * Assert nullptr check
  */
 #define IBNET_ASSERT_PTR(ptr) \
-    assert(ptr != NULL)
+    assert((ptr) != NULL)
 
 /**
  * Assert if pointer is null
  */
 #define IBNET_ASSERT_PTR_NULL(ptr) \
-    assert(ptr == NULL)
+    assert((ptr) == NULL)
 
 #endif // IBNET_SYS_ASSERT_H

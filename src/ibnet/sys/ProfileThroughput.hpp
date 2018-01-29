@@ -58,13 +58,13 @@ public:
     /**
      * Destructor
      */
-    ~ProfileThroughput(void) {};
+    ~ProfileThroughput() = default;
 
     /**
      * Start measuring throughput. Call this once before you want to start
      * updating this meter.
      */
-    void Start(void)
+    void Start()
     {
         m_totalTimer.Enter();
         m_sliceTimer.Enter();
@@ -73,7 +73,7 @@ public:
     /**
      * Check if this meter is already started
      */
-    bool IsStarted(void) const {
+    bool IsStarted() const {
         return m_totalTimer.GetCounter() > 0;
     }
 
@@ -90,7 +90,8 @@ public:
 
         m_sliceTimer.Exit();
         if (m_sliceTimer.GetTotalTime() > m_resSec) {
-            m_lastThroughput = m_sliceData / m_sliceTimer.GetTotalTime();
+            m_lastThroughput = static_cast<uint64_t>(
+                m_sliceData / m_sliceTimer.GetTotalTime());
 
             if (m_peakThroughput < m_lastThroughput) {
                 m_peakThroughput = m_lastThroughput;
@@ -108,7 +109,7 @@ public:
      *
      * @return Throughput of bytes of last slice
      */
-    uint64_t GetLastThroughput(void) const {
+    uint64_t GetLastThroughput() const {
         return m_lastThroughput;
     }
 
@@ -117,7 +118,7 @@ public:
      *
      * @return Peak throughput in bytes
      */
-    uint64_t GetCurrentPeak(void) const {
+    uint64_t GetCurrentPeak() const {
         return m_peakThroughput;
     }
 
@@ -127,7 +128,7 @@ public:
      *
      * @return Avarage throughput in bytes
      */
-    uint64_t GetCurrentAvg(void) const {
+    uint64_t GetCurrentAvg() const {
         if (m_avgCounter == 0) {
             return 0;
         }
@@ -138,7 +139,7 @@ public:
     /**
      * Get the number of times the update function was called so far
      */
-    uint64_t GetUpdateCount(void) const {
+    uint64_t GetUpdateCount() const {
         return m_updateCounter;
     }
 
@@ -146,7 +147,7 @@ public:
      * Stop the meter. Call this when you stopped processing data to also stop
      * the total timer of the meter
      */
-    void Stop(void)
+    void Stop()
     {
         m_sliceTimer.Exit();
         m_totalTimer.Exit();
@@ -156,7 +157,8 @@ public:
      * Enable output to an out stream
      */
     friend std::ostream &operator<<(std::ostream& os,
-            const ProfileThroughput& o) {
+            const ProfileThroughput& o)
+    {
         return os << o.m_name <<
             " Total data: " << __FormatData(o.m_totalData) <<
             ", Last throughput: " << __FormatData(o.GetLastThroughput()) <<

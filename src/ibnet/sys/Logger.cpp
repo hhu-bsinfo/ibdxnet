@@ -21,9 +21,9 @@
 namespace ibnet {
 namespace sys {
 
-std::shared_ptr<spdlog::logger> Logger::m_logger;
+spdlog::logger* Logger::m_logger = nullptr;
 
-void Logger::Setup(void)
+void Logger::Setup()
 {
     auto colorSink = std::make_shared<spdlog::sinks::ansicolor_sink>(
         std::make_shared<spdlog::sinks::stdout_sink_mt>());
@@ -41,8 +41,7 @@ void Logger::Setup(void)
 //    sinks.push_back(std::make_shared<spdlog::sinks::simple_file_sink_mt>(
 //        "ibnet.log", true));
 
-    m_logger =
-        std::make_shared<spdlog::logger>("ibnet", colorSink);
+    m_logger = new spdlog::logger("ibnet", colorSink);
     m_logger->set_pattern("[%L][%D][%T.%e][thread-%t]%v");
 
     m_logger->set_level(spdlog::level::trace);
@@ -50,9 +49,9 @@ void Logger::Setup(void)
     m_logger->flush_on(spdlog::level::info);
 }
 
-void Logger::Shutdown(void)
+void Logger::Shutdown()
 {
-    m_logger.reset();
+    delete m_logger;
     spdlog::drop_all();
 }
 

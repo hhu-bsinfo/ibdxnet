@@ -20,11 +20,12 @@
 
 #include <arpa/inet.h>
 #include <fcntl.h>
-#include <string.h>
 #include <unistd.h>
 
-#include "ibnet/sys/Logger.hpp"
-#include "ibnet/sys/SystemException.h"
+#include <cstring>
+
+#include "Logger.hpp"
+#include "SystemException.h"
 
 namespace ibnet {
 namespace sys {
@@ -33,13 +34,13 @@ SocketUDP::SocketUDP(uint16_t port) :
         m_port(port),
         m_socket(-1)
 {
-    struct sockaddr_in addr;
+    sockaddr_in addr = {};
 
     m_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
     if (m_socket == -1) {
-        IBNET_LOG_ERROR("Opening UDP socket failed: {}", strerror(errno));
-        throw SystemException("Opening UDP socket failed");
+        throw SystemException::Create<SystemException>(
+            "Opening UDP socket failed: %s", strerror(errno));
     }
 
     // set socket non blocking on receive
@@ -53,17 +54,15 @@ SocketUDP::SocketUDP(uint16_t port) :
 
     if (bind(m_socket, (const sockaddr*) &addr, sizeof(addr)) == -1) {
         close(m_socket);
-        IBNET_LOG_ERROR("Binding UDP socket to port {} failed: {}",
-                        port, strerror(errno));
-        throw SystemException(
-                "Binding UDP socket to port " + std::to_string(port) +
-                " failed");
+        throw SystemException::Create<SystemException>(
+            "Binding UDP socket to port %d failed: %s",
+            port, strerror(errno));
     }
 
     IBNET_LOG_DEBUG("Opened UDP socket on port {}", port);
 }
 
-SocketUDP::~SocketUDP(void)
+SocketUDP::~SocketUDP()
 {
     close(m_socket);
 }
@@ -71,7 +70,7 @@ SocketUDP::~SocketUDP(void)
 ssize_t SocketUDP::Receive(void* buffer, size_t size, uint32_t* recvIpv4)
 {
     ssize_t length;
-    struct sockaddr_in recv_addr;
+    sockaddr_in recv_addr = {};
     socklen_t recv_addr_len = sizeof(struct sockaddr_in);
 
     memset(&recv_addr, 0, sizeof(struct sockaddr_in));
@@ -100,7 +99,7 @@ ssize_t SocketUDP::Receive(void* buffer, size_t size, uint32_t* recvIpv4)
 ssize_t SocketUDP::Send(void* buffer, size_t size, uint32_t addrIpv4, uint16_t port)
 {
     ssize_t length;
-    struct sockaddr_in recv_addr;
+    sockaddr_in recv_addr = {};
     socklen_t recv_addr_len = sizeof(struct sockaddr_in);
 
     memset(&recv_addr, 0, sizeof(struct sockaddr_in));

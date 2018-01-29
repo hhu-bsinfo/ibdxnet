@@ -19,8 +19,7 @@
 #ifndef IBNET_SYS_SOCKETUDP_H
 #define IBNET_SYS_SOCKETUDP_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <cstdint>
 
 #include "AddressIPV4.h"
@@ -43,17 +42,17 @@ public:
      *
      * @param port Port to open the socket on
      */
-    SocketUDP(uint16_t port);
+    explicit SocketUDP(uint16_t port);
 
     /**
      * Destructor
      */
-    ~SocketUDP(void);
+    ~SocketUDP();
 
     /**
      * Get the port of this socket
      */
-    uint16_t GetPort(void) const {
+    uint16_t GetPort() const {
         return m_port;
     }
 

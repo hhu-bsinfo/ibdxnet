@@ -19,7 +19,7 @@
 #ifndef IBNET_SYS_SYSTEMEXCEPTION_H
 #define IBNET_SYS_SYSTEMEXCEPTION_H
 
-#include "ibnet/sys/Exception.h"
+#include "Exception.h"
 
 namespace ibnet {
 namespace sys {
@@ -37,16 +37,14 @@ public:
      *
      * @param msg Exception message
      */
-    SystemException(const std::string& msg) :
+    explicit SystemException(const std::string& msg) :
         Exception(msg)
-    {
-
-    }
+    {}
 
     /**
      * Destructor
      */
-    ~SystemException(void) {};
+    ~SystemException() = default;
 };
 
 }

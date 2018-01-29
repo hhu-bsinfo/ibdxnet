@@ -19,11 +19,11 @@
 #ifndef IBNET_SYS_LOGGER_HPP
 #define IBNET_SYS_LOGGER_HPP
 
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdint>
+#include <cstring>
 
-#include "ibnet/sys/Logger.h"
+#include "Logger.h"
 
 /**
  * Put this at the top of each file you call logging functions in and define

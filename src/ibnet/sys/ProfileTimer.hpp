@@ -39,9 +39,10 @@ public:
      *
      * @param name Name for this timer (to identify on debug output)
      */
-    ProfileTimer(const std::string& name = "") :
+    explicit ProfileTimer(const std::string& name = "") :
         m_name(name),
         m_counter(0),
+        m_enter(),
         m_total(std::chrono::nanoseconds(0)),
         m_worst(std::chrono::seconds(0)),
         // over 10 years is enough...
@@ -51,12 +52,12 @@ public:
     /**
      * Destructor
      */
-    ~ProfileTimer(void) {};
+    ~ProfileTimer() = default;
 
     /**
      * Reset the timer (set to 0)
      */
-    void Reset(void)
+    void Reset()
     {
         m_counter = 0;
         m_total = std::chrono::nanoseconds(0);
@@ -69,7 +70,7 @@ public:
      * Enter a section to be profiled/measured. Call this once, requires a call
      * to exit before calling again
      */
-    void Enter(void)
+    void Enter()
     {
         m_counter++;
         m_enter = std::chrono::high_resolution_clock::now();
@@ -79,9 +80,10 @@ public:
      * Requires a call to enter first. Finish measuring the section to be
      * profiled
      */
-    void Exit(void)
+    void Exit()
     {
-        std::chrono::duration<uint64_t, std::nano> delta(std::chrono::high_resolution_clock::now() - m_enter);
+        std::chrono::duration<uint64_t, std::nano> delta(
+            std::chrono::high_resolution_clock::now() - m_enter);
         m_total += delta;
 
         if (delta < m_best) {
@@ -94,9 +96,9 @@ public:
     }
 
     /**
-     * Get number of times the seciton was profiled (enter was called)
+     * Get number of times the section was profiled (enter was called)
      */
-    uint64_t GetCounter(void) const {
+    uint64_t GetCounter() const {
         return m_counter;
     }
 
@@ -106,7 +108,7 @@ public:
      *
      * @return Total time in seconds
      */
-    double GetTotalTime(void) const {
+    double GetTotalTime() const {
         return std::chrono::duration<double>(m_total).count();
     }
 
@@ -118,7 +120,7 @@ public:
      * @return Total time
      */
     template<typename _Unit>
-    double GetTotalTime(void) const {
+    double GetTotalTime() const {
         return std::chrono::duration<double, _Unit>(m_total).count();
     }
 
@@ -128,7 +130,7 @@ public:
      *
      * @return Average execution time in seconds
      */
-    double GetAvarageTime(void) const
+    double GetAvarageTime() const
     {
         if (m_counter == 0) {
             return 0;
@@ -145,7 +147,7 @@ public:
      * @return Total time
      */
     template<typename _Unit>
-    double GetAvarageTime(void) const
+    double GetAvarageTime() const
     {
         if (m_counter == 0) {
             return 0;
@@ -160,7 +162,7 @@ public:
      *
      * @return Best execution time in seconds
      */
-    double GetBestTime(void) const {
+    double GetBestTime() const {
         return std::chrono::duration<double>(m_best).count();
     }
 
@@ -172,7 +174,7 @@ public:
      * @return Best time
      */
     template<typename _Unit>
-    double GetBestTime(void) const {
+    double GetBestTime() const {
         return std::chrono::duration<double, _Unit>(m_best).count();
     }
 
@@ -182,7 +184,7 @@ public:
      *
      * @return Worst execution time in seconds
      */
-    double GetWorstTime(void) const {
+    double GetWorstTime() const {
         return std::chrono::duration<double>(m_worst).count();
     }
 
@@ -194,7 +196,7 @@ public:
      * @return Worst time
      */
     template<typename _Unit>
-    double GetWorstTime(void) const {
+    double GetWorstTime() const {
         return std::chrono::duration<double, _Unit>(m_worst).count();
     }
 

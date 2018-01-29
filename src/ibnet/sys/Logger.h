@@ -35,26 +35,26 @@ public:
     /**
      * Setup the logger. Make sure to call this to enable the logger
      */
-    static void Setup(void);
+    static void Setup();
 
     /**
      * Shutdown and cleanup everything. Call this before your application
      * exits to properly close and flush everything
      */
-    static void Shutdown(void);
+    static void Shutdown();
 
     /**
      * Get the logger
      */
-    static std::shared_ptr<spdlog::logger>& GetLogger() {
+    static spdlog::logger *const GetLogger() {
         return m_logger;
     }
 
 private:
-    Logger(void) {};
-    ~Logger(void) {};
+    Logger() = default;
+    ~Logger() = default;
 
-    static std::shared_ptr<spdlog::logger> m_logger;
+    static spdlog::logger* m_logger;
 };
 
 }

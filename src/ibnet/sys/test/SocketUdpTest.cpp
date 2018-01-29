@@ -28,9 +28,7 @@
 static ibnet::sys::AddressIPV4 destAddr;
 static bool isServer;
 
-static bool ParseOptions(
-        int argc,
-        char** argv)
+static bool ParseOptions(int argc, char** argv)
 {
     if (argc < 4) {
         printf("Usage: %s <dest ip> <port> <server/client>\n", argv[0]);

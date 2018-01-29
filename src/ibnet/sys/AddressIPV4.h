@@ -42,7 +42,7 @@ public:
      *
      * Inits members to invalid
      */
-    AddressIPV4(void);
+    AddressIPV4();
 
     /**
      * Constructor
@@ -51,7 +51,7 @@ public:
      *
      * @param address Address to set
      */
-    AddressIPV4(uint32_t address);
+    explicit AddressIPV4(uint32_t address);
 
     /**
      * Constructor
@@ -66,24 +66,24 @@ public:
      *
      * @param address Address as string, e.g. 127.0.0.1 or 127.0.0.1:12345
      */
-    AddressIPV4(const std::string& address);
+    explicit AddressIPV4(const std::string& address);
 
     /**
      * Destructor
      */
-    ~AddressIPV4(void);
+    ~AddressIPV4() = default;
 
     /**
      * Get the address
      */
-    uint32_t GetAddress(void) const {
+    uint32_t GetAddress() const {
         return m_address;
     }
 
     /**
      * Get the port
      */
-    uint16_t GetPort(void) const {
+    uint16_t GetPort() const {
         return m_port;
     }
 
@@ -92,7 +92,7 @@ public:
      *
      * @return True invalid, false otherwise
      */
-    bool IsValid(void) {
+    bool IsValid() {
         return m_address != INVALID_ADDRESS;
     }
 

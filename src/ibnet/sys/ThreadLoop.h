@@ -39,7 +39,7 @@ public:
      *
      * @param name Name of the thread (for debugging)
      */
-    ThreadLoop(const std::string& name = "") :
+    explicit ThreadLoop(const std::string& name = "") :
         Thread(name),
         m_run(true)
     {}
@@ -47,14 +47,13 @@ public:
     /**
      * Destructor
      */
-    virtual ~ThreadLoop(void)
-    {}
+    virtual ~ThreadLoop() = default;
 
     /**
      * Signal the thread to stop. This will cause the thread to exit
      * the loop before continuing with the next iteration.
      */
-    void Stop(void)
+    void Stop()
     {
         m_run = false;
         Join();
@@ -64,24 +63,27 @@ protected:
     /**
      * Execute something before the thread starts looping (e.g. init/setup)
      */
-    virtual void _BeforeRunLoop(void) {};
+    virtual void _BeforeRunLoop() {};
 
     /**
      * Run function which is looped until exit is signaled
      */
-    virtual void _RunLoop(void) = 0;
+    virtual void _RunLoop() = 0;
 
     /**
      * Execute something after the loop exited and before the thread terminates
      * (e.g. cleanup)
      */
-    virtual void _AfterRunLoop(void) {};
+    virtual void _AfterRunLoop() {};
 
-    void exitLoop(void) {
+    /**
+     * Exit the loop on the beginning of the next iteration
+     */
+    void ExitLoop() {
         m_run = false;
     }
 
-    void _Run(void) override
+    void _Run() override
     {
         _BeforeRunLoop();
 

@@ -21,20 +21,22 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <netdb.h>
-#include <string.h>
 #include <unistd.h>
 
-#include "ibnet/sys/SystemException.h"
+#include <cstring>
+
+#include "SystemException.h"
 
 namespace ibnet {
 namespace sys {
 
-const std::string Network::GetHostname(void)
+const std::string Network::GetHostname()
 {
     char buf[1024];
 
     if (gethostname(buf, sizeof(buf)) < 0) {
-        throw SystemException("Buffer too small for getting own hostname");
+        throw SystemException::Create<SystemException>(
+            "Buffer too small for getting own hostname");
     }
 
     std::string str(buf);
@@ -44,22 +46,25 @@ const std::string Network::GetHostname(void)
 
 AddressIPV4 Network::ResolveHostname(const std::string& hostname)
 {
-    struct hostent* he;
+    hostent* he;
     char own_hostname[1024];
 
     if (gethostname(own_hostname, sizeof(own_hostname)) < 0) {
-        throw SystemException("Getting own hostname failed");
+        throw SystemException::Create<SystemException>(
+            "Getting own hostname failed");
     }
 
     he = gethostbyname(hostname.c_str());
 
-    if (he == NULL) {
-        throw SystemException("ResolveHostname for " + hostname + ": No such host");
+    if (he == nullptr) {
+        throw SystemException::Create<SystemException>(
+            "ResolveHostname for %s: No such host", hostname);
     }
 
     if (he->h_addrtype != AF_INET) {
-        throw SystemException("ResolveHostname (" + hostname +
-                "): gethostbyname addrtype != AF_INET");
+        throw SystemException::Create<SystemException>(
+            "ResolveHostname (%s): gethostbyname addrtype != AF_INET",
+            hostname);
     }
 
     // exception for own hostname: we can't resolve that using DNS.
@@ -76,7 +81,7 @@ AddressIPV4 Network::ResolveIPForInterface(const std::string& iface)
 {
     struct ifaddrs* addrs;
     struct ifaddrs* ptr;
-    uint32_t ip = (uint32_t) -1;
+    uint32_t ip = 0xFFFFFFFF;
 
     getifaddrs(&addrs);
 
@@ -84,7 +89,7 @@ AddressIPV4 Network::ResolveIPForInterface(const std::string& iface)
 
         if (ptr->ifa_addr->sa_family == AF_INET &&
                 !strcmp(ptr->ifa_name, iface.c_str())) {
-            struct sockaddr_in* addr_in = (struct sockaddr_in*) ptr->ifa_addr;
+            auto* addr_in = (struct sockaddr_in*) ptr->ifa_addr;
 
             ip = addr_in->sin_addr.s_addr;
             break;

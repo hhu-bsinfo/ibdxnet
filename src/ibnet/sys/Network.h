@@ -37,7 +37,7 @@ public:
     /**
      * Get the currently set hostname of the system
      */
-    static const std::string GetHostname(void);
+    static const std::string GetHostname();
 
     /**
      * Resolve a hostname to an IPV4 address
@@ -58,8 +58,8 @@ public:
     static AddressIPV4 ResolveIPForInterface(const std::string& iface);
 
 private:
-    Network(void) {};
-    ~Network(void) {};
+    Network() = default;
+    ~Network() = default;
 };
 
 }

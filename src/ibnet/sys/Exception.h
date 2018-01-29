@@ -19,13 +19,13 @@
 #ifndef IBNET_SYS_EXCEPTION_H
 #define IBNET_SYS_EXCEPTION_H
 
-#include <stdarg.h>
-#include <stdio.h>
-
-#include <backwards/backward.hpp>
-
+#include <cstdarg>
+#include <cstdio>
 #include <exception>
 #include <string>
+
+#include <backwards/backward.hpp>
+#include <fmt/printf.h>
 
 namespace ibnet {
 namespace sys {
@@ -35,8 +35,22 @@ namespace sys {
  *
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
  */
-class Exception : public std::exception
+class Exception : public std::runtime_error
 {
+public:
+    /**
+     * Helper to create an exception with printf style format string message
+     *
+     * @tparam T Class of the exception you want to instantiate
+     * @param format Printf style format
+     * @param ... Parameters for format string
+     * @return Exception instance
+     */
+    template<typename T, typename... Args>
+    static T Create(const std::string& format, Args... args) {
+        return T(fmt::sprintf(format, args...));
+    }
+
 public:
     /**
      * Constructor
@@ -44,6 +58,7 @@ public:
      * @param msg Exception message
      */
     explicit Exception(const std::string& msg) :
+            std::runtime_error(msg),
             m_msg(msg)
     {
         m_stackTrace.load_here(32);
@@ -55,6 +70,7 @@ public:
      * @param msg Exception message (c-string)
      */
     explicit Exception(const char* msg) :
+            std::runtime_error(msg),
             m_msg(msg)
     {
         m_stackTrace.load_here(32);
@@ -72,14 +88,14 @@ public:
     /**
      * Get the exception message
      */
-    const std::string& GetMessage(void) const {
+    const std::string& GetMessage() const {
         return m_msg;
     }
 
     /**
      * Print the stack trace where the exception was created
      */
-    void PrintStackTrace(void) {
+    void PrintStackTrace() {
         backward::Printer p;
         p.print(m_stackTrace);
     }

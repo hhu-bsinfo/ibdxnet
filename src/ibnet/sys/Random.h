@@ -19,7 +19,7 @@
 #ifndef IBNET_SYS_RANDOM_H
 #define IBNET_SYS_RANDOM_H
 
-#include <cstdint>
+#include <random>
 
 namespace ibnet {
 namespace sys {
@@ -35,18 +35,19 @@ public:
     /**
      * Generate a 16-bit random number
      */
-    static uint16_t Generate16(void);
+    static uint16_t Generate16();
 
     /**
      * Generate a 32-bit random number
      */
-    static uint32_t Generate32(void);
+    static uint32_t Generate32();
 
 private:
-    Random(void) {};
-    ~Random(void) {};
+    Random() = default;
+    ~Random() = default;
 
-    static bool ms_randInit;
+    static std::random_device ms_rd;
+    static std::mt19937 ms_mt;
 };
 
 }

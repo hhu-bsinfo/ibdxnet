@@ -18,27 +18,22 @@
 
 #include "Random.h"
 
-#include <stdlib.h>
-#include <time.h>
-
 namespace ibnet {
 namespace sys {
 
-bool Random::ms_randInit = false;
+std::random_device Random::ms_rd;
+std::mt19937 Random::ms_mt(ms_rd.operator()());
 
-uint16_t Random::Generate16(void)
+uint16_t Random::Generate16()
 {
-    return (uint16_t) Generate32();
+    static std::uniform_int_distribution<uint16_t> dist;
+    return dist(ms_mt);
 }
 
-uint32_t Random::Generate32(void)
+uint32_t Random::Generate32()
 {
-    if (!ms_randInit) {
-        srand48(time(NULL));
-        ms_randInit = true;
-    }
-
-    return lrand48();
+    static std::uniform_int_distribution<uint32_t> dist;
+    return dist(ms_mt);
 }
 
 }

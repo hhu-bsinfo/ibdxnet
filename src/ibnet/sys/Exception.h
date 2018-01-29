@@ -38,28 +38,15 @@ namespace sys {
 class Exception : public std::runtime_error
 {
 public:
-    /**
-     * Helper to create an exception with printf style format string message
-     *
-     * @tparam T Class of the exception you want to instantiate
-     * @param format Printf style format
-     * @param ... Parameters for format string
-     * @return Exception instance
-     */
-    template<typename T, typename... Args>
-    static T Create(const std::string& format, Args... args) {
-        return T(fmt::sprintf(format, args...));
-    }
-
-public:
-    /**
-     * Constructor
-     *
-     * @param msg Exception message
-     */
-    explicit Exception(const std::string& msg) :
-            std::runtime_error(msg),
-            m_msg(msg)
+   /**
+    * Constructor
+    *
+    * @param format Printf style format message
+    * @param args Parameters for format string
+    */
+    template<typename... Args>
+    explicit Exception(const std::string& format, Args... args) :
+        std::runtime_error(fmt::sprintf(format, args...))
     {
         m_stackTrace.load_here(32);
     }
@@ -70,26 +57,9 @@ public:
      * @param msg Exception message (c-string)
      */
     explicit Exception(const char* msg) :
-            std::runtime_error(msg),
-            m_msg(msg)
+            std::runtime_error(msg)
     {
         m_stackTrace.load_here(32);
-    }
-
-    /**
-     * Get exception message
-     *
-     * @return Exception message (c-string)
-     */
-    virtual const char* what() const throw() {
-        return m_msg.c_str();
-    }
-
-    /**
-     * Get the exception message
-     */
-    const std::string& GetMessage() const {
-        return m_msg;
     }
 
     /**
@@ -101,7 +71,6 @@ public:
     }
 
 private:
-    const std::string m_msg;
     backward::StackTrace m_stackTrace;
 };
 

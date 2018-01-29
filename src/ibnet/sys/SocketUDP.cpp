@@ -39,8 +39,7 @@ SocketUDP::SocketUDP(uint16_t port) :
     m_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
     if (m_socket == -1) {
-        throw SystemException::Create<SystemException>(
-            "Opening UDP socket failed: %s", strerror(errno));
+        throw SystemException("Opening UDP socket failed: %s", strerror(errno));
     }
 
     // set socket non blocking on receive
@@ -54,8 +53,7 @@ SocketUDP::SocketUDP(uint16_t port) :
 
     if (bind(m_socket, (const sockaddr*) &addr, sizeof(addr)) == -1) {
         close(m_socket);
-        throw SystemException::Create<SystemException>(
-            "Binding UDP socket to port %d failed: %s",
+        throw SystemException("Binding UDP socket to port %d failed: %s",
             port, strerror(errno));
     }
 

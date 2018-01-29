@@ -35,8 +35,7 @@ const std::string Network::GetHostname()
     char buf[1024];
 
     if (gethostname(buf, sizeof(buf)) < 0) {
-        throw SystemException::Create<SystemException>(
-            "Buffer too small for getting own hostname");
+        throw SystemException("Buffer too small for getting own hostname");
     }
 
     std::string str(buf);
@@ -50,19 +49,17 @@ AddressIPV4 Network::ResolveHostname(const std::string& hostname)
     char own_hostname[1024];
 
     if (gethostname(own_hostname, sizeof(own_hostname)) < 0) {
-        throw SystemException::Create<SystemException>(
-            "Getting own hostname failed");
+        throw SystemException("Getting own hostname failed");
     }
 
     he = gethostbyname(hostname.c_str());
 
     if (he == nullptr) {
-        throw SystemException::Create<SystemException>(
-            "ResolveHostname for %s: No such host", hostname);
+        throw SystemException("ResolveHostname for %s: No such host", hostname);
     }
 
     if (he->h_addrtype != AF_INET) {
-        throw SystemException::Create<SystemException>(
+        throw SystemException(
             "ResolveHostname (%s): gethostbyname addrtype != AF_INET",
             hostname);
     }

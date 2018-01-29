@@ -35,10 +35,12 @@ public:
     /**
      * Constructor
      *
-     * @param msg Exception message
+     * @param format Printf style format message
+     * @param args Parameters for format string
      */
-    explicit SystemException(const std::string& msg) :
-        Exception(msg)
+    template<typename... Args>
+    explicit SystemException(const std::string& format, Args... args) :
+        Exception(format, args...)
     {}
 
     /**

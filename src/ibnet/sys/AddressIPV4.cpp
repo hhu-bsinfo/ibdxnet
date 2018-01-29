@@ -67,8 +67,7 @@ void AddressIPV4::__ToAddressAndPort(const std::string& address)
     std::vector<std::string> tokens = StringUtils::Split(address, ":");
 
     if (tokens.size() > 2) {
-        throw SystemException::Create<SystemException>(
-            "Invalid address format: %s", address);
+        throw SystemException("Invalid address format: %s", address);
     }
 
     if (tokens.size() == 0) {
@@ -80,8 +79,7 @@ void AddressIPV4::__ToAddressAndPort(const std::string& address)
     in_addr addr = {};
 
     if (!inet_pton(AF_INET, tokens[0].c_str(), &addr)) {
-        throw SystemException::Create<SystemException>(
-            "Invalid address format: %s", address);
+        throw SystemException("Invalid address format: %s", address);
     }
 
     m_address = ntohl(addr.s_addr);

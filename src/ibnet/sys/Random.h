@@ -32,6 +32,10 @@ namespace sys {
 class Random
 {
 public:
+    static void Init();
+
+    static void Shutdown();
+
     /**
      * Generate a 16-bit random number
      */
@@ -46,8 +50,10 @@ private:
     Random() = default;
     ~Random() = default;
 
-    static std::random_device ms_rd;
-    static std::mt19937 ms_mt;
+    static std::random_device* ms_rd;
+    static std::mt19937* ms_mt;
+
+    static void __Init();
 };
 
 }

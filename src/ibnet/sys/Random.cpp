@@ -21,19 +21,33 @@
 namespace ibnet {
 namespace sys {
 
-std::random_device Random::ms_rd;
-std::mt19937 Random::ms_mt(ms_rd.operator()());
+std::random_device* Random::ms_rd = nullptr;
+std::mt19937* Random::ms_mt = nullptr;
+
+void Random::Init()
+{
+    ms_rd = new std::random_device();
+    ms_mt = new std::mt19937(ms_rd->operator()());
+}
+
+void Random::Shutdown()
+{
+    delete ms_mt;
+    ms_mt = nullptr;
+    delete ms_rd;
+    ms_rd = nullptr;
+}
 
 uint16_t Random::Generate16()
 {
     static std::uniform_int_distribution<uint16_t> dist;
-    return dist(ms_mt);
+    return dist(*ms_mt);
 }
 
 uint32_t Random::Generate32()
 {
     static std::uniform_int_distribution<uint32_t> dist;
-    return dist(ms_mt);
+    return dist(*ms_mt);
 }
 
 }

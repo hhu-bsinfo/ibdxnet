@@ -26,6 +26,7 @@
 
 #include <backwards/backward.hpp>
 #include <fmt/printf.h>
+#include <fmt/ostream.h>
 
 namespace ibnet {
 namespace sys {

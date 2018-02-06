@@ -26,10 +26,11 @@ set(SOURCE_FILES
         ${IBNET_SRC_DIR}/ibnet/sys/Network.cpp
         ${IBNET_SRC_DIR}/ibnet/sys/Random.cpp
         ${IBNET_SRC_DIR}/ibnet/sys/SocketUDP.cpp
-        ${IBNET_SRC_DIR}/ibnet/sys/StringUtils.cpp)
+        ${IBNET_SRC_DIR}/ibnet/sys/StringUtils.cpp
+        ${IBNET_SRC_DIR}/ibnet/sys/SystemInfo.cpp)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 
-target_link_libraries(${PROJECT_NAME} dl dw)
+target_link_libraries(${PROJECT_NAME} fmt dl dw)
 
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -rdynamic -g -fpic -O3 -fno-strict-aliasing")

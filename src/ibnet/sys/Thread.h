@@ -24,6 +24,7 @@
 
 #include "Exception.h"
 #include "Logger.hpp"
+#include "SystemException.h"
 
 namespace ibnet {
 namespace sys {
@@ -72,6 +73,25 @@ public:
     {
         m_thread->join();
         delete m_thread;
+    }
+
+    /**
+     * Pin the thread to be executed on a specific physical core, only
+     *
+     * @param cpuid Id of the cpu core to pin to
+     */
+    void Pin(uint16_t cpuid)
+    {
+        cpu_set_t cpuset = {};
+        CPU_ZERO(&cpuset);
+        CPU_SET(cpuid, &cpuset);
+
+        pthread_t current_thread = pthread_self();
+        if (pthread_setaffinity_np(current_thread, sizeof(cpu_set_t),
+                &cpuset)) {
+            sys::SystemException("Setting cpu affinity for %s to %d failed",
+                m_name, cpuid);
+        }
     }
 
 protected:

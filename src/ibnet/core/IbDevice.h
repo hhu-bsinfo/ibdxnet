@@ -23,7 +23,6 @@
 #include <string>
 
 #include <infiniband/verbs.h>
-#include <spdlog/fmt/ostr.h>
 
 namespace ibnet {
 namespace core {
@@ -44,8 +43,7 @@ public:
     /**
      * Current state of the port of an InfiniBand HCA
      */
-    enum PortState
-    {
+    enum PortState {
         e_PortStateInvalid = -1,
 
         /**
@@ -95,8 +93,7 @@ public:
     /**
      * Possible MTU sizes in bytes (support depends on the HCA used)
      */
-    enum MtuSize
-    {
+    enum MtuSize {
         e_MtuSizeInvalid = 0,
         e_MtuSize256 = 1,
         e_MtuSize512 = 2,
@@ -108,8 +105,7 @@ public:
     /**
      * Link width of a port
      */
-    enum LinkWidth
-    {
+    enum LinkWidth {
         e_LinkWidthInvalid = 0,
         e_LinkWidth1X = 1,
         e_LinkWidth4X = 4,
@@ -120,8 +116,7 @@ public:
     /**
      * Active link speed of a port in Gbps
      */
-    enum LinkSpeed
-    {
+    enum LinkSpeed {
         e_LinkSpeedInvalid = 0,
         e_LinkSpeed2p5 = 25,
         e_LinkSpeed5 = 50,
@@ -133,8 +128,7 @@ public:
     /**
      * Physical link state of a port
      */
-    enum LinkState
-    {
+    enum LinkState {
         e_LinkStateInvalid = 0,
 
         /**
@@ -187,14 +181,14 @@ public:
      * Opens the first InfiniBand device found or throws an exception if no
      * device found.
      */
-    IbDevice(void);
+    IbDevice();
 
     /**
      * Destructor
      *
      * Close InfiniBand device and cleanup resources
      */
-    ~IbDevice(void);
+    ~IbDevice();
 
     /**
      * Update the device state. This updates some variables that
@@ -202,54 +196,54 @@ public:
      * you query these variables, ensure to call this update function
      * frequently.
      */
-    void UpdateState(void);
+    void UpdateState();
 
     /**
      * Get the GUID of the device
      */
-    uint64_t GetGuid(void) const {
+    uint64_t GetGuid() const {
         return m_ibDevGuid;
     }
 
     /**
      * Get the name of the device
      */
-    const std::string& GetName(void) const {
+    const std::string& GetName() const {
         return m_ibDevName;
     }
 
     /**
      * Get the device's LID
      */
-    uint16_t GetLid(void) const {
+    uint16_t GetLid() const {
         return m_lid;
     }
 
     /**
      * Get the link's width
      */
-    LinkWidth GetLinkWidth(void) const {
+    LinkWidth GetLinkWidth() const {
         return m_linkWidth;
     }
 
     /**
      * Get the link's speed
      */
-    LinkSpeed GetLinkSpeed(void) const {
+    LinkSpeed GetLinkSpeed() const {
         return m_linkSpeed;
     }
 
     /**
      * Get the current state of the link
      */
-    LinkState GetLinkState(void) const {
+    LinkState GetLinkState() const {
         return m_linkState;
     }
 
     /**
      * Get the InfiniBand context provided by the opened device
      */
-    ibv_context* GetIBContext(void) const {
+    ibv_context* GetIBCtx() const {
         return m_ibCtx;
     }
 
@@ -257,15 +251,16 @@ public:
      * Enable output to an out stream
      */
     friend std::ostream &operator<<(std::ostream& os, const IbDevice& o) {
-        return os << "0x" << std::hex << o.m_ibDevGuid
-                  << ", " << o.m_ibDevName
-                  << ", " << std::hex << "0x" << o.m_lid
-                  << ", " << o.m_linkWidth << "X"
-                  << ", " << o.m_linkSpeed / 10.f << " gbps"
-                  << ", MaxMTU " << ms_mtuSizeStr[o.m_maxMtuSize]
-                  << ", ActiveMTU " << ms_mtuSizeStr[o.m_maxMtuSize]
-                  << ", Port " << ms_portStateStr[o.m_portState]
-                  << ", Link " << ms_linkStateStr[o.m_linkState];
+        return os
+            << "0x" << std::hex << o.m_ibDevGuid
+            << ", " << o.m_ibDevName
+            << ", " << std::hex << "0x" << o.m_lid
+            << ", " << o.m_linkWidth << "X"
+            << ", " << o.m_linkSpeed / 10.f << " gbps"
+            << ", MaxMTU " << ms_mtuSizeStr[o.m_maxMtuSize]
+            << ", ActiveMTU " << ms_mtuSizeStr[o.m_maxMtuSize]
+            << ", Port " << ms_portStateStr[o.m_portState]
+            << ", Link " << ms_linkStateStr[o.m_linkState];
     }
 
 private:
@@ -287,7 +282,7 @@ private:
 
     ibv_context* m_ibCtx;
 
-    void __LogDeviceAttributes(void);
+    void __LogDeviceAttributes();
 };
 
 }

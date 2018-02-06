@@ -27,7 +27,7 @@ namespace ibnet {
 namespace core {
 
 /**
- * Exception thrown if a queue is full
+ * Exception thrown if an IB queue is full
  *
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
  */
@@ -37,18 +37,18 @@ public:
     /**
      * Constructor
      *
-     * @param str Further error information
+     * @param format Printf style format message
+     * @param args Parameters for format string
      */
-    IbQueueFullException(const std::string& str) :
-            IbException(str)
-    {
-
-    }
+    template<typename... Args>
+    explicit IbQueueFullException(const std::string& format, Args... args) :
+        IbException(format, args...)
+    {}
 
     /**
      * Destructor
      */
-    ~IbQueueFullException(void) {};
+    ~IbQueueFullException() override = default;
 };
 
 }

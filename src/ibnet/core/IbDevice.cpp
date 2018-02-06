@@ -59,10 +59,10 @@ const std::string IbDevice::ms_linkStateStr[8] {
     "Phytest"
 };
 
-IbDevice::IbDevice(void) :
+IbDevice::IbDevice() :
     m_ibDevGuid((uint64_t) -1),
     m_ibDevName("INVALID"),
-    m_lid((uint16_t) -1),
+    m_lid(0xFFFF),
     m_portState(e_PortStateInvalid),
     m_maxMtuSize(e_MtuSizeInvalid),
     m_activeMtuSize(e_MtuSizeInvalid),
@@ -71,60 +71,49 @@ IbDevice::IbDevice(void) :
     m_linkState(e_LinkStateInvalid),
     m_ibCtx(nullptr)
 {
-    IBNET_LOG_TRACE_FUNC;
-
     int num_devices = 0;
     ibv_device** dev_list = nullptr;
 
     IBNET_LOG_INFO("Opening device...");
 
     // device enumeration
-    IBNET_LOG_TRACE("ibv_get_device_list");
     dev_list = ibv_get_device_list(&num_devices);
 
-    if (dev_list == NULL) {
-        IBNET_LOG_ERROR("Getting ib device list: {}", strerror(errno));
-        throw IbException("Getting ib device list: " +
-            std::string(strerror(errno)));
+    if (dev_list == nullptr) {
+        throw IbException("Getting ib device list: %s", strerror(errno));
     }
 
     if (num_devices == 0) {
-        IBNET_LOG_ERROR("Could not find a connected ib device");
         throw IbException("Could not find a connected ib device");
     }
 
-    IBNET_LOG_DEBUG("Found {} ib device(s)", num_devices);
+    IBNET_LOG_DEBUG("Found %d ib device(s)", num_devices);
 
     for (int i = 0; i < num_devices; i++) {
         uint64_t guid = ibv_get_device_guid(dev_list[i]);
         const char* name = ibv_get_device_name(dev_list[i]);
 
-        IBNET_LOG_DEBUG("ibdev {}: {:x} {}", i, guid, name);
+        IBNET_LOG_DEBUG("ibdev 0x%X: 0x%X %s", i, guid, name);
     }
 
     if (num_devices > 1) {
-        IBNET_LOG_WARN("Found {} ib devices, using first device", num_devices);
+        IBNET_LOG_WARN("Found %d ib devices, using first device", num_devices);
     }
 
     // default to first found device
-    IBNET_LOG_TRACE("ibv_get_device_guid");
     m_ibDevGuid = ibv_get_device_guid(dev_list[0]);
-    IBNET_LOG_TRACE("ibv_get_device_name");
     m_ibDevName = ibv_get_device_name(dev_list[0]);
 
     // open device
-    IBNET_LOG_TRACE("ibv_open_device");
     m_ibCtx = ibv_open_device(dev_list[0]);
 
     if (m_ibCtx == nullptr) {
-        IBNET_LOG_ERROR("Opening device {:x} {} failed",
-                m_ibDevGuid, m_ibDevName);
         ibv_free_device_list(dev_list);
-        throw IbException("Opening device failed");
+        throw IbException("Opening device %X %s failed", m_ibDevGuid,
+            m_ibDevName);
     }
 
     // cleanup device list
-    IBNET_LOG_TRACE("ibv_free_device_list");
     ibv_free_device_list(dev_list);
 
     // update once for base information
@@ -132,34 +121,31 @@ IbDevice::IbDevice(void) :
 
     __LogDeviceAttributes();
 
-    IBNET_LOG_INFO("Opened device {}", *this);
+    IBNET_LOG_INFO("Opened device %s", *this);
 }
 
-IbDevice::~IbDevice(void)
+IbDevice::~IbDevice()
 {
-    IBNET_LOG_TRACE_FUNC;
     IBNET_ASSERT_PTR(m_ibCtx);
 
-    IBNET_LOG_INFO("Closing device {}", *this);
+    IBNET_LOG_INFO("Closing device %s", *this);
 
-    IBNET_LOG_TRACE("ibv_close_device");
     ibv_close_device(m_ibCtx);
 
-    m_ibDevGuid = (uint64_t) -1;
+    m_ibDevGuid = 0xFFFF;
     m_ibDevName = "INVALID";
-    m_lid = (uint16_t) -1;
+    m_lid = 0xFFFF;
     m_linkWidth = e_LinkWidthInvalid;
     m_linkSpeed = e_LinkSpeedInvalid;
     m_linkState = e_LinkStateInvalid;
     m_ibCtx = nullptr;
 }
 
-void IbDevice::UpdateState(void)
+void IbDevice::UpdateState()
 {
-    IBNET_LOG_TRACE_FUNC;
     IBNET_ASSERT_PTR(m_ibCtx);
 
-    struct ibv_port_attr attr;
+    ibv_port_attr attr = {};
     int result;
 
     memset(&attr, 0, sizeof(struct ibv_port_attr));
@@ -167,9 +153,8 @@ void IbDevice::UpdateState(void)
     result = ibv_query_port(m_ibCtx, DEFAULT_IB_PORT, &attr);
 
     if (result != 0) {
-        IBNET_LOG_ERROR("Querying port for device information failed: {}",
-                strerror(result));
-        throw IbException("Querying port for device information failed");
+        throw IbException("Querying port for device information failed: %s",
+            strerror(result));
     }
 
     m_lid = attr.lid;
@@ -189,7 +174,6 @@ void IbDevice::UpdateState(void)
             m_linkWidth = e_LinkWidth12X; break;
         default:
             IBNET_ASSERT_DIE("Unhandled switch state");
-            break;
     }
 
     switch (attr.active_speed) {
@@ -207,7 +191,6 @@ void IbDevice::UpdateState(void)
             m_linkSpeed = e_LinkSpeed25; break;
         default:
             IBNET_ASSERT_DIE("Unhandled switch state");
-            break;
     }
 
     m_linkState = (LinkState) attr.phys_state;
@@ -218,13 +201,13 @@ void IbDevice::UpdateState(void)
     }
 }
 
-void IbDevice::__LogDeviceAttributes(void)
+void IbDevice::__LogDeviceAttributes()
 {
-    struct ibv_device_attr deviceAttr;
+    ibv_device_attr deviceAttr = {};
+
     if (ibv_query_device(m_ibCtx, &deviceAttr)) {
-        IBNET_LOG_ERROR("Querying device attributes failed: {}",
-            std::string(strerror(errno)));
-        throw IbException("Querying device attributes failed");
+        throw IbException("Querying device attributes failed: %s",
+            strerror(errno));
     }
 
     std::string str =
@@ -281,7 +264,7 @@ void IbDevice::__LogDeviceAttributes(void)
             std::to_string(deviceAttr.local_ca_ack_delay) + "\n"
         "phys_port_cnt: " + std::to_string(deviceAttr.phys_port_cnt);
 
-    IBNET_LOG_DEBUG("{}", str);
+    IBNET_LOG_DEBUG("%s", str);
 }
 
 }

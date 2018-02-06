@@ -44,12 +44,12 @@ public:
      * @param device Device to connect the protection domain to
      * @param name Name for the protection domain (for debugging)
      */
-    IbProtDom(std::shared_ptr<IbDevice>& device, const std::string& name);
+    IbProtDom(IbDevice& device, const std::string& name);
 
     /**
      * Destructor
      */
-    ~IbProtDom(void);
+    ~IbProtDom();
 
     /**
      * Register a region of allocated memory with the protection domain.
@@ -68,46 +68,41 @@ public:
      */
     IbMemReg* Register(void* addr, uint32_t size, bool freeOnCleanup = true);
 
+    void Deregister(IbMemReg& memReg);
+
     /**
      * Get the IB protection domain object
      */
-    ibv_pd* GetIBProtDom(void) const {
+    ibv_pd* GetIBProtDom() const {
         return m_ibProtDom;
     }
 
+    uint64_t GetTotalMemoryRegionsRegistered() const {
+        return m_memoryRegionsRegistered;
+    }
+
     /**
-     * Get the total ammount of memory registered (in bytes)
+     * Get the total amount of memory registered (in bytes)
      */
-    uint64_t GetTotalMemoryUsage(void) const {
-        uint64_t total = 0;
-
-        for (auto& it : m_registeredRegions) {
-            total += it->GetSize();
-        }
-
-        return total;
+    uint64_t GetTotalMemoryRegistered() const {
+        return m_totalMemRegistered;
     }
 
     /**
      * Enable output to an out stream
      */
     friend std::ostream &operator<<(std::ostream& os, const IbProtDom& o) {
-        os << o.m_name << " (" << std::dec << o.GetTotalMemoryUsage() <<
-            " bytes):";
-
-        for (auto& it : o.m_registeredRegions) {
-            os << "\n" << *it;
-        }
-
-        return os;
+        return os << o.m_name << " (" << std::dec <<
+            o.GetTotalMemoryRegionsRegistered() << " regions with a total of "
+            << o.GetTotalMemoryRegistered() << " bytes)";
     }
 
 private:
     const std::string m_name;
     ibv_pd* m_ibProtDom;
 
-    std::mutex m_mutex;
-    std::vector<IbMemReg*> m_registeredRegions;
+    uint64_t m_memoryRegionsRegistered;
+    uint64_t m_totalMemRegistered;
 };
 
 }

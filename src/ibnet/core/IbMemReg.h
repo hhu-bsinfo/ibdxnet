@@ -57,18 +57,27 @@ public:
      *          caller.
      */
     IbMemReg(void* addr, uint32_t size, bool freeOnCleanup = true) :
-        m_addr(addr),
-        m_size(size),
-        m_freeOnCleanup(freeOnCleanup),
-        m_ibMemReg(nullptr) {
+            m_addr(addr),
+            m_size(size),
+            m_freeOnCleanup(freeOnCleanup),
+            m_ibMemReg(nullptr) {
         IBNET_ASSERT_PTR(addr);
+    }
+
+    /**
+     * Destructor
+     */
+    ~IbMemReg() {
+        if (m_freeOnCleanup) {
+            free(m_addr);
+        }
     }
 
     /**
      * Get the local key assigned to the region when registered with a
      * protection domain
      */
-    uint32_t GetLKey(void) const {
+    uint32_t GetLKey() const {
         return m_ibMemReg->lkey;
     }
 
@@ -76,21 +85,21 @@ public:
      * Get the remote key assigned to the region when registered with a
      * protection domain
      */
-    uint32_t GetRKey(void) const {
+    uint32_t GetRKey() const {
         return m_ibMemReg->rkey;
     }
 
     /**
      * Get the address/pointer of the allocated memory
      */
-    void* GetAddress(void) const {
+    void* GetAddress() const {
         return m_addr;
     }
 
     /**
      * Get the size of the allocated memory region
      */
-    uint32_t GetSize(void) const {
+    uint32_t GetSize() const {
         return m_size;
     }
 
@@ -109,7 +118,12 @@ public:
         memcpy((void*) ((uintptr_t) m_addr + offset), data, length);
     }
 
-    std::string ToString(void) const {
+    /**
+     * ToString method.
+     *
+     * @return Protection domain state as string
+     */
+    std::string ToString() const {
         std::string str;
         str += sys::StringUtils::ToHexString(m_ibMemReg->lkey);
         str += ", " + sys::StringUtils::ToHexString(m_ibMemReg->rkey);
@@ -137,16 +151,6 @@ private:
     bool m_freeOnCleanup;
 
     ibv_mr* m_ibMemReg;
-
-private:
-    /**
-     * Destructor
-     */
-    ~IbMemReg(void) {
-        if (m_freeOnCleanup) {
-            free(m_addr);
-        }
-    }
 };
 
 }

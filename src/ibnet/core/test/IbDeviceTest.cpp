@@ -16,10 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-#include <signal.h>
-
-#include <iostream>
 #include <chrono>
+#include <csignal>
+#include <iostream>
 #include <thread>
 
 #include "ibnet/sys/Logger.h"

@@ -40,31 +40,31 @@
  * Macro to log a message, level panic. Use this macro instead of directly
  * calling the logger class.
  */
-#define IBNET_LOG_PANIC(fmt, ...) ibnet::sys::Logger::GetLogger()->critical(("[{}] " + std::string(fmt)).c_str(), LOG_MODULE, ##__VA_ARGS__)
+#define IBNET_LOG_PANIC(fmt, ...) ibnet::sys::Logger::GetLogger().critical(("[%s] " + std::string(fmt)).c_str(), LOG_MODULE, ##__VA_ARGS__)
 
 /**
  * Macro to log a message, level error. Use this macro instead of directly
  * calling the logger class.
  */
-#define IBNET_LOG_ERROR(fmt, ...) ibnet::sys::Logger::GetLogger()->error(("[{}] " + std::string(fmt)).c_str(), LOG_MODULE, ##__VA_ARGS__)
+#define IBNET_LOG_ERROR(fmt, ...) ibnet::sys::Logger::GetLogger().error(("[%s] " + std::string(fmt)).c_str(), LOG_MODULE, ##__VA_ARGS__)
 
 /**
  * Macro to log a message, level warning. Use this macro instead of directly
  * calling the logger class.
  */
-#define IBNET_LOG_WARN(fmt, ...) ibnet::sys::Logger::GetLogger()->warn(("[{}] " + std::string(fmt)).c_str(), LOG_MODULE, ##__VA_ARGS__)
+#define IBNET_LOG_WARN(fmt, ...) ibnet::sys::Logger::GetLogger().warn(("[%s] " + std::string(fmt)).c_str(), LOG_MODULE, ##__VA_ARGS__)
 
 /**
  * Macro to log a message, level info. Use this macro instead of directly
  * calling the logger class.
  */
-#define IBNET_LOG_INFO(fmt, ...) ibnet::sys::Logger::GetLogger()->info(("[{}] " + std::string(fmt)).c_str(), LOG_MODULE, ##__VA_ARGS__)
+#define IBNET_LOG_INFO(fmt, ...) ibnet::sys::Logger::GetLogger().info(("[%s] " + std::string(fmt)).c_str(), LOG_MODULE, ##__VA_ARGS__)
 
 /**
  * Macro to log a message, level debug. Use this macro instead of directly
  * calling the logger class.
  */
-#define IBNET_LOG_DEBUG(fmt, ...) ibnet::sys::Logger::GetLogger()->debug(("[{}] " + std::string(fmt)).c_str(), LOG_MODULE, ##__VA_ARGS__)
+#define IBNET_LOG_DEBUG(fmt, ...) ibnet::sys::Logger::GetLogger().debug(("[%s] " + std::string(fmt)).c_str(), LOG_MODULE, ##__VA_ARGS__)
 
 
 #define IBNET_LOG_TRACE_STRIP
@@ -74,19 +74,19 @@
  * Macro to log a message, level trace. Use this macro instead of directly
  * calling the logger class.
  */
-#define IBNET_LOG_TRACE(fmt, ...) ibnet::sys::Logger::GetLogger()->trace(("[{}] " + std::string(fmt)).c_str(), LOG_MODULE, ##__VA_ARGS__)
+#define IBNET_LOG_TRACE(fmt, ...) ibnet::sys::Logger::GetLogger().trace(("[%s] " + std::string(fmt)).c_str(), LOG_MODULE, ##__VA_ARGS__)
 
 /**
  * Macro to easily trace function calls. Just add this at the top of a
  * function's body.
  */
-#define IBNET_LOG_TRACE_FUNC IBNET_LOG_TRACE("{} {}", "ENTER", __PRETTY_FUNCTION__)
+#define IBNET_LOG_TRACE_FUNC IBNET_LOG_TRACE("%s %s", "ENTER", __PRETTY_FUNCTION__)
 
 /**
  * Macro to easily trace function calls. Just add this at the bottom of a
  * function's body.
  */
-#define IBNET_LOG_TRACE_FUNC_EXIT IBNET_LOG_TRACE("{} {}", "EXIT", __PRETTY_FUNCTION__)
+#define IBNET_LOG_TRACE_FUNC_EXIT IBNET_LOG_TRACE("%s %s", "EXIT", __PRETTY_FUNCTION__)
 #else
 #define IBNET_LOG_TRACE(fmt, ...)
 #define IBNET_LOG_TRACE_FUNC

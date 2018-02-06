@@ -16,49 +16,47 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-#ifndef IBNET_SYS_LOGGER_H
-#define IBNET_SYS_LOGGER_H
+#ifndef IBNET_SYS_ILLEGALSTATEEXCEPTION_H
+#define IBNET_SYS_ILLEGALSTATEEXCEPTION_H
 
-#include <spdlog/spdlog.h>
-#include <spdlog/fmt/ostr.h>
+#include "Exception.h"
 
 namespace ibnet {
 namespace sys {
 
 /**
- * Logger (wrapper) class to log errors, warnings, debug messages etc
+ * Common exception that can be thrown in the sys namespace
  *
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
  */
-class Logger
+class IllegalStateException : public Exception
 {
 public:
     /**
-     * Setup the logger. Make sure to call this to enable the logger
+     * Constructor
      */
-    static void Setup();
+    IllegalStateException() :
+        Exception("")
+    {}
 
     /**
-     * Shutdown and cleanup everything. Call this before your application
-     * exits to properly close and flush everything
+     * Constructor
+     *
+     * @param format Printf style format message
+     * @param args Parameters for format string
      */
-    static void Shutdown();
+    template<typename... Args>
+    explicit IllegalStateException(const std::string& format, Args... args) :
+        Exception(format, args...)
+    {}
 
     /**
-     * Get the logger
+     * Destructor
      */
-    static spdlog::logger& GetLogger() {
-        return *m_logger;
-    }
-
-private:
-    Logger() = default;
-    ~Logger() = default;
-
-    static spdlog::logger* m_logger;
+    ~IllegalStateException() = default;
 };
 
 }
 }
 
-#endif //IBNET_SYS_LOGGER_H
+#endif //IBNET_SYS_ILLEGALSTATEEXCEPTION_H

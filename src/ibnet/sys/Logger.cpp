@@ -25,8 +25,7 @@ spdlog::logger* Logger::m_logger = nullptr;
 
 void Logger::Setup()
 {
-    auto colorSink = std::make_shared<spdlog::sinks::ansicolor_sink>(
-        std::make_shared<spdlog::sinks::stdout_sink_mt>());
+    auto colorSink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
     colorSink->set_color(spdlog::level::trace, colorSink->white);
     colorSink->set_color(spdlog::level::debug, colorSink->green);
     colorSink->set_color(spdlog::level::info,

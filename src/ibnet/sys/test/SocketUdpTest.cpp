@@ -18,6 +18,7 @@
 
 #include <chrono>
 #include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <thread>
 

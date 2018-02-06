@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# job attributes
+#PBS -l select=64:ncpus=12:mem=20GB:arch=ivybridge
+#PBS -l place=scatter
+#PBS -l walltime=01:00:00
+#PBS -r n
+#PBS -N ibdxnettest
+#PBS -A dxram
+
+module load gcc/6.1.0
+module load Java/1.8.0
+
+IBDXNETTEST=~/ibdxnet/build/cmake/IbdxnetTest/IbdxnetTest
+PORT=5730
+CONNECTION_CREATION_TIMEOUT_MS=50000
+
+NODES_COUNT=0
+NODE_MAPPINGS=""
+
+# Process available nodes
+echo "Nodes:"
+for host in $(cat $PBS_NODEFILE); do
+    NODE_MAPPINGS[$NODES_COUNT]=$host
+    NODES_COUNT=$((NODES_COUNT + 1))
+    echo "$host"
+done
+
+TARGET_NODES=""
+HOSTNAMES_LISTS=""
+
+# Create target node id and hostname lists for deployment
+for nodeid in $(seq 0 $((NODES_COUNT - 1))); do
+    for nodeid_other in $(seq 0 $((NODES_COUNT - 1))); do
+        if [ "$nodeid" != "$nodeid_other" ]; then
+            TARGET_NODES[$nodeid]="${TARGET_NODES[$nodeid]} $nodeid_other"
+            HOSTNAMES_LISTS[$nodeid]="${HOSTNAMES_LISTS[$nodeid]} ${NODE_MAPPINGS[$nodeid_other]}"
+        fi
+    done
+done
+
+OUT_PATH="/scratch_gs/stnot100/ibdxnet_test/$(date '+%Y-%m-%d_%H-%M-%S-%3N')"
+mkdir -p $OUT_PATH
+
+# Deploy
+echo "Log out path: $OUT_PATH"
+for nodeid in $(seq 0 $((NODES_COUNT - 1))); do
+    echo -n "Starting node $nodeid..."
+    host=${NODE_MAPPINGS[$nodeid]}
+    cmd="$IBDXNETTEST $PORT $CONNECTION_CREATION_TIMEOUT_MS $nodeid ${TARGET_NODES[$nodeid]} - ${HOSTNAMES_LISTS[$nodeid]}"
+    echo "$cmd"
+    ssh $host "module load gcc/6.1.0 ; module load Java/1.8.0 ; nohup $cmd > $OUT_PATH/node${nodeid} 2>&1 &"
+done

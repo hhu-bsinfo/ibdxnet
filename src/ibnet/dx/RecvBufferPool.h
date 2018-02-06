@@ -39,17 +39,17 @@ public:
     /**
      * Constructor
      *
-     * @param initialTotalPoolSize Total initial size of the pool in bytes
+     * @param totalPoolSize Total size of the pool in bytes
      * @param recvBufferSize Size of a single receive buffer in the pool
      * @param protDom Protection domain to register all buffers at
      */
-    RecvBufferPool(uint64_t initialTotalPoolSize, uint32_t recvBufferSize,
-                   std::shared_ptr<core::IbProtDom>& protDom);
+    RecvBufferPool(uint64_t totalPoolSize, uint32_t recvBufferSize,
+        core::IbProtDom* refProtDom);
 
     /**
      * Destructor
      */
-    ~RecvBufferPool(void);
+    ~RecvBufferPool();
 
     /**
      * Get a buffer from the pool. If the pool is empty, no new buffers are
@@ -57,7 +57,9 @@ public:
      *
      * @return Buffer
      */
-    core::IbMemReg* GetBuffer(void);
+    core::IbMemReg* GetBuffer();
+
+    uint32_t GetBuffers(core::IbMemReg* retBuffers[], uint32_t count);
 
     /**
      * Return a buffer to be reused
@@ -66,17 +68,21 @@ public:
      */
     void ReturnBuffer(core::IbMemReg* buffer);
 
+    void ReturnBuffers(core::IbMemReg* buffers[], uint32_t count);
+
+    void ReturnBuffers(void* ptrFirstBuffer, uint32_t stride, uint32_t count);
+
 private:
     const uint64_t m_bufferPoolSize;
     const uint32_t m_bufferSize;
+
+    core::IbProtDom* m_refProtDom;
 
     std::atomic<uint32_t> m_dataBuffersFront;
     std::atomic<uint32_t> m_dataBuffersBack;
     std::atomic<uint32_t> m_dataBuffersBackRes;
 
     core::IbMemReg** m_dataBuffers;
-
-    std::shared_ptr<core::IbProtDom> m_protDom;
 
     std::atomic<uint64_t> m_insufficientBufferCounter;
 };

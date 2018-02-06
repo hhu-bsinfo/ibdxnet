@@ -16,52 +16,51 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-#include <ibnet/sys/Thread.h>
 #include "RecvBufferPool.h"
 
+#include "ibnet/sys/IllegalStateException.h"
 #include "ibnet/sys/Logger.hpp"
-#include "DxnetException.h"
 
 namespace ibnet {
 namespace dx {
 
-RecvBufferPool::RecvBufferPool(uint64_t initialTotalPoolSize,
-        uint32_t recvBufferSize, std::shared_ptr<core::IbProtDom>& protDom) :
-    m_bufferPoolSize(initialTotalPoolSize / recvBufferSize),
+RecvBufferPool::RecvBufferPool(uint64_t totalPoolSize,
+        uint32_t recvBufferSize, core::IbProtDom* refProtDom) :
+    m_bufferPoolSize(totalPoolSize / recvBufferSize),
     m_bufferSize(recvBufferSize),
+    m_refProtDom(refProtDom),
     m_dataBuffersFront(0),
     m_dataBuffersBack(
-        (uint32_t) (initialTotalPoolSize / recvBufferSize - 1)),
+        (uint32_t) (totalPoolSize / recvBufferSize - 1)),
     m_dataBuffersBackRes(
-        (uint32_t) (initialTotalPoolSize / recvBufferSize - 1)),
-    m_protDom(protDom),
+        (uint32_t) (totalPoolSize / recvBufferSize - 1)),
     m_insufficientBufferCounter(0)
 {
-    IBNET_LOG_INFO("Alloc {} data buffers, size {} each",
-        m_bufferPoolSize, recvBufferSize);
-
-    // FIXME this isn't required (?)
-    // to handle wrap around correctly
-    if (m_bufferPoolSize % 2 != 0) {
-        throw DxnetException("RecvBufferPool: Resulting pool size must be a "
-            "power of two, invalid value: " + m_bufferPoolSize);
-    }
+    IBNET_LOG_INFO("Allocating %d data buffers, size %d each for total pool "
+        "size %d...", m_bufferPoolSize, recvBufferSize, totalPoolSize);
 
     m_dataBuffers = new core::IbMemReg*[m_bufferPoolSize];
     for (uint32_t i = 0; i < m_bufferPoolSize; i++) {
-        m_dataBuffers[i] = m_protDom->Register(
-            malloc(recvBufferSize), recvBufferSize, true);
+        m_dataBuffers[i] = m_refProtDom->Register(
+            // page size and cache alignment
+            aligned_alloc(static_cast<size_t>(getpagesize()), recvBufferSize),
+                recvBufferSize, true);
+    }
+
+    IBNET_LOG_INFO("Allocation finished");
+}
+
+RecvBufferPool::~RecvBufferPool()
+{
+    for (uint32_t i = 0; i < m_bufferPoolSize; i++) {
+        m_refProtDom->Deregister(*m_dataBuffers[i]);
+        delete m_dataBuffers[i];
     }
 }
 
-RecvBufferPool::~RecvBufferPool(void)
+core::IbMemReg* RecvBufferPool::GetBuffer()
 {
-
-}
-
-core::IbMemReg* RecvBufferPool::GetBuffer(void)
-{
-    core::IbMemReg* buffer = NULL;
+    core::IbMemReg* buffer = nullptr;
 
     uint32_t front = m_dataBuffersFront.load(std::memory_order_relaxed);
     uint32_t back;
@@ -77,7 +76,7 @@ core::IbMemReg* RecvBufferPool::GetBuffer(void)
                     "waiting for buffers to get returned. If this warning "
                     "appears periodically and very frequently, consider "
                     "increasing the receive pool's total size to avoid "
-                    "possible performance penalties, counter: {}", counter);
+                    "possible performance penalties, counter: %d", counter);
             }
 
             std::this_thread::yield();
@@ -95,6 +94,55 @@ core::IbMemReg* RecvBufferPool::GetBuffer(void)
     return buffer;
 }
 
+uint32_t RecvBufferPool::GetBuffers(core::IbMemReg* retBuffers[],
+        uint32_t count)
+{
+    uint32_t front = m_dataBuffersFront.load(std::memory_order_relaxed);
+    uint32_t back;
+
+    while (true) {
+        back = m_dataBuffersBack.load(std::memory_order_relaxed);
+
+        if (front % m_bufferPoolSize == back % m_bufferPoolSize) {
+            uint64_t counter = m_insufficientBufferCounter.fetch_add(1,
+                std::memory_order_relaxed);
+            if (counter % 1000000 == 0) {
+                IBNET_LOG_WARN("Insufficient pooled incoming buffers... "
+                    "waiting for buffers to get returned. If this warning "
+                    "appears periodically and very frequently, consider "
+                    "increasing the receive pool's total size to avoid "
+                    "possible performance penalties, counter: %d", counter);
+            }
+
+            std::this_thread::yield();
+
+            continue;
+        }
+
+        uint32_t available;
+
+        if (front <= back) {
+            available = back - front;
+        } else {
+            available = 0xFFFFFFFF - front + back;
+        }
+
+        if (available < count) {
+            count = available;
+        }
+
+        for (uint32_t i = 0; i < count; i++) {
+            retBuffers[i] = m_dataBuffers[(front + i) % m_bufferPoolSize];
+        }
+
+        m_dataBuffersFront.fetch_add(count, std::memory_order_release);
+
+        break;
+    }
+
+    return count;
+}
+
 void RecvBufferPool::ReturnBuffer(core::IbMemReg* buffer)
 {
     uint32_t backRes = m_dataBuffersBackRes.load(std::memory_order_relaxed);
@@ -104,8 +152,9 @@ void RecvBufferPool::ReturnBuffer(core::IbMemReg* buffer)
         front = m_dataBuffersFront.load(std::memory_order_relaxed);
 
         if ((backRes + 1) % m_bufferPoolSize == front % m_bufferPoolSize) {
-            IBNET_LOG_PANIC("Pool overflow, this should not happen");
-            break;
+            throw sys::IllegalStateException(
+                "Pool overflow, this should not happen: backRes %d, front %d",
+                backRes, front);
         }
 
         if (m_dataBuffersBackRes.compare_exchange_weak(backRes, backRes + 1,
@@ -123,6 +172,97 @@ void RecvBufferPool::ReturnBuffer(core::IbMemReg* buffer)
             // pointer before it can update the back pointer as well
             while (!m_dataBuffersBack.compare_exchange_weak(backRes,
                     backRes + 1, std::memory_order_release)) {
+                std::this_thread::yield();
+            }
+
+            break;
+        }
+    }
+}
+
+void RecvBufferPool::ReturnBuffers(core::IbMemReg* buffers[], uint32_t count)
+{
+    if (count == 0) {
+        return;
+    }
+
+    uint32_t backRes = m_dataBuffersBackRes.load(std::memory_order_relaxed);
+    uint32_t front;
+
+    while (true) {
+        front = m_dataBuffersFront.load(std::memory_order_relaxed);
+
+        if ((backRes + count) % m_bufferPoolSize == front % m_bufferPoolSize) {
+            throw sys::IllegalStateException(
+                "Pool overflow, this should not happen: backRes %d, front %d, "
+                "count %d", backRes, front, count);
+        }
+
+        if (m_dataBuffersBackRes.compare_exchange_weak(backRes, backRes + count,
+                std::memory_order_relaxed)) {
+
+            for (uint32_t i = 0; i < count; i++) {
+                m_dataBuffers[(backRes + i) % m_bufferPoolSize] = buffers[i];
+            }
+
+            // if two buffers are returned at the same time, the first return
+            // could be interrupt by a second return. the reserve of the first
+            // return is already completed but the back pointer is not updated.
+            // the second return reserves and updates the back pointer. now,
+            // the back pointer is pointing to the first returns reserve which
+            // might not be completed, yet.
+            // solution: the second return has to wait for the first return
+            // to complete, both, the reservation and updating of the back
+            // pointer before it can update the back pointer as well
+            while (!m_dataBuffersBack.compare_exchange_weak(backRes,
+                    backRes + count, std::memory_order_release)) {
+                std::this_thread::yield();
+            }
+
+            break;
+        }
+    }
+}
+
+void RecvBufferPool::ReturnBuffers(void* ptrFirstBuffer, uint32_t stride,
+        uint32_t count)
+{
+    if (count == 0) {
+        return;
+    }
+
+    uint32_t backRes = m_dataBuffersBackRes.load(std::memory_order_relaxed);
+    uint32_t front;
+
+    while (true) {
+        front = m_dataBuffersFront.load(std::memory_order_relaxed);
+
+        if ((backRes + count) % m_bufferPoolSize == front % m_bufferPoolSize) {
+            throw sys::IllegalStateException(
+                "Pool overflow, this should not happen: backRes %d, front %d, "
+                    "count %d", backRes, front, count);
+        }
+
+        if (m_dataBuffersBackRes.compare_exchange_weak(backRes, backRes + count,
+            std::memory_order_relaxed)) {
+
+            for (uint32_t i = 0; i < count; i++) {
+                auto* buffer = (core::IbMemReg*)
+                    ((uintptr_t ) ptrFirstBuffer) + i * stride;
+                m_dataBuffers[(backRes + i) % m_bufferPoolSize] = buffer;
+            }
+
+            // if two buffers are returned at the same time, the first return
+            // could be interrupt by a second return. the reserve of the first
+            // return is already completed but the back pointer is not updated.
+            // the second return reserves and updates the back pointer. now,
+            // the back pointer is pointing to the first returns reserve which
+            // might not be completed, yet.
+            // solution: the second return has to wait for the first return
+            // to complete, both, the reservation and updating of the back
+            // pointer before it can update the back pointer as well
+            while (!m_dataBuffersBack.compare_exchange_weak(backRes,
+                backRes + count, std::memory_order_release)) {
                 std::this_thread::yield();
             }
 

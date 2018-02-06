@@ -60,6 +60,15 @@ public:
     }
 
     /**
+     * Check if the thread is started
+     *
+     * @return True if started, false otherwise
+     */
+    bool IsStarted() const {
+        return m_thread != nullptr;
+    }
+
+    /**
      * Start the thread. A thread can be restarted once it finished execution
      */
     void Start() {
@@ -122,9 +131,9 @@ private:
     void __Run()
     {
         try {
-            IBNET_LOG_INFO("Started thread {}", m_name);
+            IBNET_LOG_INFO("Started thread %s", m_name);
             _Run();
-            IBNET_LOG_INFO("Finished thread {}", m_name);
+            IBNET_LOG_INFO("Finished thread %s", m_name);
         } catch (Exception& e) {
             e.PrintStackTrace();
             throw e;

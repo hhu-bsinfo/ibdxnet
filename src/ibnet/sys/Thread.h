@@ -44,7 +44,8 @@ public:
      */
     explicit Thread(const std::string& name = "") :
         m_name(name),
-        m_thread(nullptr)
+        m_thread(nullptr),
+        m_pinCpuid(0xFFFF)
     {}
 
     /**
@@ -89,18 +90,8 @@ public:
      *
      * @param cpuid Id of the cpu core to pin to
      */
-    void Pin(uint16_t cpuid)
-    {
-        cpu_set_t cpuset = {};
-        CPU_ZERO(&cpuset);
-        CPU_SET(cpuid, &cpuset);
-
-        pthread_t current_thread = pthread_self();
-        if (pthread_setaffinity_np(current_thread, sizeof(cpu_set_t),
-                &cpuset)) {
-            sys::SystemException("Setting cpu affinity for %s to %d failed",
-                m_name, cpuid);
-        }
+    void Pin(uint16_t cpuid) {
+        m_pinCpuid = cpuid;
     }
 
 protected:
@@ -127,9 +118,23 @@ protected:
 private:
     const std::string m_name;
     std::thread* m_thread;
+    uint16_t m_pinCpuid;
 
     void __Run()
     {
+        if (m_pinCpuid != 0xFFFF) {
+            cpu_set_t cpuset = {};
+            CPU_ZERO(&cpuset);
+            CPU_SET(m_pinCpuid, &cpuset);
+
+            pthread_t current_thread = pthread_self();
+            if (pthread_setaffinity_np(current_thread, sizeof(cpu_set_t),
+                    &cpuset)) {
+                sys::SystemException("Setting cpu affinity for %s to %d failed",
+                    m_name, m_pinCpuid);
+            }
+        }
+
         try {
             IBNET_LOG_INFO("Started thread %s", m_name);
             _Run();

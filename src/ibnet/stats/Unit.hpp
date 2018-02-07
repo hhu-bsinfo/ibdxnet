@@ -40,8 +40,8 @@ public:
         Operation(name),
         m_base(base),
         m_metricTable(),
-        m_total(0),
         m_counter(0),
+        m_total(0),
         m_min(0xFFFFFFFFFFFFFFFF),
         m_max(0)
     {

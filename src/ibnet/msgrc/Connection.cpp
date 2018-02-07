@@ -101,8 +101,6 @@ void Connection::Connect(
     // ready to recv must be set first
     __SetReadyToRecv();
     __SetReadyToSend();
-
-    m_isConnected.store(true, std::memory_order_relaxed);
 }
 
 void Connection::Close(bool force)
@@ -110,8 +108,6 @@ void Connection::Close(bool force)
     IBNET_LOG_TRACE_FUNC;
 
     // TODO state change to not ready send and receive?
-
-    m_isConnected.store(false, std::memory_order_relaxed);
 }
 
 void Connection::__CreateQP()

@@ -33,7 +33,7 @@ ConnectionManager::ConnectionManager(const std::string& name,
     m_refJobManager(refJobManager),
     m_refDiscoveryManager(refDiscoveryManager),
     m_listener(nullptr),
-    m_connectionAvailable(),
+    m_connectionStates(),
     m_connections(),
     m_openConnections(0),
     m_availableConnectionIds(),
@@ -53,8 +53,6 @@ ConnectionManager::ConnectionManager(const std::string& name,
     }
 
     for (uint32_t i = 0; i < NODE_ID_MAX_NUM_NODES; i++) {
-        m_connectionAvailable[i].store(CONNECTION_NOT_AVAILABLE,
-            std::memory_order_relaxed);
         m_connections[i] = nullptr;
     }
 
@@ -115,43 +113,75 @@ Connection* ConnectionManager::GetConnection(NodeId nodeId)
     }
 
     // keep track of "handles" issued
-    int32_t available = m_connectionAvailable[nodeId].fetch_add(1,
-        std::memory_order_acquire);
+    int32_t available =
+        m_connectionStates[nodeId].m_available.load(std::memory_order_acquire);
 
-    if (available >= CONNECTION_AVAILABLE) {
+    if (available >= ConnectionState::CONNECTION_AVAILABLE) {
         return m_connections[nodeId];
     }
 
     IBNET_LOG_TRACE("[%s] GetConnection: 0x%X, avail: %d", m_name, nodeId,
         available + 1);
 
-    __AddJobCreateConnection(nodeId);
+    // This is used to trigger periodic re-transmits for the connection exchg
+    // data. Only the first thread triggering the creation job has to do
+    // this for the current connection getting created
+    bool triggerPeriodicRecreation = false;
+    uint8_t state = ConnectionState::e_StateNotAvailable;
+
+    // avoid flooding the job queue with creation jobs, only the first thread
+    // has to add the job
+    if (m_connectionStates[nodeId].m_state.compare_exchange_strong(state,
+            ConnectionState::e_StateInCreation, std::memory_order_relaxed)) {
+        triggerPeriodicRecreation = true;
+        __AddJobCreateConnection(nodeId);
+    }
 
     std::chrono::high_resolution_clock::time_point start;
+    std::chrono::high_resolution_clock::time_point startRetry;
     std::chrono::high_resolution_clock::time_point end;
 
     start = std::chrono::high_resolution_clock::now();
+    startRetry = start;
+
     do {
-        if (m_connectionAvailable[nodeId].load(std::memory_order_acquire) >=
-            CONNECTION_AVAILABLE) {
-            available = m_connectionAvailable[nodeId].fetch_add(1,
-                std::memory_order_acquire);
+        available = m_connectionStates[nodeId].m_available
+            .load(std::memory_order_acquire);
 
-            if (available >= CONNECTION_AVAILABLE) {
-                // sanity check
-                if (m_connections[nodeId] == nullptr) {
-                    throw sys::IllegalStateException(
-                        "[%s] Invalid connection state on GetConnection",
-                        m_name);
-                }
+        if (available >= ConnectionState::CONNECTION_AVAILABLE) {
+            m_connectionStates[nodeId].m_available
+                .fetch_add(1, std::memory_order_acquire);
 
-                return m_connections[nodeId];
+            // sanity check
+            if (m_connections[nodeId] == nullptr) {
+                throw sys::IllegalStateException(
+                    "[%s] Invalid connection state on GetConnection",
+                    m_name);
             }
+
+            return m_connections[nodeId];
         }
 
         std::this_thread::yield();
 
         end = std::chrono::high_resolution_clock::now();
+
+        // to handle package loss on UDP sockets, if the remote didn't receive
+        // any exchange data so far, ensure it is resent ever second at least
+        // the connection will not be allocated again but the connection
+        // exchg data is sent again with that job
+        if (triggerPeriodicRecreation) {
+            if (end - startRetry >= std::chrono::milliseconds(1000)) {
+                if (m_connections[nodeId] &&
+                        !(m_connectionStates[nodeId].m_exchgFlags
+                        .load(std::memory_order_relaxed) &
+                        ConnectionState::e_ExchgFlagRemoteConnected)) {
+                    __AddJobCreateConnection(nodeId);
+                }
+
+                startRetry = end;
+            }
+        }
     } while (end - start <
              std::chrono::milliseconds(m_connectionCreationTimeoutMs));
 
@@ -164,11 +194,8 @@ Connection* ConnectionManager::GetConnection(NodeId nodeId)
 
 void ConnectionManager::ReturnConnection(Connection* connection)
 {
-    int32_t tmp = m_connectionAvailable[connection->GetRemoteNodeId()]
-        .fetch_sub(1, std::memory_order_relaxed);
-
-    IBNET_LOG_TRACE("[%s] ReturnConnection: 0x%X, avail %d", m_name,
-        connection->GetRemoteNodeId(), tmp - 1);
+    m_connectionStates[connection->GetRemoteNodeId()].m_available.fetch_sub(1,
+        std::memory_order_relaxed);
 }
 
 void ConnectionManager::CloseConnection(NodeId nodeId, bool force)
@@ -207,13 +234,13 @@ void ConnectionManager::_DispatchJob(const JobQueue::Job* job)
         // don't create new connections when shutting down
         if (!m_flagShutdown.load(std::memory_order_relaxed)) {
             __JobDispatchCreateConnection(
-                *dynamic_cast<const JobCreateConnection *>(job));
+                *dynamic_cast<const JobCreateConnection*>(job));
         }
     } else if (job->m_type == m_connectConnectionJobType) {
         // don't connect connections when shutting down
         if (!m_flagShutdown.load(std::memory_order_relaxed)) {
             __JobDispatchConnectConnection(
-                *dynamic_cast<const JobConnectConnection *>(job));
+                *dynamic_cast<const JobConnectConnection*>(job));
         }
     } else if (job->m_type == m_closeConnectionJobType) {
         __JobDispatchCloseConnection(
@@ -248,22 +275,30 @@ void ConnectionManager::__JobDispatchCreateConnection(
 {
     NodeConf::Entry discoveryRemoteNodeInfo;
 
-    IBNET_LOG_DEBUG("[%s] Create connection, target node id 0x%X",
-        m_name, job.m_targetNodeId);
+    // only create connection if not created or in creation
+    if (m_connectionStates[job.m_targetNodeId].m_state
+            .load(std::memory_order_relaxed) ==
+            ConnectionState::e_StateInCreation) {
+        IBNET_LOG_DEBUG("[%s] Create connection, target node id 0x%X",
+            m_name, job.m_targetNodeId);
 
-    try {
-        // try to get remote node connection info from discovery man to
-        // check if already discovered
-        discoveryRemoteNodeInfo = m_refDiscoveryManager->GetNodeInfo(
-            job.m_targetNodeId);
-    } catch (...) {
-        IBNET_LOG_WARN("[%s] Cannot create connection to remote 0x%X, "
-            "not discovered, yet", m_name, job.m_targetNodeId);
-        return;
+        try {
+            // try to get remote node connection info from discovery man to
+            // check if already discovered
+            discoveryRemoteNodeInfo = m_refDiscoveryManager->GetNodeInfo(
+                job.m_targetNodeId);
+        } catch (...) {
+            IBNET_LOG_WARN("[%s] Cannot create connection to remote 0x%X, "
+                "not discovered, yet", m_name, job.m_targetNodeId);
+            return;
+        }
+
+        __AllocateConnection(job.m_targetNodeId);
     }
 
-    __AllocateConnection(job.m_targetNodeId);
     __ReplyConnectionExchgData(job.m_targetNodeId,
+        m_connectionStates[job.m_targetNodeId].m_exchgFlags
+            .load(std::memory_order_relaxed),
         discoveryRemoteNodeInfo.GetAddress().GetAddress());
 }
 
@@ -274,9 +309,10 @@ void ConnectionManager::__JobDispatchConnectConnection(
 
     NodeConf::Entry discoveryRemoteNodeInfo;
 
-    IBNET_LOG_DEBUG("[%s] Connect connection job, target node id 0x%X, lid "
-        "0x%X, con man ident 0x%X, data size %d", m_name,
+    IBNET_LOG_DEBUG("[%s] Connect connection job, target node id 0x%X, con "
+        "state 0x%X, lid 0x%X, con man ident 0x%X, data size %d", m_name,
         job.m_remoteConnectionHeader.m_nodeId,
+        job.m_remoteConnectionHeader.m_connectionState,
         job.m_remoteConnectionHeader.m_lid,
         job.m_remoteConnectionHeader.m_conManIdent,
         job.m_remoteConnectionDataSize);
@@ -296,51 +332,101 @@ void ConnectionManager::__JobDispatchConnectConnection(
     // ensure connection is allocated
     __AllocateConnection(job.m_remoteConnectionHeader.m_nodeId);
 
-    // connection allocated but not (yet) connected -> finish connection
-    if (!m_connections[job.m_remoteConnectionHeader.m_nodeId]->IsConnected()) {
+    // sanity check
+    if (m_connectionStates[job.m_remoteConnectionHeader.m_nodeId].m_state
+            .load(std::memory_order_relaxed) <
+            ConnectionState::e_StateCreated) {
+        throw sys::IllegalStateException("Connected not created state");
+    }
+
+    // connect to remote if we aren't connected, yet
+    if (!(m_connectionStates[job.m_remoteConnectionHeader.m_nodeId].
+            IsConnectedToRemote())) {
         m_connections[job.m_remoteConnectionHeader.m_nodeId]->Connect(
             job.m_remoteConnectionHeader, job.m_remoteConnectionData,
             job.m_remoteConnectionDataSize);
 
+        m_connectionStates[job.m_remoteConnectionHeader.m_nodeId]
+            .SetConnectedToRemote();
+
         IBNET_LOG_INFO("[%s] Connected QP to remote %s", m_name,
             job.m_remoteConnectionHeader);
+    }
+
+    // check if remote confirmed that exchg data arrived
+    if (!m_connectionStates[job.m_remoteConnectionHeader.m_nodeId]
+            .IsRemoteConnected()) {
+        // check if remote was able to connect
+        // remote of the remote = current instance
+        if (!ConnectionState::IsRemoteConnected(
+                job.m_remoteConnectionHeader.m_connectionState)) {
+            IBNET_LOG_DEBUG(
+                "[%s] Remote 0x%X not connected thus far, sending exchg data",
+                m_name, job.m_remoteConnectionHeader.m_nodeId);
+
+            // seems like remote didn't get our exchange data, resend
+            __ReplyConnectionExchgData(job.m_remoteConnectionHeader.m_nodeId,
+                m_connectionStates[job.m_remoteConnectionHeader.m_nodeId]
+                    .m_exchgFlags.load(std::memory_order_relaxed),
+                discoveryRemoteNodeInfo.GetAddress().GetAddress());
+        }
+    }
+
+    // finish connection of current instance and remote are fully connected
+    if (m_connectionStates[job.m_remoteConnectionHeader.m_nodeId]
+            .ConnectionExchgComplete() &&
+            m_connectionStates[job.m_remoteConnectionHeader.m_nodeId]
+                .m_available.load(std::memory_order_relaxed) ==
+                ConnectionState::CONNECTION_NOT_AVAILABLE) {
+        // sanity check
+        uint8_t expectedState = ConnectionState::e_StateCreated;
+        if (!m_connectionStates[job.m_remoteConnectionHeader.m_nodeId].m_state
+                .compare_exchange_strong(expectedState,
+                ConnectionState::e_StateConnected, std::memory_order_relaxed)) {
+            throw sys::IllegalStateException("Illegal connection state");
+        }
+
         m_openConnections++;
 
-        m_connectionAvailable[job.m_remoteConnectionHeader.m_nodeId].store(
-            CONNECTION_AVAILABLE, std::memory_order_relaxed);
+        m_connectionStates[job.m_remoteConnectionHeader.m_nodeId].m_available
+            .store(ConnectionState::CONNECTION_AVAILABLE,
+            std::memory_order_relaxed);
+
+        IBNET_LOG_INFO("[%s] Connection completed with remote %s", m_name,
+            job.m_remoteConnectionHeader.m_nodeId);
 
         _ConnectionOpened(
             *m_connections[job.m_remoteConnectionHeader.m_nodeId]);
 
         if (m_listener) {
-            m_listener->NodeConnected(
-                *m_connections[job.m_remoteConnectionHeader.m_nodeId]);
+            m_listener->NodeConnected(*m_connections[
+                job.m_remoteConnectionHeader.m_nodeId]);
         }
+    }
 
-        __ReplyConnectionExchgData(job.m_remoteConnectionHeader.m_nodeId,
-            discoveryRemoteNodeInfo.GetAddress().GetAddress());
-    } else {
-        // check if the current node didn't figure out that the remote
-        // died and was restarted (current node acting as receiver only).
-        // this results in still owning old queue pair information
-        // which cannot be re-used with the new remote
-        if (m_connections[job.m_remoteConnectionHeader.m_nodeId]->
+    // check if the current node didn't figure out that the remote
+    // died and was restarted (current node acting as receiver only).
+    // this results in still owning old queue pair information
+    // which cannot be re-used with the new remote
+    if (m_connectionStates[job.m_remoteConnectionHeader.m_nodeId]
+            .IsRemoteConnected() &&
+            m_connections[job.m_remoteConnectionHeader.m_nodeId]->
                 GetRemoteConnectionManIdent() !=
                 job.m_remoteConnectionHeader.m_conManIdent) {
-            // different connection manager though same node id
-            // -> application restarted, kill old connection
-            IBNET_LOG_DEBUG("[%s] Detected zombie connection to node 0x%X"
-                " (%X != %X), killing...", m_name,
-                job.m_remoteConnectionHeader.m_nodeId,
-                m_connections[job.m_remoteConnectionHeader.m_nodeId]->
-                    GetRemoteConnectionManIdent());
 
-            __AddJobCloseConnection(job.m_remoteConnectionHeader.m_nodeId,
-                true, false);
-            __AddJobCreateConnection(job.m_remoteConnectionHeader.m_nodeId);
+        // different connection manager though same node id
+        // -> application restarted, kill old connection
+        IBNET_LOG_DEBUG("[%s] Detected zombie connection to node 0x%X"
+            " (%X != %X), killing...", m_name,
+            job.m_remoteConnectionHeader.m_nodeId,
+            m_connections[job.m_remoteConnectionHeader.m_nodeId]->
+                GetRemoteConnectionManIdent());
 
-            return;
-        }
+        __AddJobCloseConnection(job.m_remoteConnectionHeader.m_nodeId,
+            true, false);
+        __AddJobCreateConnection(job.m_remoteConnectionHeader.m_nodeId);
+
+        return;
     }
 }
 
@@ -350,16 +436,17 @@ void ConnectionManager::__JobDispatchCloseConnection(
     IBNET_LOG_INFO("[%s] Closing connection of 0x%X, force %d", m_name,
         job.m_nodeId, job.m_force);
 
-    int32_t counter = m_connectionAvailable[job.m_nodeId].exchange(
-        CONNECTION_CLOSING, std::memory_order_relaxed);
+
+    int32_t counter = m_connectionStates[job.m_nodeId].m_available.exchange(
+        ConnectionState::CONNECTION_CLOSING, std::memory_order_relaxed);
 
     if (!job.m_force) {
         // wait until remaining threads returned the connection
         while (true) {
-            int32_t tmp = m_connectionAvailable[job.m_nodeId].load(
+            int32_t tmp = m_connectionStates[job.m_nodeId].m_available.load(
                 std::memory_order_relaxed);
 
-            if (CONNECTION_CLOSING - counter == tmp) {
+            if (ConnectionState::CONNECTION_CLOSING - counter == tmp) {
                 break;
             }
 
@@ -377,6 +464,8 @@ void ConnectionManager::__JobDispatchCloseConnection(
     }
 
     connection->Close(job.m_force);
+    m_connectionStates[job.m_nodeId].m_state.store(
+        ConnectionState::e_StateNotAvailable, std::memory_order_relaxed);
 
     // re-use connection id
     m_availableConnectionIds.push_back(connection->GetConnectionId());
@@ -385,8 +474,8 @@ void ConnectionManager::__JobDispatchCloseConnection(
 
     m_openConnections--;
 
-    m_connectionAvailable[job.m_nodeId].store(CONNECTION_NOT_AVAILABLE,
-        std::memory_order_relaxed);
+    m_connectionStates[job.m_nodeId].m_available.store(
+        ConnectionState::CONNECTION_NOT_AVAILABLE, std::memory_order_relaxed);
 
     m_refDiscoveryManager->Invalidate(job.m_nodeId, job.m_shutdown);
 
@@ -408,9 +497,13 @@ bool ConnectionManager::__AllocateConnection(NodeId remoteNodeId)
         m_availableConnectionIds.pop_back();
 
         Connection* connection = _CreateConnection(connectionId);
+        connection->m_refState = &m_connectionStates[remoteNodeId];
 
         // connection setup done, make visible
         m_connections[remoteNodeId] = connection;
+
+        m_connectionStates[remoteNodeId].m_state.store(
+            ConnectionState::e_StateCreated, std::memory_order_relaxed);
 
         IBNET_LOG_DEBUG("[%s] Allocated new connection to remote 0x%X", m_name,
             remoteNodeId);
@@ -422,7 +515,7 @@ bool ConnectionManager::__AllocateConnection(NodeId remoteNodeId)
 }
 
 void ConnectionManager::__ReplyConnectionExchgData(NodeId remoteNodeId,
-        uint32_t remoteNodeIPV4)
+        uint8_t connectionState, uint32_t remoteNodeIPV4)
 {
     // send QP data to remote if connection established (remote might still
     // have to do that) or if we are still lacking the data
@@ -434,6 +527,7 @@ void ConnectionManager::__ReplyConnectionExchgData(NodeId remoteNodeId,
     size_t actualSizeData = maxSizeData;
 
     header->m_nodeId = m_ownNodeId;
+    header->m_connectionState = connectionState;
     header->m_lid = _GetRefDevice()->GetLid();
     header->m_conManIdent = m_connectionCtxIdent;
 
@@ -441,8 +535,9 @@ void ConnectionManager::__ReplyConnectionExchgData(NodeId remoteNodeId,
         CreateConnectionExchangeData(data, maxSizeData, &actualSizeData);
 
     IBNET_LOG_DEBUG("[%s] Reply with connection exchg data, to remote node "
-        "0x%X: node id 0x%X, lid 0x%X, con man ident 0x%X", m_name,
-        remoteNodeId, header->m_nodeId, header->m_lid, header->m_conManIdent);
+        "0x%X: node id 0x%X, lid 0x%X, con state 0x%X, con man ident 0x%X",
+        m_name, remoteNodeId, header->m_nodeId, header->m_connectionState,
+        header->m_lid, header->m_conManIdent);
 
     m_refExchangeManager->SendData(m_conDataExchgPaketType, remoteNodeIPV4,
         sendBuffer, sizeof(RemoteConnectionHeader) + actualSizeData);

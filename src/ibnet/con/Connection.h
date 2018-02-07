@@ -19,15 +19,16 @@
 #ifndef IBNET_CON_CONNECTION_H
 #define IBNET_CON_CONNECTION_H
 
-#include <atomic>
-#include <cstdint>
-
+#include "ConnectionState.h"
 #include "RemoteConnectionHeader.h"
 
 namespace ibnet {
 namespace con {
 
 typedef uint16_t ConnectionId;
+
+// forward declration for friendship
+class ConnectionManager;
 
 /**
  * Instance of a logical connection with a remote node. A connection can
@@ -38,6 +39,8 @@ typedef uint16_t ConnectionId;
 class Connection
 {
 public:
+    friend class ConnectionManager;
+
     /**
      * Constructor
      *
@@ -47,8 +50,8 @@ public:
     Connection(NodeId ownNodeId, ConnectionId connectionId) :
         m_ownNodeId(ownNodeId),
         m_connectionId(connectionId),
-        m_remoteConnectionHeader(),
-        m_isConnected(false)
+        m_refState(nullptr),
+        m_remoteConnectionHeader()
     {}
 
     /**
@@ -85,7 +88,7 @@ public:
      * Check if the connection is up
      */
     bool IsConnected() const {
-        return m_isConnected.load(std::memory_order_relaxed);
+        return m_refState->IsConnected();
     }
 
     virtual void CreateConnectionExchangeData(void* connectionDataBuffer,
@@ -104,7 +107,6 @@ public:
             const con::RemoteConnectionHeader& remoteConnectionHeader,
             const void* remoteConnectionData, size_t remoteConnectionDataSize) {
         m_remoteConnectionHeader = remoteConnectionHeader;
-        m_isConnected.store(true, std::memory_order_relaxed);
     }
 
     /**
@@ -115,9 +117,7 @@ public:
      *
      * @param force Force close connection
      */
-    virtual void Close(bool force) {
-        m_isConnected.store(false, std::memory_order_relaxed);
-    }
+    virtual void Close(bool force) = 0;
 
     /**
      * Enable output to an out stream
@@ -125,17 +125,18 @@ public:
     friend std::ostream &operator<<(std::ostream& os, const Connection& o) {
         return os <<
             "Connection: " << std::hex << o.m_ownNodeId << " -> " <<
-                std::hex << o.m_remoteConnectionHeader.m_nodeId <<
-                ", connectionId " << std::dec << o.m_connectionId <<
-                ", m_isConnected: " << o.m_isConnected <<
-                ", m_remoteConnectionHeader: " << o.m_remoteConnectionHeader;
+            std::hex << o.m_remoteConnectionHeader.m_nodeId <<
+            ", connectionId " << std::dec << o.m_connectionId <<
+            ", m_connectionState: " << *o.m_refState <<
+            std::dec << ", m_remoteConnectionHeader: " <<
+            o.m_remoteConnectionHeader;
     }
 
 protected:
     const NodeId m_ownNodeId;
     const ConnectionId m_connectionId;
+    ConnectionState* m_refState;
     RemoteConnectionHeader m_remoteConnectionHeader;
-    std::atomic<bool> m_isConnected;
 };
 
 }

@@ -102,11 +102,11 @@ void ExchangeManager::_RunLoop()
             "length %d", sys::AddressIPV4(recvAddr), header->m_magic,
             header->m_type, header->m_sourceNodeId, header->m_length);
 
+        std::lock_guard<std::mutex> l(m_dispatcherLock);
+
         if (header->m_magic == PAKET_MAGIC &&
                 header->m_type < m_paketTypeIdCounter &&
                 sizeof(PaketHeader) + header->m_length <= MAX_PAKET_SIZE) {
-
-            std::lock_guard<std::mutex> l(m_dispatcherLock);
 
             if (!m_dispatcher[header->m_type].empty()) {
 

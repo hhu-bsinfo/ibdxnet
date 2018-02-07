@@ -65,8 +65,8 @@ public:
      * @return True if available, false otherwise
      */
     bool IsConnectionAvailable(NodeId nodeId) {
-        return m_connectionAvailable[nodeId].load(std::memory_order_relaxed) >=
-            CONNECTION_AVAILABLE;
+        return m_connectionStates[nodeId].m_available.load(
+            std::memory_order_relaxed) >= ConnectionState::CONNECTION_AVAILABLE;
     }
 
     /**
@@ -177,15 +177,10 @@ private:
     };
 
 private:
-    static const int32_t CONNECTION_NOT_AVAILABLE = INT32_MIN;
-    static const int32_t CONNECTION_AVAILABLE = 0;
-    static const int32_t CONNECTION_CLOSING = INT32_MIN / 2;
-
-private:
     const std::string m_name;
     const NodeId m_ownNodeId;
     const uint32_t m_connectionCreationTimeoutMs;
-    const uint32_t m_maxNumConnections;
+    const uint16_t m_maxNumConnections;
 
     const uint32_t m_connectionCtxIdent;
 
@@ -199,7 +194,7 @@ private:
 private:
     ConnectionListener* m_listener;
 
-    std::atomic<int32_t> m_connectionAvailable[NODE_ID_MAX_NUM_NODES];
+    ConnectionState m_connectionStates[NODE_ID_MAX_NUM_NODES];
     Connection* m_connections[NODE_ID_MAX_NUM_NODES];
     uint32_t m_openConnections;
 
@@ -226,7 +221,7 @@ private:
 
     bool __AllocateConnection(NodeId remoteNodeId);
     void __ReplyConnectionExchgData(NodeId remoteNodeId,
-        uint32_t remoteNodeIPV4);
+        uint8_t connectionState, uint32_t remoteNodeIPV4);
 };
 
 }

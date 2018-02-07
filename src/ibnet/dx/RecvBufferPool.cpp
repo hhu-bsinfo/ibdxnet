@@ -232,6 +232,9 @@ void RecvBufferPool::ReturnBuffers(core::IbMemReg** buffers, uint32_t count)
 void RecvBufferPool::ReturnBuffers(void* ptrFirstBuffer, uint32_t stride,
         uint32_t count)
 {
+    throw sys::IllegalStateException(
+        "This method is still buggy (creates memory misalignment");
+
     if (count == 0) {
         return;
     }

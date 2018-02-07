@@ -31,6 +31,8 @@ void ExecutionEngine::PinWorker(uint16_t workerId, uint16_t cpuid)
         throw sys::IllegalStateException("Worker id invalid: %d", workerId);
     }
 
+    IBNET_LOG_DEBUG("Pinning worker %d to core %d", workerId, cpuid);
+
     m_workers[workerId]->Pin(cpuid);
 }
 

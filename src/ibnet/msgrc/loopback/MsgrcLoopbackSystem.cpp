@@ -235,8 +235,22 @@ MsgrcSystem::Configuration* MsgrcLoopbackSystem::__ProcessCmdArgs(
             "of msgrc dispatchers\n");
         printf("Usage: %s [Options...]\n", argv[0]);
         printf("Available options:\n");
-        // TODO compile error on cluster here, wtf?
-        //std::cout << argparser << std::endl;
+
+        // because std::cout << argparser << std::endl; doesn't compile with
+        // some versions of gcc
+        for (auto& definition : argparser.definitions) {
+            std::cout << "    ";
+            for (auto& flag : definition.flags) {
+                std::cout << flag;
+                if (flag != definition.flags.back()) {
+                    std::cout << ", ";
+                }
+            }
+            std::cout << std::endl;
+            std::cout << "        " << definition.help << std::endl;
+        }
+
+        std::cout << std::endl;
         throw sys::Exception("Help called");
     }
 

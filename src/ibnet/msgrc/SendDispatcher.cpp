@@ -207,8 +207,8 @@ bool SendDispatcher::Dispatch()
         // send data
         __SendData(connection, workPackage);
 
-        m_sentData->Add(m_prevWorkPackageResults->m_fcDataPosted);
-        m_sentFC->Add(m_prevWorkPackageResults->m_numBytesPosted);
+        m_sentData->Add(m_prevWorkPackageResults->m_numBytesPosted);
+        m_sentFC->Add(m_prevWorkPackageResults->m_fcDataPosted);
 
         // TODO trigger park start not correct, yet
 
@@ -253,7 +253,7 @@ bool SendDispatcher::__PollCompletions()
             m_nonEmptyCompletionPolls->Inc();
             m_completionBatches->Add(static_cast<uint64_t>(ret));
 
-            for (uint32_t i = 0; i < ret; i++) {
+            for (uint32_t i = 0; i < static_cast<uint32_t>(ret); i++) {
                 if (m_workComp[i].status != IBV_WC_SUCCESS) {
                     if (m_workComp[i].status) {
                         switch (m_workComp[i].status) {
@@ -339,7 +339,7 @@ void SendDispatcher::__SendData(Connection* connection,
     con::NodeId nodeId = workPackage->m_nodeId;
     uint16_t queueSize = m_refConnectionManager->GetIbSQSize();
 
-    uint16_t fcData = workPackage->m_flowControlData;
+    uint8_t fcData = workPackage->m_flowControlData;
     uint32_t posBack = workPackage->m_posBackRel;
     uint32_t posFront = workPackage->m_posFrontRel;
 
@@ -431,7 +431,7 @@ void SendDispatcher::__SendData(Connection* connection,
         auto* immedData = (ImmediateData*) &m_sendWrs[chunks].imm_data;
         immedData->m_sourceNodeId = connection->GetSourceNodeId();
         immedData->m_flowControlData = fcData;
-        immedData->m_zeroLengthData = static_cast<uint16_t>(zeroLength ? 1 : 0);
+        immedData->m_zeroLengthData = static_cast<uint8_t>(zeroLength ? 1 : 0);
 
         if (fcData > 0) {
             m_prevWorkPackageResults->m_fcDataPosted = fcData;
@@ -486,7 +486,7 @@ void SendDispatcher::__SendData(Connection* connection,
         m_prevWorkPackageResults->m_fcDataNotPosted = fcData;
     }
 
-    m_prevWorkPackageResults->m_numBytesNotPosted = totalBytesProcessed;
+    m_prevWorkPackageResults->m_numBytesPosted = totalBytesProcessed;
     m_prevWorkPackageResults->m_numBytesNotPosted =
         totalBytesToProcess - totalBytesProcessed;
 

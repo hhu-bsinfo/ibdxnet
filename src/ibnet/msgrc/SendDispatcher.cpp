@@ -75,6 +75,13 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     memset(m_sendQueuePending, 0,
         sizeof(uint16_t) * con::NODE_ID_MAX_NUM_NODES);
 
+    memset(m_sgeLists, 0,
+        sizeof(ibv_sge) * m_refConnectionManager->GetIbSQSize());
+    memset(m_sendWrs, 0,
+        sizeof(ibv_send_wr) * m_refConnectionManager->GetIbSQSize());
+    memset(m_workComp, 0,
+        sizeof(ibv_wc) * m_refConnectionManager->GetIbSharedSCQSize());
+
     m_refStatisticsManager->Register(m_totalTime);
     m_refStatisticsManager->Register(m_pollCompletions);
     m_refStatisticsManager->Register(m_sendData);

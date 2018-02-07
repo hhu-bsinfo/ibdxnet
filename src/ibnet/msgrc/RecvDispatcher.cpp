@@ -50,6 +50,14 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
 {
     memset(m_recvPackage, 0, RecvHandler::ReceivedPackage::Sizeof(
         refConnectionManager->GetIbSRQSize()));
+    memset(m_workComps, 0,
+        sizeof(ibv_wc) * refConnectionManager->GetIbSRQSize());
+    memset(m_memRegRefillBuffer, 0,
+        sizeof(core::IbMemReg*) * refConnectionManager->GetIbSRQSize());
+    memset(m_sgeList, 0,
+        sizeof(core::IbMemReg*) * refConnectionManager->GetIbSRQSize());
+    memset(m_recvWrList, 0,
+        sizeof(ibv_sge) * refConnectionManager->GetIbSRQSize());
 
     m_refStatisticsManager->Register(m_totalTime);
     m_refStatisticsManager->Register(m_receivedData);

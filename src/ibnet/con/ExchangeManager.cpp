@@ -52,7 +52,7 @@ ExchangeManager::PaketType ExchangeManager::GeneratePaketTypeId()
 void ExchangeManager::SendData(PaketType type, uint32_t targetIPV4,
         const void* data, uint32_t length)
 {
-    size_t sendSize = sizeof(PaketHeader) + length;
+    ssize_t sendSize = sizeof(PaketHeader) + length;
 
     if (type >= m_paketTypeIdCounter) {
         throw sys::IllegalStateException("Invalid paket type id: %d", type);
@@ -92,7 +92,7 @@ void ExchangeManager::_RunLoop()
 
     ssize_t res = m_socket->Receive(m_recvBuffer, MAX_PAKET_SIZE, &recvAddr);
 
-    if (res < sizeof(PaketHeader)) {
+    if (res < static_cast<ssize_t>(sizeof(PaketHeader))) {
         m_noDataAvailable = true;
     } else {
         auto header = (PaketHeader*) (m_recvBuffer);

@@ -40,6 +40,7 @@ RecvBufferPool::RecvBufferPool(uint64_t totalPoolSize,
         "size %d...", m_bufferPoolSize, recvBufferSize, totalPoolSize);
 
     m_dataBuffers = new core::IbMemReg*[m_bufferPoolSize];
+
     for (uint32_t i = 0; i < m_bufferPoolSize; i++) {
         m_dataBuffers[i] = m_refProtDom->Register(
             // page size and cache alignment
@@ -56,6 +57,8 @@ RecvBufferPool::~RecvBufferPool()
         m_refProtDom->Deregister(*m_dataBuffers[i]);
         delete m_dataBuffers[i];
     }
+
+    delete m_dataBuffers;
 }
 
 core::IbMemReg* RecvBufferPool::GetBuffer()
@@ -71,6 +74,7 @@ core::IbMemReg* RecvBufferPool::GetBuffer()
         if (front % m_bufferPoolSize == back % m_bufferPoolSize) {
             uint64_t counter = m_insufficientBufferCounter.fetch_add(1,
                 std::memory_order_relaxed);
+
             if (counter % 1000000 == 0) {
                 IBNET_LOG_WARN("Insufficient pooled incoming buffers... "
                     "waiting for buffers to get returned. If this warning "
@@ -94,7 +98,7 @@ core::IbMemReg* RecvBufferPool::GetBuffer()
     return buffer;
 }
 
-uint32_t RecvBufferPool::GetBuffers(core::IbMemReg* retBuffers[],
+uint32_t RecvBufferPool::GetBuffers(core::IbMemReg** retBuffers,
         uint32_t count)
 {
     uint32_t front = m_dataBuffersFront.load(std::memory_order_relaxed);
@@ -106,6 +110,7 @@ uint32_t RecvBufferPool::GetBuffers(core::IbMemReg* retBuffers[],
         if (front % m_bufferPoolSize == back % m_bufferPoolSize) {
             uint64_t counter = m_insufficientBufferCounter.fetch_add(1,
                 std::memory_order_relaxed);
+
             if (counter % 1000000 == 0) {
                 IBNET_LOG_WARN("Insufficient pooled incoming buffers... "
                     "waiting for buffers to get returned. If this warning "
@@ -180,7 +185,7 @@ void RecvBufferPool::ReturnBuffer(core::IbMemReg* buffer)
     }
 }
 
-void RecvBufferPool::ReturnBuffers(core::IbMemReg* buffers[], uint32_t count)
+void RecvBufferPool::ReturnBuffers(core::IbMemReg** buffers, uint32_t count)
 {
     if (count == 0) {
         return;

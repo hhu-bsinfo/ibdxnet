@@ -59,7 +59,7 @@ public:
      */
     core::IbMemReg* GetBuffer();
 
-    uint32_t GetBuffers(core::IbMemReg* retBuffers[], uint32_t count);
+    uint32_t GetBuffers(core::IbMemReg** retBuffers, uint32_t count);
 
     /**
      * Return a buffer to be reused
@@ -68,7 +68,7 @@ public:
      */
     void ReturnBuffer(core::IbMemReg* buffer);
 
-    void ReturnBuffers(core::IbMemReg* buffers[], uint32_t count);
+    void ReturnBuffers(core::IbMemReg** buffers, uint32_t count);
 
     void ReturnBuffers(void* ptrFirstBuffer, uint32_t stride, uint32_t count);
 

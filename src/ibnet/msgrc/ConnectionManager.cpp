@@ -67,6 +67,8 @@ ibv_srq* ConnectionManager::__CreateSRQ(uint16_t size)
         throw core::IbException("Creating shared receive queue failed: %s",
             strerror(errno));
     }
+
+    return srq;
 }
 
 ibv_cq* ConnectionManager::__CreateCQ(uint16_t size)
@@ -80,6 +82,8 @@ ibv_cq* ConnectionManager::__CreateCQ(uint16_t size)
         throw core::IbException("Creating completion queue failed: %s",
             strerror(errno));
     }
+
+    return cq;
 }
 
 }

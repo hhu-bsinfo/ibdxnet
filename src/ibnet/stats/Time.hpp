@@ -212,13 +212,13 @@ private:
 private:
     static inline void __FormatTime(std::ostream& os,const std::string& name,
             double timeNs) {
-        if (timeNs > 1000.0) {
-            os << ";" << name << " " << timeNs / 1000.0 << " us";
+        if (timeNs > 1000.0 * 1000.0 * 1000.0) {
+            os << ";" << name << " " << timeNs / 1000.0 * 1000.0 * 1000.0 <<
+               " sec";
         } else if (timeNs > 1000.0 * 1000.0) {
             os << ";" << name << " " << timeNs / 1000.0 * 1000.0 << " ms";
-        } else if (timeNs > 1000.0 * 1000.0 * 1000.0) {
-            os << ";" << name << " " << timeNs / 1000.0 * 1000.0 * 1000.0 <<
-                " sec";
+        } else if (timeNs > 1000.0) {
+            os << ";" << name << " " << timeNs / 1000.0 << " us";
         } else {
             os << ";" << name << " " << timeNs << " ns";
         }

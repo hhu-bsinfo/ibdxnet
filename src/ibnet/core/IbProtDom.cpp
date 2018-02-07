@@ -57,8 +57,12 @@ IbProtDom::~IbProtDom()
 
 IbMemReg* IbProtDom::Register(void* addr, uint32_t size, bool freeOnCleanup)
 {
-    IBNET_ASSERT_PTR(addr);
     IBNET_ASSERT(size != 0);
+
+    if (addr == nullptr) {
+        throw IbException("[%s] Registering memory region failed, null",
+            m_name);
+    }
 
     IBNET_LOG_TRACE("[%s] Registering memory region %p, size %d",
             m_name, addr, size);

@@ -95,7 +95,7 @@ void MsgrcSystem::Init()
         m_configuration->m_recvBufferSize, m_connectionManager,
         m_statisticsManager, this);
 
-    m_executionEngine = new dx::ExecutionEngine(2);
+    m_executionEngine = new dx::ExecutionEngine(2, m_statisticsManager);
 
     m_executionEngine->AddExecutionUnit(0, m_sendDispatcher);
     m_executionEngine->AddExecutionUnit(1, m_recvDispatcher);

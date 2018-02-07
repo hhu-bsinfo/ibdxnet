@@ -9,10 +9,12 @@
 namespace ibnet {
 namespace dx {
 
-ExecutionEngine::ExecutionEngine(uint16_t threadCount)
+ExecutionEngine::ExecutionEngine(uint16_t threadCount,
+        stats::StatisticsManager* refStatisticsManager) :
+    m_refStatisticsManager(refStatisticsManager)
 {
     for (uint16_t i = 0; i < threadCount; i++) {
-        m_workers.push_back(new Worker(i));
+        m_workers.push_back(new Worker(i, refStatisticsManager));
     }
 }
 
@@ -65,14 +67,45 @@ void ExecutionEngine::Stop()
     IBNET_LOG_DEBUG("Execution engine stopped");
 }
 
-ExecutionEngine::Worker::Worker(uint16_t id) :
+ExecutionEngine::Worker::Worker(uint16_t id,
+        stats::StatisticsManager* refStatisticsManager) :
     ThreadLoop("ExecutionEngineWorker-" + std::to_string(id)),
     m_id(id),
+    m_refStatisticsManager(refStatisticsManager),
     m_executionUnits(),
     m_idleTimer(),
-    m_idleCount(0)
+    m_idleCounter(
+        new stats::Unit("EE-Worker-" + std::to_string(id) + "-Idle")),
+    m_activeCounter(
+        new stats::Unit("EE-Worker-" + std::to_string(id) + "-Active")),
+    m_yieldCounter(
+        new stats::Unit("EE-Worker-" + std::to_string(id) + "-Yield")),
+    m_sleepCounter(
+        new stats::Unit("EE-Worker-" + std::to_string(id) + "-Sleep")),
+    m_activityRatio(new stats::Ratio(
+        "EE-Worker-" + std::to_string(id) + "-ActivityRatio", m_activeCounter,
+        m_idleCounter))
 {
+    m_refStatisticsManager->Register(m_idleCounter);
+    m_refStatisticsManager->Register(m_activeCounter);
+    m_refStatisticsManager->Register(m_yieldCounter);
+    m_refStatisticsManager->Register(m_sleepCounter);
+    m_refStatisticsManager->Register(m_activityRatio);
+}
 
+ExecutionEngine::Worker::~Worker()
+{
+    m_refStatisticsManager->Deregister(m_idleCounter);
+    m_refStatisticsManager->Deregister(m_activeCounter);
+    m_refStatisticsManager->Deregister(m_yieldCounter);
+    m_refStatisticsManager->Deregister(m_sleepCounter);
+    m_refStatisticsManager->Deregister(m_activityRatio);
+
+    delete m_idleCounter;
+    delete m_activeCounter;
+    delete m_yieldCounter;
+    delete m_sleepCounter;
+    delete m_activityRatio;
 }
 
 void ExecutionEngine::Worker::AddExecutionUnit(ExecutionUnit* executionUnit)
@@ -111,15 +144,19 @@ void ExecutionEngine::Worker::_RunLoop()
             m_idleTimer.Start();
         }
 
-        if (m_idleTimer.GetTimeMs() > 100.0) {
-            std::this_thread::yield();
-        } else if (m_idleTimer.GetTimeMs() > 1000.0) {
+        if (m_idleTimer.GetTimeMs() > 1000.0) {
+            m_sleepCounter->Inc();
             std::this_thread::sleep_for(std::chrono::nanoseconds(1));
+        } else if (m_idleTimer.GetTimeMs() > 100.0) {
+            m_yieldCounter->Inc();
+            std::this_thread::yield();
         }
 
-        m_idleCount++;
+        m_idleCounter->Inc();
     } else {
         m_idleTimer.Stop();
+
+        m_activeCounter->Inc();
     }
 }
 

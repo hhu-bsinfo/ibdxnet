@@ -47,9 +47,9 @@ public:
         m_counter(0),
         m_start(),
         m_total(std::chrono::nanoseconds(0)),
-        m_worst(std::chrono::seconds(0)),
         // over a year should be sufficient
-        m_best(std::chrono::hours(10000))
+        m_best(std::chrono::hours(10000)),
+        m_worst(std::chrono::seconds(0))
     {};
 
     /**

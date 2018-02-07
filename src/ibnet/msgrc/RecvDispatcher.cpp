@@ -109,7 +109,7 @@ uint32_t RecvDispatcher::__Poll()
     auto receivedCount = static_cast<uint32_t>(ret);
 
     // polling successful, iterate work completions and check for errors
-    for (int i = 0; i < receivedCount; i++) {
+    for (uint32_t i = 0; i < receivedCount; i++) {
         if (m_workComps[i].status != IBV_WC_SUCCESS) {
             if (m_workComps[i].status) {
                 switch (m_workComps[i].status) {
@@ -154,7 +154,7 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
         // create batch for handler
 
         // batch process all completions
-        for (int i = 0; i < receivedCount; i++) {
+        for (uint32_t i = 0; i < receivedCount; i++) {
             auto* immedData = (ImmediateData*) &m_workComps[i].imm_data;
             auto* dataMem = (core::IbMemReg*) m_workComps[i].wr_id;
             uint32_t dataRecvLen = m_workComps[i].byte_len;

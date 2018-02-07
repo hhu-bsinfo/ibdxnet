@@ -52,7 +52,7 @@ ExchangeManager::PaketType ExchangeManager::GeneratePaketTypeId()
 void ExchangeManager::SendData(PaketType type, uint32_t targetIPV4,
         const void* data, uint32_t length)
 {
-    ssize_t sendSize = sizeof(PaketHeader) + length;
+    size_t sendSize = sizeof(PaketHeader) + length;
 
     if (type >= m_paketTypeIdCounter) {
         throw sys::IllegalStateException("Invalid paket type id: %d", type);
@@ -80,7 +80,7 @@ void ExchangeManager::SendData(PaketType type, uint32_t targetIPV4,
     ssize_t ret = m_socket->Send(&sendBuffer, sendSize, targetIPV4,
         m_socket->GetPort());
 
-    if (ret != sendSize) {
+    if (ret != static_cast<ssize_t>(sendSize)) {
         IBNET_LOG_ERROR("Sending exchg data type %d, length %d to %s failed",
             type, length, sys::AddressIPV4(targetIPV4));
     }

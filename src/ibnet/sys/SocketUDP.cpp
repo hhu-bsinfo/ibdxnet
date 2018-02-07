@@ -109,10 +109,9 @@ ssize_t SocketUDP::Send(void* buffer, size_t size, uint32_t addrIpv4, uint16_t p
     length = sendto(m_socket, buffer, size, 0, (struct sockaddr*) &recv_addr,
         recv_addr_len);
 
-    if (length != size) {
+    if (length != static_cast<ssize_t>(size)) {
         IBNET_LOG_ERROR("Sending data failed (%d): %s", length,
                 strerror((int) length));
-        return length;
     }
 
     return length;

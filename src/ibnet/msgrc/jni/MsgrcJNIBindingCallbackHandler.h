@@ -84,7 +84,7 @@ public:
         IBNET_LOG_TRACE_FUNC;
 
         JNIEnv* env = sys::JNIHelper::GetEnv(m_vm);
-        jlong ret = env->CallLongMethod(m_object, m_midGetNextDataToSend,
+        env->CallLongMethod(m_object, m_midGetNextDataToSend,
             (jlong) &m_nextWorkPackage, (jlong) prevResults,
             (jlong) completionList);
         sys::JNIHelper::ReturnEnv(m_vm, env);

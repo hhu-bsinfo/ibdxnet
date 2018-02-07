@@ -58,6 +58,8 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_shutdown(
     g_system->Shutdown();
     delete g_system;
     g_system = nullptr;
+
+    return (jboolean) 1;
 }
 
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_addNode(

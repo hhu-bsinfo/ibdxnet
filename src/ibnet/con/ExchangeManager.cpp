@@ -29,6 +29,9 @@ ExchangeManager::ExchangeManager(con::NodeId ownNodeId, uint16_t socketPort) :
 ExchangeManager::~ExchangeManager()
 {
     Stop();
+
+    delete m_socket;
+    delete [] m_recvBuffer;
 }
 
 ExchangeManager::PaketType ExchangeManager::GeneratePaketTypeId()

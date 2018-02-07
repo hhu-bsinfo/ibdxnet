@@ -43,7 +43,7 @@ JobQueue::~JobQueue()
         front++;
     }
 
-    delete m_queue;
+    delete [] m_queue;
 }
 
 bool JobQueue::PushBack(Job* job)

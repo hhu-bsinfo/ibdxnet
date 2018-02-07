@@ -157,7 +157,7 @@ private:
         {}
 
         ~JobConnectConnection() override {
-            delete m_remoteConnectionData;
+            delete [] m_remoteConnectionData;
         }
     };
 
@@ -217,7 +217,7 @@ private:
     void __AddJobCreateConnection(NodeId destNodeId);
     void __AddJobConnectConnection(
         const RemoteConnectionHeader& remoteConnectionHeader,
-        const uint8_t* remoteConnectionData, size_t remoteConnectionDatSize);
+        const uint8_t remoteConnectionData[], size_t remoteConnectionDatSize);
     void __AddJobCloseConnection(NodeId nodeId, bool force, bool shutdown);
 
     void __JobDispatchCreateConnection(const JobCreateConnection& job);

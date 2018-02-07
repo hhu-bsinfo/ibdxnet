@@ -58,7 +58,7 @@ RecvBufferPool::~RecvBufferPool()
         delete m_dataBuffers[i];
     }
 
-    delete m_dataBuffers;
+    delete [] m_dataBuffers;
 }
 
 core::IbMemReg* RecvBufferPool::GetBuffer()

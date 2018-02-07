@@ -23,7 +23,7 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
     m_refRecvBufferPool(refRecvBufferPool),
     m_refStatisticsManager(refStatisticsManager),
     m_refRecvHandler(refRecvHandler),
-    m_recvPackage(static_cast<RecvHandler::ReceivedPackage *>(malloc(
+    m_recvPackage(static_cast<RecvHandler::ReceivedPackage*>(malloc(
         RecvHandler::ReceivedPackage::Sizeof(
         refConnectionManager->GetIbSRQSize())))),
     m_recvQueuePending(0),

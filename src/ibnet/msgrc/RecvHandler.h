@@ -39,8 +39,7 @@ public:
     struct ReceivedPackage
     {
         static size_t Sizeof(uint32_t maxCount) {
-            return sizeof(uint32_t) + maxCount * (sizeof(con::NodeId) +
-                sizeof(uint8_t) + sizeof(core::IbMemReg*) + sizeof(uint32_t));
+            return sizeof(uint32_t) + maxCount * sizeof(Entry);
         }
 
         uint32_t m_count;

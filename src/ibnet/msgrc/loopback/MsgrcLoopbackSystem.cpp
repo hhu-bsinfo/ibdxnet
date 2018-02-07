@@ -5,10 +5,11 @@
 #include "MsgrcLoopbackSystem.h"
 
 #include <argagg/argagg.hpp>
-#include <ibnet/msgrc/RecvHandler.h>
 
 #include "ibnet/con/InvalidNodeIdException.h"
 #include "ibnet/con/NodeConfStringReader.h"
+
+#include "ibnet/msgrc/RecvHandler.h"
 
 namespace ibnet {
 namespace msgrc {
@@ -57,8 +58,9 @@ void MsgrcLoopbackSystem::NodeDisconnected(con::NodeId nodeId)
 void MsgrcLoopbackSystem::Received(ReceivedPackage* recvPackage)
 {
     // just return buffers back to pool
-    m_recvBufferPool->ReturnBuffers(&recvPackage->m_entries[0].m_data,
-        sizeof(ReceivedPackage::Entry), recvPackage->m_count);
+    for (uint32_t i = 0; i < recvPackage->m_count; i++) {
+        m_recvBufferPool->ReturnBuffer(recvPackage->m_entries[i].m_data);
+    }
 }
 
 const SendHandler::NextWorkPackage* MsgrcLoopbackSystem::GetNextDataToSend(

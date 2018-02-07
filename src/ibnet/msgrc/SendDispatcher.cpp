@@ -67,6 +67,11 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     m_throughputSentFC(new stats::Throughput("SentThroughputFC", m_sentFC,
         m_totalTime))
 {
+    memset(m_prevWorkPackageResults, 0,
+        sizeof(SendHandler::PrevWorkPackageResults));
+    memset(m_completionList, 0, SendHandler::CompletedWorkList::Sizeof(
+        refConectionManager->GetMaxNumConnections()));
+
     memset(m_sendQueuePending, 0,
         sizeof(uint16_t) * con::NODE_ID_MAX_NUM_NODES);
 

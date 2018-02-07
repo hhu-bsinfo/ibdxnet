@@ -48,6 +48,9 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
     m_throughputReceivedFC(new stats::Throughput("RecvThroughputFC",
         m_receivedFC, m_totalTime))
 {
+    memset(m_recvPackage, 0, RecvHandler::ReceivedPackage::Sizeof(
+        refConnectionManager->GetIbSRQSize()));
+
     m_refStatisticsManager->Register(m_totalTime);
     m_refStatisticsManager->Register(m_receivedData);
     m_refStatisticsManager->Register(m_receivedFC);

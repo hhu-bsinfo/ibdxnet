@@ -43,7 +43,7 @@ public:
                 sizeof(uint8_t) + sizeof(core::IbMemReg*) + sizeof(uint32_t));
         }
 
-        uint32_t m_count = 0;
+        uint32_t m_count;
 
         struct Entry
         {

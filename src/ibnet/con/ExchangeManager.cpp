@@ -95,7 +95,7 @@ void ExchangeManager::_RunLoop()
     if (res < sizeof(PaketHeader)) {
         m_noDataAvailable = true;
     } else {
-        auto* header = static_cast<PaketHeader*>(m_recvBuffer);
+        auto header = (PaketHeader*) (m_recvBuffer);
 
         IBNET_LOG_TRACE(
             "Received paket from %s, magic 0x%X, type %d, nodeId 0x%X, "

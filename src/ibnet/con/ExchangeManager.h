@@ -69,7 +69,7 @@ private:
     const con::NodeId m_ownNodeId;
 
     sys::SocketUDP* m_socket;
-    void* m_recvBuffer;
+    uint8_t* m_recvBuffer;
 
     bool m_noDataAvailable;
 

@@ -44,17 +44,6 @@ public:
         IBNET_LOG_TRACE_FUNC_EXIT;
     }
 
-    inline void NodeConnected(con::NodeId nodeId)
-    {
-        IBNET_LOG_TRACE_FUNC;
-
-        JNIEnv* env = sys::JNIHelper::GetEnv(m_vm);
-        env->CallVoidMethod(m_object, m_midNodeConnected, nodeId);
-        sys::JNIHelper::ReturnEnv(m_vm, env);
-
-        IBNET_LOG_TRACE_FUNC_EXIT;
-    }
-
     inline void NodeDisconnected(con::NodeId nodeId)
     {
         IBNET_LOG_TRACE_FUNC;
@@ -100,7 +89,6 @@ private:
 
     jmethodID m_midNodeDiscovered;
     jmethodID m_midNodeInvalidated;
-    jmethodID m_midNodeConnected;
     jmethodID m_midNodeDisconnected;
 
     jmethodID m_midReceived;

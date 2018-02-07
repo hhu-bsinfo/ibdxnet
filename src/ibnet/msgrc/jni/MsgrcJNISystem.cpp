@@ -4,6 +4,8 @@
 
 #include "MsgrcJNISystem.h"
 
+#include "ibnet/sys/TimeoutException.h"
+
 namespace ibnet {
 namespace msgrc {
 
@@ -24,6 +26,26 @@ void MsgrcJNISystem::AddNode(uint32_t ipv4)
     m_discoveryManager->AddNode(entry);
 }
 
+uint32_t MsgrcJNISystem::CreateConnection(con::NodeId nodeId)
+{
+    // force connection creation
+    try {
+        Connection* con = dynamic_cast<Connection*>(
+            m_connectionManager->GetConnection(nodeId));
+        m_connectionManager->ReturnConnection(con);
+    } catch (sys::TimeoutException& e) {
+        IBNET_LOG_WARN("CreateConnection (0x%X): %s", nodeId, e.what());
+        return 1;
+    } catch (sys::Exception& e) {
+        IBNET_LOG_WARN("CreateConnection (0x%X): %s", nodeId, e.what());
+        return 2;
+    }
+
+    IBNET_LOG_DEBUG("Created connection to 0x%X", nodeId);
+
+    return 0;
+}
+
 core::IbMemReg* MsgrcJNISystem::GetSendBuffer(con::NodeId targetNodeId)
 {
     Connection* connection = nullptr;
@@ -37,6 +59,8 @@ core::IbMemReg* MsgrcJNISystem::GetSendBuffer(con::NodeId targetNodeId)
     }
 
     if (!connection) {
+        IBNET_LOG_ERROR("Getting send buffer address for 0x%X failed, "
+            "connection not created, yet", targetNodeId);
         return nullptr;
     }
 
@@ -68,7 +92,7 @@ void MsgrcJNISystem::NodeInvalidated(con::NodeId nodeId)
 
 void MsgrcJNISystem::NodeConnected(con::Connection& connection)
 {
-    m_callbackHandler.NodeConnected(connection.GetRemoteNodeId());
+    // unused
 }
 
 void MsgrcJNISystem::NodeDisconnected(con::NodeId nodeId)

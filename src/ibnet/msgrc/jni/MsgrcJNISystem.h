@@ -24,6 +24,9 @@ public:
 
     void AddNode(uint32_t ipv4);
 
+    // returns 0 for success, 1 for creation timeout, 2 for any other error
+    uint32_t CreateConnection(con::NodeId nodeId);
+
     core::IbMemReg* GetSendBuffer(con::NodeId targetNodeId);
 
     void ReturnRecvBuffer(core::IbMemReg* buffer);

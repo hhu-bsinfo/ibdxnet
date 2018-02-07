@@ -68,9 +68,16 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_addNode(
     g_system->AddNode(static_cast<uint32_t>(p_ipv4));
 }
 
+JNIEXPORT jint JNICALL
+Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_createConnection(JNIEnv* p_env,
+        jclass p_class, jshort p_nodeId)
+{
+    return g_system->CreateConnection(static_cast<ibnet::con::NodeId>(p_nodeId));
+}
+
 JNIEXPORT jlong JNICALL
-    Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_getSendBufferAddress
-        (JNIEnv* p_env, jclass p_class, jshort p_targetNodeId)
+Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_getSendBufferAddress(JNIEnv* p_env,
+        jclass p_class, jshort p_targetNodeId)
 {
     return (jlong) g_system->GetSendBuffer(
         static_cast<ibnet::con::NodeId>(p_targetNodeId));

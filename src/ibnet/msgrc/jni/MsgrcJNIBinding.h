@@ -33,10 +33,20 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_addNode
 
 /*
  * Class:     de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding
+ * Method:    createConnection
+ * Signature: (S)I
+ */
+JNIEXPORT jint JNICALL
+    Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_createConnection
+    (JNIEnv *, jclass, jshort);
+
+/*
+ * Class:     de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding
  * Method:    getSendBufferAddress
  * Signature: (S)J
  */
-JNIEXPORT jlong JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_getSendBufferAddress
+JNIEXPORT jlong JNICALL
+    Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_getSendBufferAddress
     (JNIEnv *, jclass, jshort);
 
 /*

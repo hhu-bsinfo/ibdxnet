@@ -36,11 +36,12 @@ IbAddressHandle::IbAddressHandle(
     m_serviceLevel(serviceLevel),
     m_srcPathBits(srcPathBits),
     m_staticRate(staticRate),
+    m_isGlobal(1),
     m_portNum(portNum)
 {
     IBNET_LOG_TRACE_FUNC;
 
-    struct ibv_ah_attr ah_attr;
+    struct ibv_ah_attr ah_attr = {};
 
     memset(&ah_attr, 0, sizeof(ah_attr));
     ah_attr.grh.dgid = ibGrh.GetDgid();
@@ -52,7 +53,7 @@ IbAddressHandle::IbAddressHandle(
     ah_attr.sl = m_serviceLevel;
     ah_attr.src_path_bits = m_srcPathBits;
     ah_attr.static_rate = m_staticRate;
-    ah_attr.is_global = 1;
+    ah_attr.is_global = m_isGlobal;
     ah_attr.port_num = m_portNum;
 
     m_ibAh = ibv_create_ah(ibProtDom.GetIBProtDom(), &ah_attr);
@@ -76,18 +77,19 @@ IbAddressHandle::IbAddressHandle(
     m_serviceLevel(serviceLevel),
     m_srcPathBits(srcPathBits),
     m_staticRate(staticRate),
+    m_isGlobal(0),
     m_portNum(portNum)
 {
     IBNET_LOG_TRACE_FUNC;
 
-    struct ibv_ah_attr ah_attr;
+    struct ibv_ah_attr ah_attr = {};
 
     memset(&ah_attr, 0, sizeof(ah_attr));
     ah_attr.dlid = m_dlid;
     ah_attr.sl = m_serviceLevel;
     ah_attr.src_path_bits = m_srcPathBits;
     ah_attr.static_rate = m_staticRate;
-    ah_attr.is_global = 0;
+    ah_attr.is_global = m_isGlobal;
     ah_attr.port_num = m_portNum;
 
     m_ibAh = ibv_create_ah(ibProtDom.GetIBProtDom(), &ah_attr);
@@ -99,7 +101,7 @@ IbAddressHandle::IbAddressHandle(
     IBNET_LOG_INFO("Created address handle for remote node with LID 0x%X", m_dlid);
 } 
 
-IbAddressHandle::~IbAddressHandle(void)
+IbAddressHandle::~IbAddressHandle()
 {
     ibv_destroy_ah(m_ibAh);
 }

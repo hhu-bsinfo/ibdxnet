@@ -66,6 +66,7 @@ add_subdirectory(fmt)
 
 add_subdirectory(ConnectionManagerTest)
 add_subdirectory(IbDeviceTest)
+add_subdirectory(IbAddressHandleTest)
 add_subdirectory(IbnetCon)
 add_subdirectory(IbnetCore)
 add_subdirectory(IbnetMsgrc)

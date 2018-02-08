@@ -22,7 +22,9 @@ include_directories(${IBNET_SRC_DIR})
 
 set(SOURCE_FILES
         ${IBNET_SRC_DIR}/ibnet/core/IbDevice.cpp
-        ${IBNET_SRC_DIR}/ibnet/core/IbProtDom.cpp)
+        ${IBNET_SRC_DIR}/ibnet/core/IbProtDom.cpp
+        ${IBNET_SRC_DIR}/ibnet/core/IbAddressHandle.cpp
+        ${IBNET_SRC_DIR}/ibnet/core/IbGlobalRoutingHeader.cpp)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 

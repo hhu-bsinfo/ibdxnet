@@ -220,8 +220,8 @@ private:
     void __JobDispatchCloseConnection(const JobCloseConnection& job);
 
     bool __AllocateConnection(NodeId remoteNodeId);
-    void __ReplyConnectionExchgData(NodeId remoteNodeId,
-        uint8_t connectionState, uint32_t remoteNodeIPV4);
+    void __SendConnectionExchgData(NodeId remoteNodeId,
+        uint8_t exchgFalgs, uint8_t exchgFlagsRemote, uint32_t remoteNodeIPV4);
 };
 
 }

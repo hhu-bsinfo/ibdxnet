@@ -36,7 +36,8 @@ namespace con {
 struct RemoteConnectionHeader
 {
     con::NodeId m_nodeId;
-    uint8_t m_connectionState;
+    uint8_t m_exchgFlags;
+    uint8_t m_exchgFlagsRemote;
     uint16_t m_lid;
     uint32_t m_conManIdent;
 
@@ -47,7 +48,8 @@ struct RemoteConnectionHeader
      */
     RemoteConnectionHeader() :
         m_nodeId(NODE_ID_INVALID),
-        m_connectionState(0),
+        m_exchgFlags(0),
+        m_exchgFlagsRemote(0),
         m_lid(0xFFFF),
         m_conManIdent(0xFFFFFFFF)
     {}
@@ -60,10 +62,11 @@ struct RemoteConnectionHeader
      * @param conManIdent Identifier of connection manager to detect
      *      rebooted nodes
      */
-    RemoteConnectionHeader(con::NodeId nodeId, uint8_t connectionState,
-            uint16_t lid, uint32_t conManIdent) :
+    RemoteConnectionHeader(con::NodeId nodeId, uint8_t exchgFlags,
+            uint8_t remoteExchgFlags, uint16_t lid, uint32_t conManIdent) :
         m_nodeId(nodeId),
-        m_connectionState(connectionState),
+        m_exchgFlags(exchgFlags),
+        m_exchgFlagsRemote(remoteExchgFlags),
         m_lid(lid),
         m_conManIdent(conManIdent)
     {}
@@ -74,7 +77,8 @@ struct RemoteConnectionHeader
     friend std::ostream &operator<<(std::ostream& os,
             const RemoteConnectionHeader& o) {
         os << "NodeId: 0x" << std::hex << o.m_nodeId <<
-            ", ConnectionState: " << std::hex << o.m_connectionState <<
+            ", ExchgFlags: " << std::bitset<2>(o.m_exchgFlags) <<
+            ", ExchgFlagsRemote: " << std::bitset<2>(o.m_exchgFlagsRemote) <<
             ", Lid: 0x" << std::hex << o.m_lid <<
             ", ConManIdent: " << std::hex << o.m_conManIdent;
 

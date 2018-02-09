@@ -49,12 +49,16 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_init(
         return (jboolean) 0;
     }
 
+    IBNET_LOG_INFO("Initializing done");
+
     return (jboolean) 1;
 }
 
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_shutdown(
         JNIEnv* p_env, jclass p_class)
 {
+    IBNET_LOG_INFO("Shutdown");
+
     g_system->Shutdown();
     delete g_system;
     g_system = nullptr;

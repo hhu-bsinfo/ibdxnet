@@ -6,6 +6,7 @@
 #define IBNET_CON_CONNECTIONSTATE_H
 
 #include <atomic>
+#include <bitset>
 #include <cstdint>
 
 namespace ibnet {
@@ -27,15 +28,22 @@ struct ConnectionState
     enum ExchgFlag {
         e_ExchgFlagConnectedToRemote = (1 << 0),
         e_ExchgFlagRemoteConnected = (1 << 1),
+        e_ExchgFlagCompleted =
+            e_ExchgFlagConnectedToRemote | e_ExchgFlagRemoteConnected,
     };
 
     std::atomic<uint8_t> m_state;
     std::atomic<uint8_t> m_exchgFlags;
+    // we have to to store the previously received remote exchg state as well
+    // in order to determine when to terminate the connection data exchange
+    // and being certain that all data is exchanged
+    std::atomic<uint8_t> m_remoteExchgFlags;
     std::atomic<int32_t> m_available;
 
     ConnectionState() :
         m_state(e_StateNotAvailable),
         m_exchgFlags(0),
+        m_remoteExchgFlags(0),
         m_available(CONNECTION_NOT_AVAILABLE)
     {}
 
@@ -43,13 +51,14 @@ struct ConnectionState
         return m_state.load(std::memory_order_relaxed) == e_StateConnected;
     }
 
-    static bool IsRemoteConnected(uint8_t remoteState) {
+    static bool IsRemoteConnectedToCurrent(uint8_t remoteState) {
         return remoteState & e_ExchgFlagConnectedToRemote;
     }
 
     bool ConnectionExchgComplete() const {
-        return __IsFlagSet(e_ExchgFlagConnectedToRemote |
-            e_ExchgFlagRemoteConnected);
+        return m_exchgFlags.load(std::memory_order_relaxed) ==
+            e_ExchgFlagCompleted && m_remoteExchgFlags.load(
+            std::memory_order_relaxed) == e_ExchgFlagCompleted;
     }
 
     bool IsConnectedToRemote() const {
@@ -69,10 +78,14 @@ struct ConnectionState
     }
 
     friend std::ostream &operator<<(std::ostream& os,
-        const ConnectionState& o) {
-        return os << o.m_state.load(std::memory_order_relaxed) << "|" <<
-            std::hex << o.m_exchgFlags.load(std::memory_order_relaxed) << "|" <<
-            std::dec << o.m_available.load(std::memory_order_relaxed);
+            const ConnectionState& o) {
+        return os << static_cast<uint16_t>(
+                o.m_state.load(std::memory_order_relaxed))
+            << "|" <<
+            std::bitset<2>(o.m_exchgFlags.load(std::memory_order_relaxed))
+            << "|" << std::bitset<2>(
+                o.m_remoteExchgFlags.load(std::memory_order_relaxed))
+            << "|" << std::dec << o.m_available.load(std::memory_order_relaxed);
     }
 
 private:
@@ -82,12 +95,16 @@ private:
 
         do {
             newVal = prev | flag;
-        } while (m_exchgFlags.compare_exchange_strong(prev, newVal,
+        } while (!m_exchgFlags.compare_exchange_strong(prev, newVal,
             std::memory_order_relaxed));
     }
 
     bool __IsFlagSet(uint8_t flag) const {
         return m_exchgFlags.load(std::memory_order_relaxed) & flag;
+    }
+
+    bool __IsFlagRemoteSet(uint8_t flag) const {
+        return m_remoteExchgFlags.load(std::memory_order_relaxed) & flag;
     }
 };
 

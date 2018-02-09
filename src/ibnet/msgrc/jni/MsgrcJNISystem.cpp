@@ -41,7 +41,7 @@ uint32_t MsgrcJNISystem::CreateConnection(con::NodeId nodeId)
         return 2;
     }
 
-    IBNET_LOG_DEBUG("Created connection to 0x%X", nodeId);
+    IBNET_LOG_INFO("Actively created connection to 0x%X", nodeId);
 
     return 0;
 }

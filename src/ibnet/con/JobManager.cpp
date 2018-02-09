@@ -71,9 +71,10 @@ void JobManager::_RunLoop()
     // creation and avoiding that discovery jobs are prioritized and cause
     // connection creation timeouts
     if (!job) {
+        m_idleJobLock.lock();
 
         if (m_idleJob) {
-            IBNET_LOG_TRACE("Dispatching idle job type %d", m_idleJob->m_type);
+            IBNET_LOG_DEBUG("Dispatching idle job type %d", m_idleJob->m_type);
 
             std::lock_guard<std::mutex> l(m_dispatcherLock);
 
@@ -84,11 +85,13 @@ void JobManager::_RunLoop()
             // re-use idle job, don't delete
         }
 
+        m_idleJobLock.unlock();
+
         // reduce CPU load and get woken up if a new job is available
         std::unique_lock<std::mutex> l(m_jobLock);
         m_jobCondition.wait_for(l, std::chrono::milliseconds(1000));
     } else {
-        IBNET_LOG_TRACE("Dispatching job type %d", job->m_type);
+        IBNET_LOG_DEBUG("Dispatching job type %d", job->m_type);
 
         m_dispatcherLock.lock();
 

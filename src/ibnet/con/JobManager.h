@@ -44,6 +44,8 @@ public:
 
     // job to execute when queue is empty
     void SetIdleJob(JobQueue::Job* job) {
+        std::lock_guard<std::mutex> l(m_idleJobLock);
+        delete m_idleJob;
         m_idleJob = job;
     }
 
@@ -60,6 +62,7 @@ private:
     std::mutex m_dispatcherLock;
     std::vector<std::vector<JobDispatcher*>> m_dispatcher;
 
+    std::mutex m_idleJobLock;
     std::mutex m_jobLock;
     std::condition_variable m_jobCondition;
 };

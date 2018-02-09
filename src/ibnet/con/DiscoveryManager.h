@@ -73,6 +73,7 @@ private:
     ExchangeManager::PaketType m_discoverRespExchgPaketType;
 
     JobQueue::JobType m_discoverJobType;
+    JobQueue::JobType m_discoverOnIdleJobType;
     JobQueue::JobType m_discoveredJobType;
 
     void __ExchgSendDiscoveryReq(uint32_t destIPV4);
@@ -80,6 +81,8 @@ private:
 
     void __JobAddDiscover();
     void __JobAddDiscovered(uint32_t sourceIPV4, NodeId sourceNodeIdDiscovered);
+
+    void __ExecuteDiscovery();
 };
 
 }

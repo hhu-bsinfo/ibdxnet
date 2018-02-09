@@ -23,6 +23,7 @@ DiscoveryManager::DiscoveryManager(NodeId ownNodeId, const NodeConf& nodeConf,
     m_discoverReqExchgPaketType(m_refExchangeManager->GeneratePaketTypeId()),
     m_discoverRespExchgPaketType(m_refExchangeManager->GeneratePaketTypeId()),
     m_discoverJobType(m_refJobManager->GenerateJobTypeId()),
+    m_discoverOnIdleJobType(m_refJobManager->GenerateJobTypeId()),
     m_discoveredJobType(m_refJobManager->GenerateJobTypeId())
 {
     IBNET_LOG_INFO("Initializing node discovery list, own node id 0x%X...",
@@ -42,10 +43,11 @@ DiscoveryManager::DiscoveryManager(NodeId ownNodeId, const NodeConf& nodeConf,
     m_refExchangeManager->AddDispatcher(m_discoverRespExchgPaketType, this);
 
     m_refJobManager->AddDispatcher(m_discoverJobType, this);
+    m_refJobManager->AddDispatcher(m_discoverOnIdleJobType, this);
     m_refJobManager->AddDispatcher(m_discoveredJobType, this);
 
     // Run node discovery on job idle
-    m_refJobManager->SetIdleJob(new JobQueue::Job(m_discoverJobType));
+    m_refJobManager->SetIdleJob(new JobQueue::Job(m_discoverOnIdleJobType));
 }
 
 DiscoveryManager::~DiscoveryManager()
@@ -56,6 +58,7 @@ DiscoveryManager::~DiscoveryManager()
     m_refExchangeManager->RemoveDispatcher(m_discoverRespExchgPaketType, this);
 
     m_refJobManager->RemoveDispatcher(m_discoverJobType, this);
+    m_refJobManager->RemoveDispatcher(m_discoverOnIdleJobType, this);
     m_refJobManager->RemoveDispatcher(m_discoveredJobType, this);
 
     for (auto it: m_infoToGet) {
@@ -84,7 +87,7 @@ void DiscoveryManager::AddNode(const NodeConf::Entry& entry)
         m_infoToGet.push_back(new NodeConf::Entry(entry));
     }
 
-    // trigger discovery
+    // trigger initial discovery
     __JobAddDiscover();
 }
 
@@ -132,24 +135,18 @@ void DiscoveryManager::_DispatchExchangeData(uint32_t sourceIPV4,
 void DiscoveryManager::_DispatchJob(const JobQueue::Job* job)
 {
     if (job->m_type == m_discoverJobType) {
-        IBNET_LOG_TRACE("Requesting node info of %d nodes", m_infoToGet.size());
-
-        m_lock.lock();
-
-        // request remote node's information if not received, yet
-        for (auto& it : m_infoToGet) {
-            IBNET_LOG_TRACE("Requesting node info from %s",
-                it->GetAddress().GetAddressStr());
-
-            __ExchgSendDiscoveryReq(it->GetAddress().GetAddress());
-        }
-
-        m_lock.unlock();
+        __ExecuteDiscovery();
 
         // there are more nodes to be discovered
         if (m_infoToGet.size() != 0) {
+            // avoid flooding the job manager
+            // note: this slows down the job dispatching thread so following
+            // jobs are delayed by 10 ms at least
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             __JobAddDiscover();
         }
+    } else if (job->m_type == m_discoverOnIdleJobType) {
+        __ExecuteDiscovery();
     } else if (job->m_type == m_discoveredJobType) {
         auto* jobDiscovered = dynamic_cast<const JobDiscovered*>(job);
 
@@ -210,6 +207,23 @@ void DiscoveryManager::__JobAddDiscovered(uint32_t sourceIPV4,
 {
     m_refJobManager->AddJob(new JobDiscovered(m_discoveredJobType, sourceIPV4,
         sourceNodeIdDiscovered));
+}
+
+void DiscoveryManager::__ExecuteDiscovery()
+{
+    IBNET_LOG_TRACE("Requesting node info of %d nodes", m_infoToGet.size());
+
+    m_lock.lock();
+
+    // request remote node's information if not received, yet
+    for (auto& it : m_infoToGet) {
+        IBNET_LOG_TRACE("Requesting node info from %s",
+            it->GetAddress().GetAddressStr());
+
+        __ExchgSendDiscoveryReq(it->GetAddress().GetAddress());
+    }
+
+    m_lock.unlock();
 }
 
 }

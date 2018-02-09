@@ -28,7 +28,7 @@ class ansicolor_sink: public base_sink<Mutex>
 public:
     ansicolor_sink(FILE* file): target_file_(file)
     {
-        should_do_colors_ = details::os::in_terminal(file) && details::os::is_color_terminal();
+        should_do_colors_ = true; //details::os::in_terminal(file) && details::os::is_color_terminal();
         colors_[level::trace] = cyan;
         colors_[level::debug] = cyan;
         colors_[level::info] = reset;

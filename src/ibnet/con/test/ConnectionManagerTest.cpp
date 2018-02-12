@@ -75,7 +75,7 @@ protected:
         }
 
         if (m_id == 0 && notConnectedPrev > notConnected) {
-            if (notConnected == 0) {
+            if (notConnected <= 0) {
                 printf("***** ALL CONNECTED *****\n");
             } else {
                 printf("Waiting for %d more node(s) to connect...\n",
@@ -91,7 +91,7 @@ protected:
 private:
     const uint32_t m_id;
     const ibnet::con::NodeId m_ownNodeId;
-    const std::vector<std::string> m_hostnamesSorted;
+    std::vector<std::string> m_hostnamesSorted;
     ibnet::con::ConnectionManager* m_refConnectionManager;
 };
 
@@ -166,6 +166,8 @@ int main(int argc, char** argv)
 
     ibnet::con::NodeId ownNodeId = ibnet::con::NODE_ID_INVALID;
     const std::string ownHostname = ibnet::sys::Network::GetHostname();
+
+    // auto assign a node id by using the sorted hostname list
 
     uint16_t counter = 0;
     for (auto& it : hostnamesSorted) {

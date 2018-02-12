@@ -188,8 +188,8 @@ Connection* ConnectionManager::GetConnection(NodeId nodeId)
                 // either if no connection allocated at all (because it wasn't
                 // discovered so far) or connected created but exchg is not
                 // complete (e.g. dropped UDP packages)
-                if (!m_connections[nodeId] || m_connections[nodeId] &&
-                        !m_connectionStates[nodeId].ConnectionExchgComplete()) {
+                if (!m_connections[nodeId] || (m_connections[nodeId] &&
+                        !m_connectionStates[nodeId].ConnectionExchgComplete())) {
                     __AddJobCreateConnection(nodeId);
                 }
 

@@ -378,6 +378,11 @@ void SendDispatcher::__SendData(Connection* connection,
         uint32_t length;
         bool zeroLength;
 
+        // set this before moving posBack pointer
+        m_sgeLists[chunks].addr =
+            (uintptr_t) refSendBuffer->GetAddress() + posBack;
+
+        // calculate length and move ring buffer pointers
         if (posBack + m_recvBufferSize < posEnd) {
             // fits a full receive buffer
             length = m_recvBufferSize;
@@ -405,10 +410,6 @@ void SendDispatcher::__SendData(Connection* connection,
             m_sendDataNonFullBuffers->Inc();
         }
 
-        // create work request
-
-        m_sgeLists[chunks].addr =
-            (uintptr_t) refSendBuffer->GetAddress() + posBack;
         // don't send packages with size 0 which is a special value
         // and gets translated to 2^31 bytes length
         // use a flag to indicate 0 length payloads (see below)

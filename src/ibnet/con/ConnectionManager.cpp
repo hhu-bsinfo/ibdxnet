@@ -172,7 +172,10 @@ Connection* ConnectionManager::GetConnection(NodeId nodeId)
         // exchg data is sent again with that job
         if (triggerPeriodicRecreation) {
             if (end - startRetry >= std::chrono::milliseconds(1000)) {
-                if (m_connections[nodeId] &&
+                // either if no connection allocated at all (because it wasn't
+                // discovered so far) or connected created but exchg is not
+                // complete (e.g. dropped UDP packages)
+                if (!m_connections[nodeId] || m_connections[nodeId] &&
                         !m_connectionStates[nodeId].ConnectionExchgComplete()) {
                     __AddJobCreateConnection(nodeId);
                 }
@@ -183,6 +186,12 @@ Connection* ConnectionManager::GetConnection(NodeId nodeId)
     } while (end - start <
              std::chrono::milliseconds(m_connectionCreationTimeoutMs));
 
+    if (triggerPeriodicRecreation) {
+        // reset state if not created, yet
+        state = ConnectionState::e_StateInCreation;
+        m_connectionStates[nodeId].m_state.compare_exchange_strong(state,
+            ConnectionState::e_StateNotAvailable, std::memory_order_relaxed);
+    }
 
     std::chrono::duration<uint64_t, std::nano> delta(end - start);
     throw sys::TimeoutException(

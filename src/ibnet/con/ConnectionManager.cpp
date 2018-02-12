@@ -113,11 +113,24 @@ Connection* ConnectionManager::GetConnection(NodeId nodeId)
     }
 
     // keep track of "handles" issued
-    int32_t available =
-        m_connectionStates[nodeId].m_available.load(std::memory_order_acquire);
+    int32_t available = m_connectionStates[nodeId].m_available.fetch_add(1,
+        std::memory_order_acquire);
 
     if (available >= ConnectionState::CONNECTION_AVAILABLE) {
         return m_connections[nodeId];
+    }
+
+    // connection not available, reset fetch
+    while (true) {
+        if (m_connectionStates[nodeId].m_available.compare_exchange_strong(
+                available, ConnectionState::CONNECTION_NOT_AVAILABLE,
+                std::memory_order_relaxed)) {
+            break;
+        }
+
+        if (available >= ConnectionState::CONNECTION_AVAILABLE) {
+            break;
+        }
     }
 
     IBNET_LOG_TRACE("[%s] GetConnection: 0x%X, avail: %d", m_name, nodeId,
@@ -194,6 +207,7 @@ Connection* ConnectionManager::GetConnection(NodeId nodeId)
     }
 
     std::chrono::duration<uint64_t, std::nano> delta(end - start);
+
     throw sys::TimeoutException(
         "[%s] Creating connection connection to %X, timeout: %d ms", m_name,
         nodeId, delta.count() / 1000 / 1000);

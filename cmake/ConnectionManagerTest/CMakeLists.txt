@@ -14,15 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-project(IbConnectionManagerTest)
+project(ConnectionManagerTest)
 message(STATUS "Project " ${PROJECT_NAME})
 
 include_directories(${IBNET_LIBS_DIR})
 include_directories(${IBNET_SRC_DIR})
 
 set(SOURCE_FILES
-        ${IBNET_SRC_DIR}/ibnet/core/test/IbConnectionManagerTest.cpp)
+    ${IBNET_SRC_DIR}/ibnet/con/test/ConnectionManagerTest.cpp
+    ${IBNET_SRC_DIR}/ibnet/con/test/DummyConnection.cpp
+    ${IBNET_SRC_DIR}/ibnet/con/test/DummyConnectionManager.cpp)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
-target_link_libraries(${PROJECT_NAME} IbnetCore)
+target_link_libraries(${PROJECT_NAME} IbnetCon IbnetCore IbnetSys pthread)

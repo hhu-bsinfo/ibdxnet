@@ -62,6 +62,7 @@ set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall")
 # sub-projects
 add_subdirectory(fmt)
 
+add_subdirectory(ConnectionManagerTest)
 add_subdirectory(IbDeviceTest)
 add_subdirectory(IbnetCon)
 add_subdirectory(IbnetCore)

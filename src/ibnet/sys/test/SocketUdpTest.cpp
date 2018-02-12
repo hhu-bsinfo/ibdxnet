@@ -91,7 +91,7 @@ int main(int argc, char** argv)
                 std::cout << "Received data from 0x" << std::hex <<
                           recvIp << ", length " << length << std::endl;
 
-                for (ssize_t i = 0; i < length; i++) {
+                for (size_t i = 0; i < static_cast<size_t>(length); i++) {
 
                     if (i >= sizeof(buffer)) {
                         break;

@@ -53,9 +53,9 @@ Connection::Connection(con::NodeId ownNodeId, con::ConnectionId connectionId,
 
     m_sendBuffer = m_refProtDom->Register(
         aligned_alloc(static_cast<size_t>(getpagesize()), m_sendBufferSize),
-        m_sendBufferSize, true)
+        m_sendBufferSize, true);
 
-    IBNET_LOG_TRACE("Created QP, qpNum 0x%X", m_ibPhysicalQPId);
+    IBNET_LOG_DEBUG("Created QP, qpNum 0x%X", m_ibPhysicalQPId);
 }
 
 Connection::~Connection()

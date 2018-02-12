@@ -49,7 +49,7 @@ ConnectionManager::ConnectionManager(const std::string& name,
         ownNodeId, connectionCreationTimeoutMs, maxNumConnections, nodeConf);
 
     if (ownNodeId == NODE_ID_INVALID) {
-        throw sys::IllegalStateException("Invalid node id provided");
+        throw sys::IllegalStateException("Invalid own node id provided");
     }
 
     for (uint32_t i = 0; i < NODE_ID_MAX_NUM_NODES; i++) {
@@ -168,8 +168,8 @@ Connection* ConnectionManager::GetConnection(NodeId nodeId)
             // sanity check
             if (m_connections[nodeId] == nullptr) {
                 throw sys::IllegalStateException(
-                    "[%s] Invalid connection state on GetConnection",
-                    m_name);
+                    "[%s] Invalid connection state on GetConnection, node id "
+                    "0x%X", m_name, nodeId);
             }
 
             return m_connections[nodeId];
@@ -237,7 +237,9 @@ void ConnectionManager::_DispatchExchangeData(uint32_t sourceIPV4,
             paketHeader->m_length - sizeof(RemoteConnectionHeader);
 
         if (paketHeader->m_length < sizeof(RemoteConnectionHeader)) {
-            throw sys::IllegalStateException();
+            throw sys::IllegalStateException(
+                 "Exchg data invalid packet header length, source %s",
+                 sys::AddressIPV4(sourceIPV4));
         }
 
         // create a copy of the data, don't use receive buffer pointer
@@ -357,7 +359,8 @@ void ConnectionManager::__JobDispatchConnectConnection(
     if (m_connectionStates[job.m_remoteConnectionHeader.m_nodeId].m_state
             .load(std::memory_order_relaxed) <
             ConnectionState::e_StateCreated) {
-        throw sys::IllegalStateException("Connected not created state");
+        throw sys::IllegalStateException("Connected not created state, node id "
+            "0x%X", job.m_remoteConnectionHeader.m_nodeId);
     }
 
     // update remote exchg flags

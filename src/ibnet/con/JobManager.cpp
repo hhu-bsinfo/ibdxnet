@@ -87,9 +87,12 @@ void JobManager::_RunLoop()
 
         m_idleJobLock.unlock();
 
-        // reduce CPU load and get woken up if a new job is available
         std::unique_lock<std::mutex> l(m_jobLock);
-        m_jobCondition.wait_for(l, std::chrono::milliseconds(1000));
+
+        if (m_queue.IsEmpty()) {
+            // reduce CPU load and get woken up if a new job is available
+            m_jobCondition.wait_for(l, std::chrono::milliseconds(1000));
+        }
     } else {
         IBNET_LOG_DEBUG("Dispatching job type %d", job->m_type);
 

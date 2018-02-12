@@ -84,7 +84,7 @@ Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_getSendBufferAddress(JNIEnv* p_env,
         jclass p_class, jshort p_targetNodeId)
 {
     return (jlong) g_system->GetSendBuffer(
-        static_cast<ibnet::con::NodeId>(p_targetNodeId));
+        static_cast<ibnet::con::NodeId>(p_targetNodeId))->GetAddress();
 }
 
 JNIEXPORT void JNICALL

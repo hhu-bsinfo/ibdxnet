@@ -142,7 +142,6 @@ void DiscoveryManager::_DispatchJob(const JobQueue::Job* job)
             // avoid flooding the job manager
             // note: this slows down the job dispatching thread so following
             // jobs are delayed by 10 ms at least
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             __JobAddDiscover();
         }
     } else if (job->m_type == m_discoverOnIdleJobType) {

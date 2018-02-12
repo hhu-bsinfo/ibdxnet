@@ -8,6 +8,7 @@
 #include <atomic>
 #include <bitset>
 #include <cstdint>
+#include <ostream>
 
 namespace ibnet {
 namespace con {

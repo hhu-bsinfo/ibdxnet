@@ -136,14 +136,6 @@ void DiscoveryManager::_DispatchJob(const JobQueue::Job* job)
 {
     if (job->m_type == m_discoverJobType) {
         __ExecuteDiscovery();
-
-        // there are more nodes to be discovered
-        if (m_infoToGet.size() != 0) {
-            // avoid flooding the job manager
-            // note: this slows down the job dispatching thread so following
-            // jobs are delayed by 10 ms at least
-            __JobAddDiscover();
-        }
     } else if (job->m_type == m_discoverOnIdleJobType) {
         __ExecuteDiscovery();
     } else if (job->m_type == m_discoveredJobType) {

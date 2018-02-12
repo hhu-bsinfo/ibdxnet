@@ -387,7 +387,7 @@ void SendDispatcher::__SendData(Connection* connection,
             (uintptr_t) refSendBuffer->GetAddress() + posBack;
 
         // calculate length and move ring buffer pointers
-        if (posBack + m_recvBufferSize < posEnd) {
+        if (posBack + m_recvBufferSize <= posEnd) {
             // fits a full receive buffer
             length = m_recvBufferSize;
             zeroLength = false;

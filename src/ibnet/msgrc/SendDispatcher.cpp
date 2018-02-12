@@ -72,6 +72,10 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     memset(m_completionList, 0, SendHandler::CompletedWorkList::Sizeof(
         refConectionManager->GetMaxNumConnections()));
 
+    // set correct initial state
+    m_prevWorkPackageResults->Reset();
+    m_completionList->Reset();
+
     memset(m_sendQueuePending, 0,
         sizeof(uint16_t) * con::NODE_ID_MAX_NUM_NODES);
 

@@ -208,8 +208,13 @@ void RecvDispatcher::__Refill()
         uint32_t count =
             m_refConnectionManager->GetIbSRQSize() - m_recvQueuePending;
 
-        uint32_t numBufs = m_refRecvBufferPool->GetBuffers(m_memRegRefillBuffer,
-            count);
+        // TODO test and fix batch getting from pool
+//        uint32_t numBufs = m_refRecvBufferPool->GetBuffers(m_memRegRefillBuffer,
+//            count);
+        uint32_t numBufs = count;
+        for (uint32_t i = 0; i < numBufs; i++) {
+            m_memRegRefillBuffer[i] = m_refRecvBufferPool->GetBuffer();
+        }
 
         // TODO track the batch sizes pulled from the completion queue and added back to the recv queue
 

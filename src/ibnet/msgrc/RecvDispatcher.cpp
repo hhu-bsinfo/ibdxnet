@@ -4,6 +4,8 @@
 
 #include "RecvDispatcher.h"
 
+#include "ibnet/sys/IllegalStateException.h"
+
 #include "ibnet/core/IbCommon.h"
 #include "ibnet/core/IbQueueFullException.h"
 
@@ -177,6 +179,11 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
                 // otherwise, the pool runs dry after a while
                 m_refRecvBufferPool->ReturnBuffer(dataMem);
                 dataMem = nullptr;
+
+                if (!immedData->m_flowControlData) {
+                    __ThrowDetailedException<sys::IllegalStateException>(
+                        "Zero length data received but no flow control data");
+                }
             }
 
             if (immedData->m_flowControlData) {

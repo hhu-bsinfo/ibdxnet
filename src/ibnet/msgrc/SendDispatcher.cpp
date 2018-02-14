@@ -410,6 +410,12 @@ void SendDispatcher::__SendData(Connection* connection,
             if (length == 0) {
                 zeroLength = true;
                 length = 1;
+
+                // sanity check
+                if (!fcData) {
+                    __ThrowDetailedException<sys::IllegalStateException>(
+                        "Sending zero length data but no flow control");
+                }
             } else {
                 zeroLength = false;
 

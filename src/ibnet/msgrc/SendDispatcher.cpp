@@ -379,6 +379,12 @@ void SendDispatcher::__SendData(Connection* connection,
             posEnd = posFront;
         }
 
+       // edge case: wrap around exactly on buffer size and no new data after
+       // wrap around
+        if (posBack == posEnd && !fcData) {
+            break;
+        }
+
         uint32_t length;
         bool zeroLength;
 

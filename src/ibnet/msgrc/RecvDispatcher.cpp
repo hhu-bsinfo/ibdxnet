@@ -187,7 +187,8 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
                 immedData->m_sourceNodeId;
             m_recvPackage->m_entries[i].m_fcData = immedData->m_flowControlData;
             m_recvPackage->m_entries[i].m_data = dataMem;
-            m_recvPackage->m_entries[i].m_dataRaw = dataMem->GetAddress();
+            m_recvPackage->m_entries[i].m_dataRaw =
+                dataMem ? dataMem->GetAddress() : nullptr;
             m_recvPackage->m_entries[i].m_dataLength = dataRecvLen;
 
             m_receivedData->Add(dataRecvLen);

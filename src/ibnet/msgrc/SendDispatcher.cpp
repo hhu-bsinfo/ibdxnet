@@ -143,7 +143,7 @@ SendDispatcher::~SendDispatcher()
     free(m_completionList);
 
     free(m_sgeLists);
-    free(m_workComp);
+    free(m_sendWrs);
     free(m_workComp);
 
     delete m_totalTime;

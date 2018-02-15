@@ -31,7 +31,7 @@ MsgrcSystem::MsgrcSystem() :
 
 MsgrcSystem::~MsgrcSystem()
 {
-    delete m_configuration;
+
 }
 
 void MsgrcSystem::Init()

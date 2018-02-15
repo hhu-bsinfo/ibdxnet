@@ -78,6 +78,7 @@ RecvDispatcher::~RecvDispatcher()
     m_refStatisticsManager->Deregister(m_throughputReceivedData);
     m_refStatisticsManager->Deregister(m_throughputReceivedFC);
 
+    free(m_workComps);
     free(m_memRegRefillBuffer);
     free(m_sgeList);
     free(m_recvWrList);

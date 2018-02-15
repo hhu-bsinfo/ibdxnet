@@ -74,7 +74,7 @@ void JobManager::_RunLoop()
         m_idleJobLock.lock();
 
         if (m_idleJob) {
-            IBNET_LOG_DEBUG("Dispatching idle job type %d", m_idleJob->m_type);
+            IBNET_LOG_TRACE("Dispatching idle job type %d", m_idleJob->m_type);
 
             std::lock_guard<std::mutex> l(m_dispatcherLock);
 

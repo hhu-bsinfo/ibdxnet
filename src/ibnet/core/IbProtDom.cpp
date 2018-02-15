@@ -47,7 +47,7 @@ IbProtDom::~IbProtDom()
 
     if (m_totalMemRegistered > 0) {
         IBNET_LOG_WARN("[%s] Memory is still registered with the protection "
-            "domain, total: %d", m_totalMemRegistered);
+            "domain, total: %d", m_name, m_totalMemRegistered);
     }
 
     ibv_dealloc_pd(m_ibProtDom);

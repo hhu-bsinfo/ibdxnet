@@ -73,6 +73,7 @@ IbMemReg* IbProtDom::Register(void* addr, uint32_t size, bool freeOnCleanup)
         IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
 
     if (memReg->m_ibMemReg == nullptr) {
+        delete memReg;
         throw IbException("[%s] Registering memory region failed: %s",
             m_name, strerror(errno));
     }
@@ -94,6 +95,8 @@ void IbProtDom::Deregister(IbMemReg& memReg)
         throw IbException("[%s] Deregistering memory region failed: %s",
             m_name, strerror(errno));
     }
+
+    memReg.m_ibMemReg = nullptr;
 
     m_memoryRegionsRegistered--;
     m_totalMemRegistered -= memReg.GetSize();

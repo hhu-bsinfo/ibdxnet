@@ -242,55 +242,5 @@ void RecvBufferPool::ReturnBuffers(core::IbMemReg** buffers, uint32_t count)
     }
 }
 
-void RecvBufferPool::ReturnBuffers(void* ptrFirstBuffer, uint32_t stride,
-        uint32_t count)
-{
-    throw sys::IllegalStateException(
-        "This method is still buggy (creates memory misalignment");
-
-    if (count == 0) {
-        return;
-    }
-
-    uint32_t backRes = m_dataBuffersBackRes.load(std::memory_order_relaxed);
-    uint32_t front;
-
-    while (true) {
-        front = m_dataBuffersFront.load(std::memory_order_relaxed);
-
-        if ((backRes + count) % m_bufferPoolSize == front % m_bufferPoolSize) {
-            throw sys::IllegalStateException(
-                "Pool overflow, this should not happen: backRes %d, front %d, "
-                    "count %d", backRes, front, count);
-        }
-
-        if (m_dataBuffersBackRes.compare_exchange_weak(backRes, backRes + count,
-            std::memory_order_relaxed)) {
-
-            for (uint32_t i = 0; i < count; i++) {
-                auto* buffer = (core::IbMemReg*)
-                    ((uintptr_t ) ptrFirstBuffer) + i * stride;
-                m_dataBuffers[(backRes + i) % m_bufferPoolSize] = buffer;
-            }
-
-            // if two buffers are returned at the same time, the first return
-            // could be interrupt by a second return. the reserve of the first
-            // return is already completed but the back pointer is not updated.
-            // the second return reserves and updates the back pointer. now,
-            // the back pointer is pointing to the first returns reserve which
-            // might not be completed, yet.
-            // solution: the second return has to wait for the first return
-            // to complete, both, the reservation and updating of the back
-            // pointer before it can update the back pointer as well
-            while (!m_dataBuffersBack.compare_exchange_weak(backRes,
-                backRes + count, std::memory_order_release)) {
-                std::this_thread::yield();
-            }
-
-            break;
-        }
-    }
-}
-
 }
 }

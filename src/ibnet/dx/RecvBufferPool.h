@@ -70,8 +70,6 @@ public:
 
     void ReturnBuffers(core::IbMemReg** buffers, uint32_t count);
 
-    void ReturnBuffers(void* ptrFirstBuffer, uint32_t stride, uint32_t count);
-
 private:
     const uint64_t m_bufferPoolSize;
     const uint32_t m_bufferSize;

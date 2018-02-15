@@ -36,16 +36,27 @@ RecvBufferPool::RecvBufferPool(uint64_t totalPoolSize,
         (uint32_t) (totalPoolSize / recvBufferSize - 1)),
     m_insufficientBufferCounter(0)
 {
+    // allocate a single region and slice it into multiple buffers for the pool
+
+    m_memoryPool = new core::IbMemReg(
+        aligned_alloc(static_cast<size_t>(getpagesize()),
+        m_bufferPoolSize * m_bufferSize), m_bufferPoolSize * m_bufferSize,
+        true);
+
+    IBNET_LOG_INFO("Allocated memory pool region %p, size %d",
+        m_memoryPool->GetAddress(), m_memoryPool->GetSize());
+
+    m_refProtDom->Register(m_memoryPool);
+
     IBNET_LOG_INFO("Allocating %d data buffers, size %d each for total pool "
         "size %d...", m_bufferPoolSize, recvBufferSize, totalPoolSize);
 
     m_dataBuffers = new core::IbMemReg*[m_bufferPoolSize];
 
     for (uint32_t i = 0; i < m_bufferPoolSize; i++) {
-        m_dataBuffers[i] = m_refProtDom->Register(
-            // page size and cache alignment
-            aligned_alloc(static_cast<size_t>(getpagesize()), recvBufferSize),
-                recvBufferSize, true);
+        m_dataBuffers[i] = new core::IbMemReg((void*)
+            (((uintptr_t) m_memoryPool->GetAddress()) + i * recvBufferSize),
+            recvBufferSize, m_memoryPool);
     }
 
     IBNET_LOG_INFO("Allocation finished");
@@ -53,8 +64,10 @@ RecvBufferPool::RecvBufferPool(uint64_t totalPoolSize,
 
 RecvBufferPool::~RecvBufferPool()
 {
+    m_refProtDom->Deregister(m_memoryPool);
+    delete m_memoryPool;
+
     for (uint32_t i = 0; i < m_bufferPoolSize; i++) {
-        m_refProtDom->Deregister(*m_dataBuffers[i]);
         delete m_dataBuffers[i];
     }
 

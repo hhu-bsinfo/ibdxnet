@@ -82,6 +82,7 @@ private:
     std::atomic<uint32_t> m_dataBuffersBack;
     std::atomic<uint32_t> m_dataBuffersBackRes;
 
+    core::IbMemReg* m_memoryPool;
     core::IbMemReg** m_dataBuffers;
 
     std::atomic<uint64_t> m_insufficientBufferCounter;

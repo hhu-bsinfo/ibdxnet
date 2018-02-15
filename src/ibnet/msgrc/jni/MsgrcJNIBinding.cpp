@@ -59,9 +59,11 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_shutdown(
 {
     IBNET_LOG_INFO("Shutdown");
 
-    g_system->Shutdown();
-    delete g_system;
-    g_system = nullptr;
+    if (g_system) {
+        g_system->Shutdown();
+        delete g_system;
+        g_system = nullptr;
+    }
 
     return (jboolean) 1;
 }

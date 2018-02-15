@@ -66,9 +66,10 @@ public:
      *          destroyed, false if the caller takes care of memory management
      * @return Pointer to a IbMemReg object registered at the protected domain
      */
-    IbMemReg* Register(void* addr, uint32_t size, bool freeOnCleanup = true);
+     // TODO update doc
+    void Register(IbMemReg* refMemReg);
 
-    void Deregister(IbMemReg& memReg);
+    void Deregister(IbMemReg* refMemReg);
 
     /**
      * Get the IB protection domain object

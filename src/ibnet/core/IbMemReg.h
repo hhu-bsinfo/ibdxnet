@@ -56,11 +56,20 @@ public:
      *          destruction of this object, false to leave management to the
      *          caller.
      */
-    IbMemReg(void* addr, uint32_t size, bool freeOnCleanup = true) :
+    IbMemReg(void* addr, uint64_t size, bool freeOnCleanup = true) :
             m_addr(addr),
             m_size(size),
             m_freeOnCleanup(freeOnCleanup),
             m_ibMemReg(nullptr) {
+        IBNET_ASSERT_PTR(addr);
+    }
+
+    // TODO doc
+    IbMemReg(void* addr, uint64_t size, IbMemReg* refParentMemory) :
+        m_addr(addr),
+        m_size(size),
+        m_freeOnCleanup(false),
+        m_ibMemReg(refParentMemory->m_ibMemReg) {
         IBNET_ASSERT_PTR(addr);
     }
 
@@ -99,7 +108,7 @@ public:
     /**
      * Get the size of the allocated memory region
      */
-    uint32_t GetSize() const {
+    uint64_t GetSize() const {
         return m_size;
     }
 
@@ -147,7 +156,7 @@ public:
 
 private:
     void* m_addr;
-    uint32_t m_size;
+    uint64_t m_size;
     bool m_freeOnCleanup;
 
     ibv_mr* m_ibMemReg;

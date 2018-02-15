@@ -55,51 +55,50 @@ IbProtDom::~IbProtDom()
     IBNET_LOG_DEBUG("[%s] Destroying protection domain done", m_name);
 }
 
-IbMemReg* IbProtDom::Register(void* addr, uint32_t size, bool freeOnCleanup)
+void IbProtDom::Register(IbMemReg* refMemReg)
 {
-    IBNET_ASSERT(size != 0);
+    IBNET_ASSERT(refMemReg != nullptr);
+    IBNET_ASSERT(refMemReg->m_size != 0);
 
-    if (addr == nullptr) {
+    if (refMemReg->m_addr == nullptr) {
         throw IbException("[%s] Registering memory region failed, null",
             m_name);
     }
 
     IBNET_LOG_TRACE("[%s] Registering memory region %p, size %d",
-            m_name, addr, size);
+            m_name, refMemReg->m_addr, refMemReg->m_size);
 
-    auto* memReg = new IbMemReg(addr, size, freeOnCleanup);
+    refMemReg->m_ibMemReg = ibv_reg_mr(m_ibProtDom, refMemReg->m_addr,
+        refMemReg->m_size, IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
 
-    memReg->m_ibMemReg = ibv_reg_mr(m_ibProtDom, addr, size,
-        IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
-
-    if (memReg->m_ibMemReg == nullptr) {
-        delete memReg;
+    if (refMemReg->m_ibMemReg == nullptr) {
         throw IbException("[%s] Registering memory region failed: %s",
             m_name, strerror(errno));
     }
 
     m_memoryRegionsRegistered++;
-    m_totalMemRegistered += size;
-
-    return memReg;
+    m_totalMemRegistered += refMemReg->m_size;
 }
 
-void IbProtDom::Deregister(IbMemReg& memReg)
+void IbProtDom::Deregister(IbMemReg* refMemReg)
 {
+    IBNET_ASSERT(refMemReg != nullptr);
+    IBNET_ASSERT(refMemReg->m_size != 0);
+
     IBNET_LOG_TRACE("[%s] Deregistering memory region %p, size %d",
         m_name, memReg.GetAddress(), memReg.GetSize());
 
-    int ret = ibv_dereg_mr(memReg.m_ibMemReg);
+    int ret = ibv_dereg_mr(refMemReg->m_ibMemReg);
 
     if (ret != 0) {
         throw IbException("[%s] Deregistering memory region failed: %s",
             m_name, strerror(errno));
     }
 
-    memReg.m_ibMemReg = nullptr;
+    refMemReg->m_ibMemReg = nullptr;
 
     m_memoryRegionsRegistered--;
-    m_totalMemRegistered -= memReg.GetSize();
+    m_totalMemRegistered -= refMemReg->m_size;
 }
 
 }

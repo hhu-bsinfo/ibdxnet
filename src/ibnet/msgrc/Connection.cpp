@@ -51,9 +51,11 @@ Connection::Connection(con::NodeId ownNodeId, con::ConnectionId connectionId,
     IBNET_LOG_DEBUG("Allocate send buffer, size %d for connection id 0x%X",
         m_sendBufferSize, connectionId);
 
-    m_sendBuffer = m_refProtDom->Register(
+    m_sendBuffer = new core::IbMemReg(
         aligned_alloc(static_cast<size_t>(getpagesize()), m_sendBufferSize),
         m_sendBufferSize, true);
+
+    m_refProtDom->Register(m_sendBuffer);
 
     IBNET_LOG_DEBUG("Created QP, qpNum 0x%X", m_ibPhysicalQPId);
 }
@@ -65,7 +67,7 @@ Connection::~Connection()
     }
 
     if (m_sendBuffer) {
-        m_refProtDom->Deregister(*m_sendBuffer);
+        m_refProtDom->Deregister(m_sendBuffer);
         delete m_sendBuffer;
     }
 }

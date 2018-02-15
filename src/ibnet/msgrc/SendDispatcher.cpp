@@ -33,6 +33,7 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     m_completionsPending(0),
     m_sendQueuePending(),
     m_firstWc(true),
+    m_ignoreFlushErrOnPendingCompletions(0),
     m_sgeLists(static_cast<ibv_sge*>(
         aligned_alloc(static_cast<size_t>(getpagesize()),
         sizeof(ibv_sge) * m_refConnectionManager->GetIbSQSize()))),
@@ -234,6 +235,8 @@ bool SendDispatcher::Dispatch()
         // reset due to failure
         m_prevWorkPackageResults->Reset();
 
+        m_ignoreFlushErrOnPendingCompletions += m_completionsPending;
+
         return true;
     }
 }
@@ -259,45 +262,45 @@ bool SendDispatcher::__PollCompletions()
 
             for (uint32_t i = 0; i < static_cast<uint32_t>(ret); i++) {
                 if (m_workComp[i].status != IBV_WC_SUCCESS) {
-                    if (m_workComp[i].status) {
-                        switch (m_workComp[i].status) {
-                            // a previous work request failed and put the queue into error
-                            // state
-                            //case IBV_WC_WR_FLUSH_ERR:
-                            //    throw IbException("Work completion of recv queue failed, "
-                            //        "flush err");
+                    auto* ctx = (WorkRequestIdCtx*) &m_workComp[i].wr_id;
 
-                            case IBV_WC_RETRY_EXC_ERR:
-                                if (m_firstWc) {
-                                    __ThrowDetailedException<core::IbException>(
-                                        "First work completion of queue failed,"
-                                        " it's very likely your connection "
-                                        "attributes are wrong or the remote"
-                                        " isn't in a state to respond");
-                                } else {
-                                    throw con::DisconnectedException();
-                                }
+                    switch (m_workComp[i].status) {
+                        case IBV_WC_WR_FLUSH_ERR:
+                            if (m_ignoreFlushErrOnPendingCompletions != 0) {
+                                // some node disconnected/failed and we have
+                                // to ignore any errors for a bit
+                                break;
+                            }
 
-                            default:
-                                auto* ctx =
-                                    (WorkRequestIdCtx*) &m_workComp[i].wr_id;
+                            // fall through to default error case
 
-                                __ThrowDetailedException<core::IbException>(
-                                    "Found failed work completion (%d), target "
+                        default:
+                            __ThrowDetailedException<core::IbException>(
+                                "Found failed work completion (%d), target "
                                     "node 0x%X, send bytes %d, fc data %d, "
                                     "status %s", i, ctx->m_targetNodeId,
-                                    ctx->m_sendSize, ctx->m_fcData,
-                                    core::WORK_COMPLETION_STATUS_CODE[
-                                        m_workComp[i].status]);
-                        }
+                                ctx->m_sendSize, ctx->m_fcData,
+                                core::WORK_COMPLETION_STATUS_CODE[
+                                    m_workComp[i].status]);
 
-                        // TODO case if a node got disconnected but there are
-                        // still completions to poll from the cq
-                        // have to handle them here, further decrement
-                        // m_completionsPending--;
-                        // and reset m_sendQueueFillState[nodeId] = 0;
-                        // on disconnect detection
+                        case IBV_WC_RETRY_EXC_ERR:
+                            if (m_firstWc) {
+                                __ThrowDetailedException<core::IbException>(
+                                    "First work completion of queue failed,"
+                                    " it's very likely your connection "
+                                    "attributes are wrong or the remote"
+                                    " isn't in a state to respond");
+                            } else {
+                                throw con::DisconnectedException();
+                            }
                     }
+
+                    // node failure/disconnect but still completions to poll
+                    // from the cq. Continue decrementing until all failed
+                    // completions are processed
+
+                    m_sendQueuePending[ctx->m_targetNodeId]--;
+                    m_completionsPending--;
                 } else {
                     m_firstWc = false;
 
@@ -318,6 +321,10 @@ bool SendDispatcher::__PollCompletions()
                         ctx->m_fcData;
                     m_sendQueuePending[ctx->m_targetNodeId]--;
                     m_completionsPending--;
+                }
+
+                if (m_ignoreFlushErrOnPendingCompletions > 0) {
+                    m_ignoreFlushErrOnPendingCompletions--;
                 }
             }
         } else {

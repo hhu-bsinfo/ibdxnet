@@ -67,6 +67,7 @@ private:
     uint32_t m_completionsPending;
     uint16_t m_sendQueuePending[con::NODE_ID_MAX_NUM_NODES];
     bool m_firstWc;
+    uint32_t m_ignoreFlushErrOnPendingCompletions;
 
     ibv_sge* m_sgeLists;
     ibv_send_wr* m_sendWrs;

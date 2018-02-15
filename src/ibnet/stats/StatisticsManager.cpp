@@ -12,12 +12,18 @@ StatisticsManager::StatisticsManager(uint32_t printIntervalMs) :
     m_mutex(),
     m_operations()
 {
-
+#ifdef IBNET_DISABLE_STATISTICS
+    IBNET_LOG_INFO("Preprocessor flag to disable some statistics active");
+#endif
 }
 
 void StatisticsManager::PrintStatistics()
 {
     std::cout << "================= Statistics =================" << std::endl;
+
+#ifdef IBNET_DISABLE_STATISTICS
+    std::cout << "DISABLED DISABLED DISABLED DISABLED DISABLED" << std::endl;
+#endif
 
     m_mutex.lock();
 

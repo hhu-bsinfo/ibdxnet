@@ -26,9 +26,12 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     m_refConnectionManager(refConectionManager),
     m_refStatisticsManager(refStatisticsManager),
     m_refSendHandler(refSendHandler),
-    m_prevWorkPackageResults(new SendHandler::PrevWorkPackageResults()),
+    m_prevWorkPackageResults(static_cast<SendHandler::PrevWorkPackageResults*>(
+        aligned_alloc(static_cast<size_t>(getpagesize()),
+        sizeof(SendHandler::PrevWorkPackageResults)))),
     m_completionList(static_cast<SendHandler::CompletedWorkList*>(
-        malloc(SendHandler::CompletedWorkList::Sizeof(
+        aligned_alloc(static_cast<size_t>(getpagesize()),
+        SendHandler::CompletedWorkList::Sizeof(
         refConectionManager->GetMaxNumConnections())))),
     m_completionsPending(0),
     m_sendQueuePending(),
@@ -140,7 +143,7 @@ SendDispatcher::~SendDispatcher()
     m_refStatisticsManager->Deregister(m_throughputSentData);
     m_refStatisticsManager->Deregister(m_throughputSentFC);
 
-    delete m_prevWorkPackageResults;
+    free(m_prevWorkPackageResults);
     free(m_completionList);
 
     free(m_sgeLists);
@@ -176,10 +179,10 @@ SendDispatcher::~SendDispatcher()
 bool SendDispatcher::Dispatch()
 {
     if (m_totalTime->GetCounter() == 0) {
-        m_totalTime->Start();
+        IBNET_STATS(m_totalTime->Start());
     } else {
-        m_totalTime->Stop();
-        m_totalTime->Start();
+        IBNET_STATS(m_totalTime->Stop());
+        IBNET_STATS(m_totalTime->Start());
     }
 
     const SendHandler::NextWorkPackage* workPackage =
@@ -200,11 +203,11 @@ bool SendDispatcher::Dispatch()
     try {
         // nothing to send, poll completions
         if (workPackage->m_nodeId == con::NODE_ID_INVALID) {
-            m_emptyNextWorkPackage->Inc();
+            IBNET_STATS(m_emptyNextWorkPackage->Inc());
             return __PollCompletions();
         }
 
-        m_nonEmptyNextWorkPackage->Inc();
+        IBNET_STATS(m_nonEmptyNextWorkPackage->Inc());
 
         connection = (Connection*)
             m_refConnectionManager->GetConnection(workPackage->m_nodeId);
@@ -212,8 +215,9 @@ bool SendDispatcher::Dispatch()
         // send data
         __SendData(connection, workPackage);
 
-        m_sentData->Add(m_prevWorkPackageResults->m_numBytesPosted);
-        m_sentFC->Add(m_prevWorkPackageResults->m_fcDataPosted);
+        IBNET_STATS(m_sentData->Add(
+            m_prevWorkPackageResults->m_numBytesPosted));
+        IBNET_STATS(m_sentFC->Add(m_prevWorkPackageResults->m_fcDataPosted));
 
         // TODO trigger park start not correct, yet
 
@@ -245,7 +249,7 @@ bool SendDispatcher::__PollCompletions()
 {
     // anything to poll from the shared completion queue
     if (m_completionsPending > 0) {
-        m_pollCompletions->Start();
+        IBNET_STATS(m_pollCompletions->Start());
 
         // poll in batches
         int ret = ibv_poll_cq(m_refConnectionManager->GetIbSharedSCQ(),
@@ -257,8 +261,8 @@ bool SendDispatcher::__PollCompletions()
         }
 
         if (ret > 0) {
-            m_nonEmptyCompletionPolls->Inc();
-            m_completionBatches->Add(static_cast<uint64_t>(ret));
+            IBNET_STATS(m_nonEmptyCompletionPolls->Inc());
+            IBNET_STATS(m_completionBatches->Add(static_cast<uint64_t>(ret)));
 
             for (uint32_t i = 0; i < static_cast<uint32_t>(ret); i++) {
                 if (m_workComp[i].status != IBV_WC_SUCCESS) {
@@ -328,10 +332,10 @@ bool SendDispatcher::__PollCompletions()
                 }
             }
         } else {
-            m_emptyCompletionPolls->Inc();
+            IBNET_STATS(m_emptyCompletionPolls->Inc());
         }
 
-        m_pollCompletions->Stop();
+        IBNET_STATS(m_pollCompletions->Stop());
     }
 
     return m_completionsPending > 0;
@@ -340,7 +344,7 @@ bool SendDispatcher::__PollCompletions()
 void SendDispatcher::__SendData(Connection* connection,
         const SendHandler::NextWorkPackage* workPackage)
 {
-    m_sendData->Start();
+    IBNET_STATS(m_sendData->Start());
 
     uint32_t totalBytesProcessed = 0;
 
@@ -408,7 +412,7 @@ void SendDispatcher::__SendData(Connection* connection,
             posBack += length;
             totalBytesProcessed += length;
 
-            m_sendDataFullBuffers->Inc();
+            IBNET_STATS(m_sendDataFullBuffers->Inc());
         } else {
             // smaller than a receive buffer
             length = posEnd - posBack;
@@ -430,7 +434,7 @@ void SendDispatcher::__SendData(Connection* connection,
                 totalBytesProcessed += length;
             }
 
-            m_sendDataNonFullBuffers->Inc();
+            IBNET_STATS(m_sendDataNonFullBuffers->Inc());
         }
 
         // don't send packages with size 0 which is a special value
@@ -499,7 +503,7 @@ void SendDispatcher::__SendData(Connection* connection,
             }
         }
 
-        m_sendBatches->Add(chunks);
+        IBNET_STATS(m_sendBatches->Add(chunks));
 
         m_sendQueuePending[nodeId] += chunks;
         // completion queue shared among all connections
@@ -514,7 +518,7 @@ void SendDispatcher::__SendData(Connection* connection,
     m_prevWorkPackageResults->m_numBytesNotPosted =
         totalBytesToProcess - totalBytesProcessed;
 
-    m_sendData->Stop();
+    IBNET_STATS(m_sendData->Stop());
 }
 
 }

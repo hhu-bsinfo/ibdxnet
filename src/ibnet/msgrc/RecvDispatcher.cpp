@@ -25,7 +25,8 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
     m_refRecvBufferPool(refRecvBufferPool),
     m_refStatisticsManager(refStatisticsManager),
     m_refRecvHandler(refRecvHandler),
-    m_recvPackage(static_cast<RecvHandler::ReceivedPackage*>(malloc(
+    m_recvPackage(static_cast<RecvHandler::ReceivedPackage*>(
+        aligned_alloc(static_cast<size_t>(getpagesize()),
         RecvHandler::ReceivedPackage::Sizeof(
         refConnectionManager->GetIbSRQSize())))),
     m_recvQueuePending(0),
@@ -93,10 +94,10 @@ RecvDispatcher::~RecvDispatcher()
 bool RecvDispatcher::Dispatch()
 {
     if (m_totalTime->GetCounter() == 0) {
-        m_totalTime->Start();
+        IBNET_STATS(m_totalTime->Start());
     } else {
-        m_totalTime->Stop();
-        m_totalTime->Start();
+        IBNET_STATS(m_totalTime->Stop());
+        IBNET_STATS(m_totalTime->Start());
     }
 
     uint32_t receivedCount = __Poll();
@@ -188,7 +189,7 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
             }
 
             if (immedData->m_flowControlData) {
-                m_receivedFC->Inc();
+                IBNET_STATS(m_receivedFC->Inc());
             }
 
             m_recvPackage->m_entries[i].m_sourceNodeId =
@@ -199,7 +200,7 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
                 dataMem ? dataMem->GetAddress() : nullptr;
             m_recvPackage->m_entries[i].m_dataLength = dataRecvLen;
 
-            m_receivedData->Add(dataRecvLen);
+            IBNET_STATS(m_receivedData->Add(dataRecvLen));
         }
 
         m_recvPackage->m_count = receivedCount;

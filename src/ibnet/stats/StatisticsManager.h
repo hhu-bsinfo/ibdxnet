@@ -12,6 +12,13 @@
 
 #include "Operation.hpp"
 
+//#define IBNET_DISABLE_STATISTICS
+#ifdef IBNET_DISABLE_STATISTICS
+#define IBNET_STATS(...)
+#else
+#define IBNET_STATS(x) x
+#endif
+
 namespace ibnet {
 namespace stats {
 

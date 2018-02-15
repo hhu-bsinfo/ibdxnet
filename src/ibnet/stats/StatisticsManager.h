@@ -33,6 +33,7 @@ public:
         for (auto it = m_operations.begin(); it != m_operations.end(); it++) {
             if (*it == operation) {
                 m_operations.erase(it);
+                break;
             }
         }
     }

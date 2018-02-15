@@ -71,6 +71,12 @@ public:
         m_freeOnCleanup(false),
         m_ibMemReg(refParentMemory->m_ibMemReg) {
         IBNET_ASSERT_PTR(addr);
+
+        if (size >= 0x7FFFFFFF) {
+            throw IbException("Invalid size (%d) for memory region with parent "
+                "region: %p (%d)", size, refParentMemory->GetAddress(),
+                refParentMemory->GetSize());
+        }
     }
 
     /**
@@ -103,6 +109,10 @@ public:
      */
     void* GetAddress() const {
         return m_addr;
+    }
+
+    uint32_t GetSizeBuffer() const {
+        return static_cast<uint32_t>(m_size);
     }
 
     /**

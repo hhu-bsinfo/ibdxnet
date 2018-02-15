@@ -122,6 +122,9 @@ void MsgrcSystem::Shutdown()
 
     m_executionEngine->Stop();
 
+    m_connectionManager->SetListener(nullptr);
+    m_discoveryManager->SetListener(nullptr);
+
     if (m_configuration->m_statisticsThreadPrintIntervalMs > 0) {
         m_statisticsManager->Stop();
     }
@@ -133,14 +136,12 @@ void MsgrcSystem::Shutdown()
     delete m_sendDispatcher;
     delete m_recvDispatcher;
 
-    m_connectionManager->SetListener(nullptr);
     delete m_connectionManager;
 
     delete m_statisticsManager;
 
     delete m_recvBufferPool;
 
-    m_discoveryManager->SetListener(nullptr);
     delete m_discoveryManager;
     delete m_jobManager;
     delete m_exchangeManager;

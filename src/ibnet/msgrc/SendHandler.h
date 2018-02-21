@@ -87,7 +87,7 @@ public:
                 ", m_numBytesPosted " << std::dec << o.m_numBytesPosted <<
                 ", m_numBytesNotPosted " << o.m_numBytesNotPosted <<
                 ", m_fcDataPosted " << static_cast<uint16_t>(o.m_fcDataPosted)
-                << ", m_fcDataNotPosted" <<
+                << ", m_fcDataNotPosted " <<
                 static_cast<uint16_t>(o.m_fcDataNotPosted);
         }
     } __attribute__((packed));

@@ -69,7 +69,8 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     m_throughputSentData(new stats::Throughput("SentThroughputData", m_sentData,
         m_totalTime)),
     m_throughputSentFC(new stats::Throughput("SentThroughputFC", m_sentFC,
-        m_totalTime))
+        m_totalTime)),
+    m_privateStats(new Stats(this))
 {
     memset(m_prevWorkPackageResults, 0,
         sizeof(SendHandler::PrevWorkPackageResults));
@@ -114,6 +115,8 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
 
     m_refStatisticsManager->Register(m_throughputSentData);
     m_refStatisticsManager->Register(m_throughputSentFC);
+
+    m_refStatisticsManager->Register(m_privateStats);
 }
 
 SendDispatcher::~SendDispatcher()
@@ -142,6 +145,8 @@ SendDispatcher::~SendDispatcher()
 
     m_refStatisticsManager->Deregister(m_throughputSentData);
     m_refStatisticsManager->Deregister(m_throughputSentFC);
+
+    m_refStatisticsManager->Deregister(m_privateStats);
 
     free(m_prevWorkPackageResults);
     free(m_completionList);
@@ -174,6 +179,8 @@ SendDispatcher::~SendDispatcher()
 
     delete m_throughputSentData;
     delete m_throughputSentFC;
+
+    delete m_privateStats;
 }
 
 bool SendDispatcher::Dispatch()

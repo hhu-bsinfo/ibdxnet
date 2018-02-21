@@ -121,6 +121,34 @@ private:
     };
 
 private:
+    class Stats : public stats::Operation
+    {
+    public:
+        Stats(SendDispatcher* refParent) :
+            Operation("SendDispatcherState"),
+            m_refParent(refParent)
+        {}
+
+        ~Stats() override = default;
+
+        void WriteOstream(std::ostream& os) const override {
+            os << "m_prevWorkPackageResults " <<
+               *m_refParent->m_prevWorkPackageResults << ", m_completionList "
+               << *m_refParent->m_completionList << ", m_completionsPending "
+               << m_refParent->m_completionsPending << ", m_sendQueuePending ";
+
+            for (uint16_t i = 0; i < con::NODE_ID_MAX_NUM_NODES; i++) {
+                if (m_refParent->m_sendQueuePending[i] > 0) {
+                    os << std::hex << i << "|" << std::dec <<
+                       m_refParent->m_sendQueuePending[i] << " ";
+                }
+            }
+        }
+    private:
+        SendDispatcher* m_refParent;
+    };
+
+private:
     stats::Time* m_totalTime;
     stats::Time* m_pollCompletions;
     stats::Time* m_sendData;
@@ -145,6 +173,8 @@ private:
 
     stats::Throughput* m_throughputSentData;
     stats::Throughput* m_throughputSentFC;
+
+    Stats* m_privateStats;
 };
 
 }

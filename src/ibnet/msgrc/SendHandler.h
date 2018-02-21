@@ -86,8 +86,9 @@ public:
             return os << "m_nodeId " << std::hex << o.m_nodeId <<
                 ", m_numBytesPosted " << std::dec << o.m_numBytesPosted <<
                 ", m_numBytesNotPosted " << o.m_numBytesNotPosted <<
-                ", m_fcDataPosted " << o.m_fcDataPosted << ", m_fcDataNotPosted"
-                << o.m_fcDataNotPosted;
+                ", m_fcDataPosted " << static_cast<uint16_t>(o.m_fcDataPosted)
+                << ", m_fcDataNotPosted" <<
+                static_cast<uint16_t>(o.m_fcDataNotPosted);
         }
     } __attribute__((packed));
 
@@ -127,7 +128,7 @@ public:
             for (uint16_t i = 0; i < o.m_numNodes; i++) {
                 os << " " << std::hex << o.m_nodeIds[i] << "|" <<
                 std::dec << o.m_numBytesWritten[o.m_nodeIds[i]] << "|" <<
-                o.m_fcDataWritten[o.m_nodeIds[i]];
+                static_cast<uint16_t>(o.m_fcDataWritten[o.m_nodeIds[i]]);
             }
 
             return os;

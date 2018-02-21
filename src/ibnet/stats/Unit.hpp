@@ -68,7 +68,7 @@ public:
     }
 
     inline double GetCounter(Metric metric) const {
-        return GetCounter() / m_metricTable[metric];
+        return GetCounter() / static_cast<double>(m_metricTable[metric]);
     }
 
     inline uint64_t GetTotalValue() const {
@@ -76,15 +76,15 @@ public:
     }
 
     inline double GetTotalValue(Metric metric) const {
-        return GetTotalValue() / m_metricTable[metric];
+        return GetTotalValue() / static_cast<double>(m_metricTable[metric]);
     }
 
     inline double GetAvgValue() const {
-        return m_counter == 0 ? 0 : (double) m_total / m_counter;
+        return m_counter == 0 ? 0.0 : static_cast<double>(m_total) / m_counter;
     }
 
     inline double GetAvgValue(Metric metric) const {
-        return GetAvgValue() / m_metricTable[metric];
+        return GetAvgValue() / static_cast<double>(m_metricTable[metric]);
     }
 
     inline uint64_t GetMinValue() const {
@@ -92,7 +92,7 @@ public:
     }
 
     inline double GetMinValue(Metric metric) const {
-        return GetMinValue() / m_metricTable[metric];
+        return GetMinValue() / static_cast<double>(m_metricTable[metric]);
     }
 
     inline uint64_t GetMaxValue() const {

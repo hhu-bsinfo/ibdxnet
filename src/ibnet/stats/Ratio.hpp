@@ -39,23 +39,23 @@ public:
     }
 
     inline double GetRatioCounter() const {
-        uint64_t tmp = m_unit2->GetCounter();
-        return m_unit1->GetCounter() / (tmp == 0 ? 1 : tmp);
+        double tmp = m_unit2->GetCounter();
+        return m_unit1->GetCounter() / (tmp == 0.0 ? 1.0 : tmp);
     }
 
     inline double GetRatioTotalValue() const {
-        uint64_t tmp = m_unit2->GetTotalValue();
-        return m_unit1->GetTotalValue() / (tmp == 0 ? 1 : tmp);
+        double tmp = m_unit2->GetTotalValue();
+        return m_unit1->GetTotalValue() / (tmp == 0.0 ? 1.0 : tmp);
     }
 
     inline double GetRatioMinValue() const {
-        uint64_t tmp = m_unit2->GetMinValue();
-        return m_unit1->GetMinValue() / (tmp == 0 ? 1 : tmp);
+        double tmp = m_unit2->GetMinValue();
+        return m_unit1->GetMinValue() / (tmp == 0.0 ? 1.0 : tmp);
     }
 
     inline double GetRatioMaxValue() const {
-        uint64_t tmp = m_unit2->GetMaxValue();
-        return m_unit1->GetMaxValue() / (tmp == 0 ? 1 : tmp);
+        double tmp = m_unit2->GetMaxValue();
+        return m_unit1->GetMaxValue() / (tmp == 0.0 ? 1.0 : tmp);
     }
 
     void WriteOstream(std::ostream& os) const override {

@@ -20,6 +20,22 @@
 #define IBNET_SYS_TIMER_H
 
 #include <chrono>
+#include <pt/pttsc.h>
+#include <pt/pttscp.h>
+#include <pt/ptutil.h>
+
+#include "ibnet/sys/Logger.hpp"
+
+//#define IBNET_SYS_TIMER_MODE_NORMAL
+//#define IBNET_SYS_TIMER_MODE_RDTSC
+//#define IBNET_SYS_TIMER_MODE_RDTSCP
+
+// Default to RDTSCP for timer
+#if !defined(IBNET_SYS_TIMER_MODE_NORMAL) || \
+    !defined(IBNET_SYS_TIMER_MODE_RDTSC) || \
+    !defined(IBNET_SYS_TIMER_MODE_RDTSCP)
+#define IBNET_SYS_TIMER_MODE_RDTSCP
+#endif
 
 namespace ibnet {
 namespace sys {
@@ -42,9 +58,46 @@ public:
             m_start(),
             m_accuNs(0)
     {
+#ifdef IBNET_SYS_TIMER_MODE_RDTSC
+        if (ms_overhead == 0 || ms_cyclesPerSec == 0.0) {
+            if (!pttsc_support()) {
+                IBNET_LOG_ERROR("RDTSC instruction not supported. Recompile to "
+                    "use normal timers instead");
+                abort();
+            }
+
+            ms_overhead = pttsc_overhead(1000000);
+            ms_cyclesPerSec = ptutil_cycles_per_sec(pttsc_start, pttsc_end,
+                ms_overhead);
+
+            IBNET_LOG_INFO("perf-timer RDTSC initialized: overhead %d cycles, "
+                "cycles per sec %f", ms_overhead, ms_cyclesPerSec);
+        }
+#elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
+        if (ms_overhead == 0 || ms_cyclesPerSec == 0.0) {
+            if (!pttscp_support()) {
+                IBNET_LOG_ERROR("RDTSCP instruction not supported. Recompile to "
+                    "use either RTSCP or normal timers instead");
+                abort();
+            }
+
+            ms_overhead = pttscp_overhead(1000000);
+            ms_cyclesPerSec = ptutil_cycles_per_sec(pttscp_start, pttscp_end,
+                ms_overhead);
+
+            IBNET_LOG_INFO("perf-timer RDTSCP initialized: overhead %d cycles, "
+                "cycles per sec %f", ms_overhead, ms_cyclesPerSec);
+        }
+#endif
+
         if (start) {
             m_running = true;
+#if defined(IBNET_SYS_TIMER_MODE_RDTSC) || defined(IBNET_SYS_TIMER_MODE_RDTSCP)
+            m_start = 0;
+#else
             m_start = std::chrono::high_resolution_clock::now();
+#endif
+
         }
     };
 
@@ -60,7 +113,15 @@ public:
     void Start()
     {
         m_running = true;
+
+#ifdef IBNET_SYS_TIMER_MODE_RDTSC
+        m_start = pttsc_start();
+#elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
+        m_start = pttscp_start();
+#else
         m_start = std::chrono::high_resolution_clock::now();
+#endif
+
         m_accuNs = 0;
     }
 
@@ -70,7 +131,13 @@ public:
     void Resume()
     {
         if (!m_running) {
+#ifdef IBNET_SYS_TIMER_MODE_RDTSC
+            m_start = pttsc_start();
+#elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
+            m_start = pttscp_start();
+#else
             m_start = std::chrono::high_resolution_clock::now();
+#endif
             m_running = true;
         }
     }
@@ -82,10 +149,21 @@ public:
     {
         if (m_running) {
             m_running = false;
+
+#ifdef IBNET_SYS_TIMER_MODE_RDTSC
+            uint64_t end = pttsc_end();
+            m_accuNs += ptutil_cycles_to_ns(end - m_start - ms_overhead,
+                ms_cyclesPerSec);
+#elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
+            uint64_t end = pttscp_end();
+            m_accuNs += ptutil_cycles_to_ns(end - m_start - ms_overhead,
+                ms_cyclesPerSec);
+#else
             std::chrono::high_resolution_clock::time_point stop =
                 std::chrono::high_resolution_clock::now();
             m_accuNs += std::chrono::duration<uint64_t, std::nano>(
                 stop - m_start).count();
+#endif
         }
     }
 
@@ -104,9 +182,17 @@ public:
     double GetTimeSec()
     {
         if (m_running) {
+#ifdef IBNET_SYS_TIMER_MODE_RDTSC
+            return m_accuNs + ptutil_cycles_to_sec(pttsc_end() - m_start -
+                ms_overhead, ms_cyclesPerSec);
+#elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
+            return m_accuNs + ptutil_cycles_to_sec(pttscp_end() - m_start -
+                ms_overhead, ms_cyclesPerSec);
+#else
             return (m_accuNs + std::chrono::duration<uint64_t, std::nano>(
                     std::chrono::high_resolution_clock::now() -
                     m_start).count()) / 1000.0 / 1000.0 / 1000.0;
+#endif
         } else {
             return m_accuNs / 1000.0 / 1000.0 / 1000.0;
         }
@@ -118,9 +204,17 @@ public:
     double GetTimeMs()
     {
         if (m_running) {
+#ifdef IBNET_SYS_TIMER_MODE_RDTSC
+            return m_accuNs + ptutil_cycles_to_ms(pttsc_end() - m_start -
+                                                   ms_overhead, ms_cyclesPerSec);
+#elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
+            return m_accuNs + ptutil_cycles_to_ms(pttscp_end() - m_start -
+                ms_overhead, ms_cyclesPerSec);
+#else
             return (m_accuNs + std::chrono::duration<uint64_t, std::nano>(
                     std::chrono::high_resolution_clock::now() -
                     m_start).count()) / 1000.0 / 1000.0;
+#endif
         } else {
             return m_accuNs / 1000.0 / 1000.0;
         }
@@ -132,9 +226,17 @@ public:
     double GetTimeUs()
     {
         if (m_running) {
+#ifdef IBNET_SYS_TIMER_MODE_RDTSC
+            return m_accuNs + ptutil_cycles_to_us(pttsc_end() - m_start -
+                                                  ms_overhead, ms_cyclesPerSec);
+#elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
+            return m_accuNs + ptutil_cycles_to_us(pttscp_end() - m_start -
+                ms_overhead, ms_cyclesPerSec);
+#else
             return (m_accuNs + std::chrono::duration<uint64_t, std::nano>(
                     std::chrono::high_resolution_clock::now() -
                     m_start).count()) / 1000.0;
+#endif
         } else {
             return m_accuNs / 1000.0;
         }
@@ -146,9 +248,17 @@ public:
     double GetTimeNs()
     {
         if (m_running) {
+#ifdef IBNET_SYS_TIMER_MODE_RDTSC
+            return m_accuNs + ptutil_cycles_to_ns(pttsc_end() - m_start -
+                                                  ms_overhead, ms_cyclesPerSec);
+#elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
+            return m_accuNs + ptutil_cycles_to_ns(pttscp_end() - m_start -
+                ms_overhead, ms_cyclesPerSec);
+#else
             return (m_accuNs + std::chrono::duration<uint64_t, std::nano>(
                     std::chrono::high_resolution_clock::now() -
                     m_start).count());
+#endif
         } else {
             return m_accuNs;
         }
@@ -156,7 +266,18 @@ public:
 
 private:
     bool m_running;
+#ifdef IBNET_SYS_TIMER_MODE_NORMAL
     std::chrono::high_resolution_clock::time_point m_start;
+#elif defined(IBNET_SYS_TIMER_MODE_RDTSC) || \
+        defined(IBNET_SYS_TIMER_MODE_RDTSCP)
+    uint64_t m_start;
+
+    static uint64_t ms_overhead;
+    static double ms_cyclesPerSec;
+#else
+#error "Unsupported timer mode specified"
+#endif
+
     uint64_t m_accuNs;
 };
 

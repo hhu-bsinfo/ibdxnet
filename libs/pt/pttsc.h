@@ -35,7 +35,7 @@ static inline bool pttsc_support()
     uint32_t flags;
 
     asm volatile("cpuid" : "=d" (flags) : "a" (in));
-    return flags & (1 << 4);
+    return (bool) (flags & (1 << 4));
 }
 
 /**

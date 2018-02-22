@@ -19,13 +19,6 @@
 #ifndef IBNET_SYS_TIMER_H
 #define IBNET_SYS_TIMER_H
 
-#include <chrono>
-#include <pt/pttsc.h>
-#include <pt/pttscp.h>
-#include <pt/ptutil.h>
-
-#include "ibnet/sys/Logger.hpp"
-
 //#define IBNET_SYS_TIMER_MODE_NORMAL
 //#define IBNET_SYS_TIMER_MODE_RDTSC
 //#define IBNET_SYS_TIMER_MODE_RDTSCP
@@ -36,6 +29,17 @@
     !defined(IBNET_SYS_TIMER_MODE_RDTSCP)
 #define IBNET_SYS_TIMER_MODE_RDTSCP
 #endif
+
+#include <chrono>
+#ifdef IBNET_SYS_TIMER_MODE_RDTSC
+#include <pt/pttsc.h>
+#include <pt/ptutil.h>
+#elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
+#include <pt/pttscp.h>
+#include <pt/ptutil.h>
+#endif
+
+#include "ibnet/sys/Logger.hpp"
 
 namespace ibnet {
 namespace sys {

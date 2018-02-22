@@ -22,9 +22,6 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
-#include "pttsc.h"
-#include "pttscp.h"
-
 /**
  * Convert cycles to seconds
  * 
@@ -35,7 +32,7 @@
 static inline uint64_t ptutil_cycles_to_sec(uint64_t cycles, 
         double cycles_per_sec)
 {
-    return cycles / cycles_per_sec;
+    return (uint64_t) (cycles / cycles_per_sec);
 }
 
 /**
@@ -48,7 +45,7 @@ static inline uint64_t ptutil_cycles_to_sec(uint64_t cycles,
 static inline uint64_t ptutil_cycles_to_ms(uint64_t cycles, 
         double cycles_per_sec)
 {
-    return cycles / (cycles_per_sec / 1000.0);
+    return (uint64_t) (cycles / (cycles_per_sec / 1000.0));
 }
 
 /**
@@ -61,7 +58,7 @@ static inline uint64_t ptutil_cycles_to_ms(uint64_t cycles,
 static inline uint64_t ptutil_cycles_to_us(uint64_t cycles, 
         double cycles_per_sec)
 {
-    return cycles / (cycles_per_sec / 1000.0 / 1000.0);
+    return (uint64_t) (cycles / (cycles_per_sec / 1000.0 / 1000.0));
 }
 
 /**
@@ -74,7 +71,7 @@ static inline uint64_t ptutil_cycles_to_us(uint64_t cycles,
 static inline uint64_t ptutil_cycles_to_ns(uint64_t cycles, 
         double cycles_per_sec)
 {
-    return cycles / (cycles_per_sec / 1000.0 / 1000.0 / 1000.0);
+    return (uint64_t) (cycles / (cycles_per_sec / 1000.0 / 1000.0 / 1000.0));
 }
 
 /**
@@ -125,8 +122,8 @@ static double ptutil_cycles_per_sec(uint64_t (*pt_start_func)(),
             }
                     
             stop_cycles = pt_end_func();
-            micros = (stop_time.tv_usec - start_time.tv_usec) + 
-                (stop_time.tv_sec - start_time.tv_sec) * 1000000;
+            micros = (uint64_t) ((stop_time.tv_usec - start_time.tv_usec) +
+                (stop_time.tv_sec - start_time.tv_sec) * 1000000);
 
             if (micros > 10000) {
                 cycles_per_sec = 
@@ -146,8 +143,6 @@ static double ptutil_cycles_per_sec(uint64_t (*pt_start_func)(),
 
         old_cycles = cycles_per_sec;
     }
-
-    return cycles_per_sec;
 }
 
 #endif /* PTUTIL_H */

@@ -4,7 +4,7 @@
  * Defines a very simple command line argument parser.
  *
  * @copyright
- * Copyright (c) 2017 Viet The Nguyen
+ * Copyright (C) 2018 Viet The Nguyen
  *
  * @copyright
  * Permission is hereby granted, free of charge, to any person obtaining a copy

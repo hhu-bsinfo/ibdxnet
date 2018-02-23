@@ -47,12 +47,14 @@ public:
     /**
      * Get the logger
      */
-    static spdlog::logger& GetLogger() {
+    static spdlog::logger& GetLogger()
+    {
         return *m_logger;
     }
 
 private:
     Logger() = default;
+
     ~Logger() = default;
 
     static spdlog::logger* m_logger;

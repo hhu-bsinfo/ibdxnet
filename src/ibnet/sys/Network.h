@@ -59,6 +59,7 @@ public:
 
 private:
     Network() = default;
+
     ~Network() = default;
 };
 

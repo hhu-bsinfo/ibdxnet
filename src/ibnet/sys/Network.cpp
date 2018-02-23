@@ -70,7 +70,7 @@ AddressIPV4 Network::ResolveHostname(const std::string& hostname)
         // assuming eth0 as default iface
         return ResolveIPForInterface("eth0");
     } else {
-        return AddressIPV4(inet_ntoa(*((struct in_addr *) he->h_addr)));
+        return AddressIPV4(inet_ntoa(*((struct in_addr*) he->h_addr)));
     }
 }
 
@@ -85,7 +85,7 @@ AddressIPV4 Network::ResolveIPForInterface(const std::string& iface)
     for (ptr = addrs; ptr; ptr = ptr->ifa_next) {
 
         if (ptr->ifa_addr->sa_family == AF_INET &&
-                !strcmp(ptr->ifa_name, iface.c_str())) {
+            !strcmp(ptr->ifa_name, iface.c_str())) {
             auto* addr_in = (struct sockaddr_in*) ptr->ifa_addr;
 
             ip = addr_in->sin_addr.s_addr;

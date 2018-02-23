@@ -19,6 +19,10 @@
 #ifndef IBNET_SYS_TIMER_H
 #define IBNET_SYS_TIMER_H
 
+/**
+ * The timer is implemented using either the rdtsc or rdtscp instruction or chrono of the STL.
+ * If your machine does not support rdtscp or rdtsc, you can manually flip the compile flags
+ */
 //#define IBNET_SYS_TIMER_MODE_NORMAL
 //#define IBNET_SYS_TIMER_MODE_RDTSC
 //#define IBNET_SYS_TIMER_MODE_RDTSCP
@@ -31,12 +35,15 @@
 #endif
 
 #include <chrono>
+
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC
 #include <pt/pttsc.h>
 #include <pt/ptutil.h>
 #elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
+
 #include <pt/pttscp.h>
 #include <pt/ptutil.h>
+
 #endif
 
 #include "ibnet/sys/Logger.hpp"
@@ -58,9 +65,9 @@ public:
      * @param start True to start the timer immediately after construction
      */
     explicit Timer(bool start = false) :
-            m_running(false),
-            m_start(),
-            m_accuNs(0)
+        m_running(false),
+        m_start(),
+        m_accuNs(0)
     {
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC
         if (ms_overhead == 0 || ms_cyclesPerSec == 0.0) {
@@ -86,8 +93,7 @@ public:
             }
 
             ms_overhead = pttscp_overhead(1000000);
-            ms_cyclesPerSec = ptutil_cycles_per_sec(pttscp_start, pttscp_end,
-                ms_overhead);
+            ms_cyclesPerSec = ptutil_cycles_per_sec(pttscp_start, pttscp_end, ms_overhead);
 
             IBNET_LOG_INFO("perf-timer RDTSCP initialized: overhead %d cycles, "
                 "cycles per sec %f", ms_overhead, ms_cyclesPerSec);
@@ -95,13 +101,7 @@ public:
 #endif
 
         if (start) {
-            m_running = true;
-#if defined(IBNET_SYS_TIMER_MODE_RDTSC) || defined(IBNET_SYS_TIMER_MODE_RDTSCP)
-            m_start = 0;
-#else
-            m_start = std::chrono::high_resolution_clock::now();
-#endif
-
+            Start();
         }
     };
 
@@ -176,7 +176,8 @@ public:
      *
      * @return True if running, false otherwise
      */
-    bool IsRunning() const {
+    bool IsRunning() const
+    {
         return m_running;
     }
 

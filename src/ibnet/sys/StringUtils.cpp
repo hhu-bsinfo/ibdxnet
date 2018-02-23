@@ -24,7 +24,7 @@ namespace ibnet {
 namespace sys {
 
 std::vector<std::string> StringUtils::Split(const std::string& text,
-        const std::string& delimiter, bool ignoreEmptyTokens)
+    const std::string& delimiter, bool ignoreEmptyTokens)
 {
     std::string remaining = text;
     std::vector<std::string> result;
@@ -56,31 +56,31 @@ std::vector<std::string> StringUtils::Split(const std::string& text,
 }
 
 std::string StringUtils::ToHexString(uint64_t value, bool fillZeros,
-        bool hexNumberIdent)
+    bool hexNumberIdent)
 {
     return __ToHexString(value, fillZeros ? 16 : 0, hexNumberIdent);
 }
 
 std::string StringUtils::ToHexString(uint32_t value, bool fillZeros,
-        bool hexNumberIdent)
+    bool hexNumberIdent)
 {
     return __ToHexString(value, fillZeros ? 8 : 0, hexNumberIdent);
 }
 
 std::string StringUtils::ToHexString(uint16_t value, bool fillZeros,
-        bool hexNumberIdent)
+    bool hexNumberIdent)
 {
     return __ToHexString(value, fillZeros ? 4 : 0, hexNumberIdent);
 }
 
 std::string StringUtils::ToHexString(uint8_t value, bool fillZeros,
-        bool hexNumberIdent)
+    bool hexNumberIdent)
 {
     return __ToHexString(value, fillZeros ? 2 : 0, hexNumberIdent);
 }
 
 std::string StringUtils::__ToHexString(uint64_t value, uint32_t fillZerosCount,
-        bool hexNumberIdent)
+    bool hexNumberIdent)
 {
     std::ostringstream os;
     os << std::hex << value;

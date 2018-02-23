@@ -48,12 +48,11 @@ public:
 
 private:
     Random() = default;
+
     ~Random() = default;
 
     static std::random_device* ms_rd;
     static std::mt19937* ms_mt;
-
-    static void __Init();
 };
 
 }

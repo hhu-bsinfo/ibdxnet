@@ -52,9 +52,9 @@ public:
         // Very important note:
         // If the JVM is crashing here: Have a look at the JNINotes.md file
 
-        int envStat = vm->GetEnv((void **)&env, JNI_VERSION_1_8);
+        int envStat = vm->GetEnv((void**) &env, JNI_VERSION_1_8);
         if (envStat == JNI_EDETACHED) {
-            if (vm->AttachCurrentThread((void **) &env, nullptr) != 0) {
+            if (vm->AttachCurrentThread((void**) &env, nullptr) != 0) {
                 throw std::runtime_error("Failed to attach to java vm");
             }
         } else if (envStat == JNI_OK) {
@@ -99,10 +99,10 @@ public:
      * @return The method id of the specified java method
      */
     static inline jmethodID GetAndVerifyMethod(JNIEnv* env, jobject object,
-            const std::string& name, const std::string& signature)
+        const std::string& name, const std::string& signature)
     {
         jmethodID mid;
-        
+
         mid = env->GetMethodID(env->GetObjectClass(object), name.c_str(),
             signature.c_str());
 
@@ -118,6 +118,7 @@ public:
 
 private:
     JNIHelper() = default;
+
     ~JNIHelper() = default;
 };
 

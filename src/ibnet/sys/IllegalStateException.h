@@ -25,7 +25,7 @@ namespace ibnet {
 namespace sys {
 
 /**
- * Common exception that can be thrown in the sys namespace
+ * Exception when encountering an illegal state (e.g. illegal variable value)
  *
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
  */
@@ -37,7 +37,8 @@ public:
      */
     IllegalStateException() :
         Exception("")
-    {}
+    {
+    }
 
     /**
      * Constructor
@@ -45,10 +46,11 @@ public:
      * @param format Printf style format message
      * @param args Parameters for format string
      */
-    template<typename... Args>
+    template <typename... Args>
     explicit IllegalStateException(const std::string& format, Args... args) :
         Exception(format, args...)
-    {}
+    {
+    }
 
     /**
      * Destructor

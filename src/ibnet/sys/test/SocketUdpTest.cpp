@@ -37,7 +37,7 @@ static bool ParseOptions(int argc, char** argv)
     }
 
     destAddr = ibnet::sys::AddressIPV4(std::string(argv[1]) + ":" +
-            std::string(argv[2]));
+        std::string(argv[2]));
 
     isServer = !strcmp(argv[3], "server");
 
@@ -70,18 +70,18 @@ int main(int argc, char** argv)
 
         while (true) {
             ssize_t length = socket->Send(buffer, sizeof(buffer),
-                    destAddr.GetAddress(), destAddr.GetPort());
+                destAddr.GetAddress(), destAddr.GetPort());
 
             if (length != sizeof(buffer)) {
                 std::cout << "Sending data to " << destAddr << " failed: " <<
-                          length << std::endl;
+                    length << std::endl;
             }
 
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     } else {
         std::cout << "Waiting to receive data on port " << destAddr.GetPort() <<
-                std::endl;
+            std::endl;
 
         while (true) {
             uint32_t recvIp = -1;
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
 
             if (length > 0) {
                 std::cout << "Received data from 0x" << std::hex <<
-                          recvIp << ", length " << length << std::endl;
+                    recvIp << ", length " << length << std::endl;
 
                 for (size_t i = 0; i < static_cast<size_t>(length); i++) {
 
@@ -102,7 +102,7 @@ int main(int argc, char** argv)
                 std::cout << std::endl;
             } else {
                 std::cout << "Receiving data on port " << destAddr.GetPort() <<
-                     " failed: " << length << std::endl;
+                    " failed: " << length << std::endl;
             }
 
             std::this_thread::sleep_for(std::chrono::seconds(1));

@@ -31,8 +31,8 @@ namespace ibnet {
 namespace sys {
 
 SocketUDP::SocketUDP(uint16_t port) :
-        m_port(port),
-        m_socket(-1)
+    m_port(port),
+    m_socket(-1)
 {
     sockaddr_in addr = {};
 
@@ -111,7 +111,7 @@ ssize_t SocketUDP::Send(void* buffer, size_t size, uint32_t addrIpv4, uint16_t p
 
     if (length != static_cast<ssize_t>(size)) {
         IBNET_LOG_ERROR("Sending data failed (%d): %s", length,
-                strerror((int) length));
+            strerror((int) length));
     }
 
     return length;

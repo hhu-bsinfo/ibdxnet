@@ -52,7 +52,8 @@ public:
     /**
      * Get the port of this socket
      */
-    uint16_t GetPort() const {
+    uint16_t GetPort() const
+    {
         return m_port;
     }
 

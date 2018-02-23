@@ -42,7 +42,8 @@ public:
     explicit ThreadLoop(const std::string& name = "") :
         Thread(name),
         m_run(true)
-    {}
+    {
+    }
 
     /**
      * Destructor
@@ -63,7 +64,9 @@ protected:
     /**
      * Execute something before the thread starts looping (e.g. init/setup)
      */
-    virtual void _BeforeRunLoop() {};
+    virtual void _BeforeRunLoop()
+    {
+    };
 
     /**
      * Run function which is looped until exit is signaled
@@ -74,12 +77,15 @@ protected:
      * Execute something after the loop exited and before the thread terminates
      * (e.g. cleanup)
      */
-    virtual void _AfterRunLoop() {};
+    virtual void _AfterRunLoop()
+    {
+    };
 
     /**
      * Exit the loop on the beginning of the next iteration
      */
-    void ExitLoop() {
+    void ExitLoop()
+    {
         m_run = false;
     }
 

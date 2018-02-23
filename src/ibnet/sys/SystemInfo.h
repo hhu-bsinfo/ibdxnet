@@ -24,23 +24,46 @@
 namespace ibnet {
 namespace sys {
 
-//
-// Created by on 2/2/18.
-//
+/**
+ * Access information about the current system (hardware, os, kernel etc)
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 02.02.2018
+ */
 class SystemInfo
 {
 public:
+    /**
+     * Log a hardware report containing cpu and memory information using the logger
+     */
     static void LogHardwareReport();
 
+    /**
+     * Log information about the current os to the logger
+     */
     static void LogOSReport();
 
+    /**
+     * Log application information (version, gitrev, build date) to the logger
+     */
     static void LogApplicationReport();
 
 private:
+    /**
+     * Constructor
+     */
     SystemInfo() = default;
 
+    /**
+     * Destructor
+     */
     ~SystemInfo() = default;
 
+    /**
+     * Execute a shell command
+     *
+     * @param cmd Command to execute on the shell
+     * @return Stdout of command stored as string
+     */
     static std::string __ExecuteCmd(const std::string& cmd);
 };
 

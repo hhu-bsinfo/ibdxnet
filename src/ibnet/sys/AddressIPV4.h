@@ -76,14 +76,16 @@ public:
     /**
      * Get the address
      */
-    uint32_t GetAddress() const {
+    uint32_t GetAddress() const
+    {
         return m_address;
     }
 
     /**
      * Get the port
      */
-    uint16_t GetPort() const {
+    uint16_t GetPort() const
+    {
         return m_port;
     }
 
@@ -92,7 +94,8 @@ public:
      *
      * @return True invalid, false otherwise
      */
-    bool IsValid() {
+    bool IsValid()
+    {
         return m_address != INVALID_ADDRESS;
     }
 
@@ -102,7 +105,8 @@ public:
      * @param withPort True to add the port, e.g. "127.0.0.1:12345"
      * @return Address (with port) as string
      */
-    const std::string GetAddressStr(bool withPort = false) const {
+    const std::string GetAddressStr(bool withPort = false) const
+    {
         if (withPort) {
             return m_addressStr + ":" + std::to_string(m_port);
         } else {
@@ -113,7 +117,8 @@ public:
     /**
      * Enable usage with out streams
      */
-    friend std::ostream &operator<<(std::ostream& os, const AddressIPV4& o) {
+    friend std::ostream& operator<<(std::ostream& os, const AddressIPV4& o)
+    {
         return os << o.m_addressStr;
     }
 
@@ -123,6 +128,7 @@ private:
     std::string m_addressStr;
 
     void __ToString(uint32_t address);
+
     void __ToAddressAndPort(const std::string& address);
 };
 

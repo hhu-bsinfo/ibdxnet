@@ -46,7 +46,8 @@ public:
         m_name(name),
         m_thread(nullptr),
         m_pinCpuid(0xFFFF)
-    {}
+    {
+    }
 
     /**
      * Destructor
@@ -56,7 +57,8 @@ public:
     /**
      * Get the thread name
      */
-    const std::string& GetName() const {
+    const std::string& GetName() const
+    {
         return m_name;
     }
 
@@ -65,14 +67,16 @@ public:
      *
      * @return True if started, false otherwise
      */
-    bool IsStarted() const {
+    bool IsStarted() const
+    {
         return m_thread != nullptr;
     }
 
     /**
      * Start the thread. A thread can be restarted once it finished execution
      */
-    void Start() {
+    void Start()
+    {
         m_thread = new std::thread(&Thread::__Run, this);
     }
 
@@ -90,7 +94,8 @@ public:
      *
      * @param cpuid Id of the cpu core to pin to
      */
-    void Pin(uint16_t cpuid) {
+    void Pin(uint16_t cpuid)
+    {
         m_pinCpuid = cpuid;
     }
 
@@ -103,7 +108,8 @@ protected:
     /**
      * Yield this thread
      */
-    void _Yield() {
+    void _Yield()
+    {
         std::this_thread::yield();
     }
 
@@ -111,7 +117,8 @@ protected:
      * Put thread to sleep
      * @param timeMs Number of ms to sleep
      */
-    void _Sleep(uint32_t timeMs) {
+    void _Sleep(uint32_t timeMs)
+    {
         std::this_thread::sleep_for(std::chrono::milliseconds(timeMs));
     }
 
@@ -129,7 +136,7 @@ private:
 
             pthread_t current_thread = pthread_self();
             if (pthread_setaffinity_np(current_thread, sizeof(cpu_set_t),
-                    &cpuset)) {
+                &cpuset)) {
                 sys::SystemException("Setting cpu affinity for %s to %d failed",
                     m_name, m_pinCpuid);
             }

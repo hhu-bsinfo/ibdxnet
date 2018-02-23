@@ -39,13 +39,13 @@ namespace sys {
 class Exception : public std::runtime_error
 {
 public:
-   /**
-    * Constructor
-    *
-    * @param format Printf style format message
-    * @param args Parameters for format string
-    */
-    template<typename... Args>
+    /**
+     * Constructor
+     *
+     * @param format Printf style format message
+     * @param args Parameters for format string
+     */
+    template <typename... Args>
     explicit Exception(const std::string& format, Args... args) :
         std::runtime_error(fmt::sprintf(format, args...))
     {
@@ -58,7 +58,7 @@ public:
      * @param msg Exception message (c-string)
      */
     explicit Exception(const char* msg) :
-            std::runtime_error(msg)
+        std::runtime_error(msg)
     {
         m_stackTrace.load_here(32);
     }
@@ -66,7 +66,8 @@ public:
     /**
      * Print the stack trace where the exception was created
      */
-    void PrintStackTrace() {
+    void PrintStackTrace()
+    {
         backward::Printer p;
         p.print(m_stackTrace);
     }

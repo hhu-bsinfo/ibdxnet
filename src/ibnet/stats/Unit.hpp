@@ -27,18 +27,26 @@
 namespace ibnet {
 namespace stats {
 
-//
-// Created by nothaas on 2/1/18.
-//
+/**
+ * Statistic operation tracking a value/unit
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.02.2018
+ */
 class Unit : public Operation
 {
 public:
+    /**
+     * Base of the unit
+     */
     enum Base
     {
         e_Base10 = 1000,
         e_Base2 = 1024
     };
 
+    /**
+     * Metric of the unit
+     */
     enum Metric
     {
         e_MetricDefault = 0,
@@ -53,6 +61,12 @@ public:
     };
 
 public:
+    /**
+     * Constructor
+     *
+     * @param name Name of the statistic operation
+     * @param base Base to use for converting to different metrics
+     */
     explicit Unit(const std::string& name, Base base = e_Base10) :
         Operation(name),
         m_base(base),
@@ -76,55 +90,122 @@ public:
 
     ~Unit() override = default;
 
-    inline uint64_t GetMetricFactor(Metric metric) {
+    /**
+     * Get the factor applied when converting
+     *
+     * @param metric Metric to convert to
+     * @return Factor applied to value
+     */
+    inline uint64_t GetMetricFactor(Metric metric)
+    {
         return m_metricTable[metric];
     }
 
-    inline uint64_t GetCounter() const {
+    /**
+     * Get the number of times this value was modified
+     */
+    inline uint64_t GetCounter() const
+    {
         return m_counter;
     }
 
-    inline double GetCounter(Metric metric) const {
+    /**
+     * Get the number of times this value was modified
+     *
+     * @param metric Metric to convert to
+     */
+    inline double GetCounter(Metric metric) const
+    {
         return GetCounter() / static_cast<double>(m_metricTable[metric]);
     }
 
-    inline uint64_t GetTotalValue() const {
+    /**
+     * Get the (total) value
+     */
+    inline uint64_t GetTotalValue() const
+    {
         return m_total;
     }
 
-    inline double GetTotalValue(Metric metric) const {
+    /**
+     * Get the (total) value
+     *
+     * @param metric Metric to convert to
+     */
+    inline double GetTotalValue(Metric metric) const
+    {
         return GetTotalValue() / static_cast<double>(m_metricTable[metric]);
     }
 
-    inline double GetAvgValue() const {
+    /**
+     * Get the average value: total / counter
+     */
+    inline double GetAvgValue() const
+    {
         return m_counter == 0 ? 0.0 : static_cast<double>(m_total) / m_counter;
     }
 
-    inline double GetAvgValue(Metric metric) const {
+    /**
+     * Get the average value: total / counter
+     *
+     * @param metric Metric to convert to
+     */
+    inline double GetAvgValue(Metric metric) const
+    {
         return GetAvgValue() / static_cast<double>(m_metricTable[metric]);
     }
 
-    inline uint64_t GetMinValue() const {
+    /**
+     * Get the minimum value ever applied/added to the total value
+     */
+    inline uint64_t GetMinValue() const
+    {
         return m_min;
     }
 
-    inline double GetMinValue(Metric metric) const {
+    /**
+     * Get the minimum value ever applied/added to the total value
+     *
+     * @param metric Metric to convert to
+     */
+    inline double GetMinValue(Metric metric) const
+    {
         return GetMinValue() / static_cast<double>(m_metricTable[metric]);
     }
 
-    inline uint64_t GetMaxValue() const {
+    /**
+     * Get the maximum value ever applied/added to the total value
+     */
+    inline uint64_t GetMaxValue() const
+    {
         return m_max;
     }
 
-    inline uint64_t GetMaxValue(Metric metric) const {
+    /**
+     * Get the maximum value ever applied/added to the total value
+     *
+     * @param metric Metric to convert to
+     */
+    inline uint64_t GetMaxValue(Metric metric) const
+    {
         return GetMaxValue() / m_metricTable[metric];
     }
 
-    inline void Inc() {
+    /**
+     * Incrememnt the value by 1
+     */
+    inline void Inc()
+    {
         Add(1);
     }
 
-    inline void Add(uint64_t val) {
+    /**
+     * Add a value to the total
+     *
+     * @param val Value to add to the current total
+     */
+    inline void Add(uint64_t val)
+    {
         m_counter++;
         m_total += val;
 
@@ -137,7 +218,11 @@ public:
         }
     }
 
-    void WriteOstream(std::ostream& os) const override {
+    /**
+     * Overriding virtual method
+     */
+    void WriteOstream(std::ostream& os) const override
+    {
         os << "counter " << GetCounter();
         __FormatUnit(os, "total", GetTotalValue());
         __FormatUnit(os, "avg", GetAvgValue());
@@ -159,12 +244,13 @@ private:
 
 private:
     inline void __FormatUnit(std::ostream& os, const std::string& name,
-            uint64_t units) const {
+        uint64_t units) const
+    {
         for (uint8_t i = 1; i < e_MetricCount; i++) {
             if (units < m_metricTable[i]) {
                 os << ";" << name << " " <<
                     (double) units / m_metricTable[i - 1] << " " <<
-                     ms_metricTableNames[i - 1];
+                    ms_metricTableNames[i - 1];
                 break;
             }
         }

@@ -114,7 +114,7 @@ public:
      * Start the timer. If the timer was already started, this causes a
      * reset/restart
      */
-    void Start()
+    inline void Start()
     {
         m_running = true;
 
@@ -132,7 +132,7 @@ public:
     /**
      * Resume a timer after it was stopped
      */
-    void Resume()
+    inline void Resume()
     {
         if (!m_running) {
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC
@@ -149,7 +149,7 @@ public:
     /**
      * Stop the timer after it was started
      */
-    void Stop()
+    inline void Stop()
     {
         if (m_running) {
             m_running = false;
@@ -176,7 +176,7 @@ public:
      *
      * @return True if running, false otherwise
      */
-    bool IsRunning() const
+    inline bool IsRunning() const
     {
         return m_running;
     }
@@ -184,7 +184,7 @@ public:
     /**
      * Get the measured time in seconds
      */
-    double GetTimeSec()
+    inline double GetTimeSec()
     {
         if (m_running) {
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC
@@ -206,7 +206,7 @@ public:
     /**
      * Get the measured time in milliseconds
      */
-    double GetTimeMs()
+    inline double GetTimeMs()
     {
         if (m_running) {
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC
@@ -228,7 +228,7 @@ public:
     /**
      * Get the measured time in microseconds
      */
-    double GetTimeUs()
+    inline double GetTimeUs()
     {
         if (m_running) {
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC
@@ -250,7 +250,7 @@ public:
     /**
      * Get the measured time in nanoseconds
      */
-    double GetTimeNs()
+    inline double GetTimeNs()
     {
         if (m_running) {
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC

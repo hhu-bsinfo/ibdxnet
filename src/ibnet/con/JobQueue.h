@@ -26,32 +26,63 @@
 namespace ibnet {
 namespace con {
 
+/**
+ * FIFO queue for the JobManager
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 29.01.2018
+ */
 class JobQueue
 {
 public:
     typedef uint8_t JobType;
     static const JobType JOB_TYPE_INVALID = 0xFF;
 
+    /**
+     * Base for a job to execute
+     */
     struct Job
     {
         const JobType m_type;
 
         explicit Job(JobType type) :
             m_type(type)
-        {}
+        {
+        }
 
         virtual ~Job() = default;
     };
 
 public:
+    /**
+     * Constructor
+     *
+     * @param size Total size of the queue
+     */
     explicit JobQueue(uint32_t size);
 
+    /**
+     * Destructor
+     */
     ~JobQueue();
 
+    /**
+     * Add a job to the queue
+     *
+     * @param job Job to add
+     * @return True if adding successful, false if queue full
+     */
     bool PushBack(Job* job);
 
+    /**
+     * Get a job from the front of the queue
+     *
+     * @return Pointer to a job or NULL if queue empty
+     */
     Job* PopFront();
 
+    /**
+     * Check if the queue is empty
+     */
     bool IsEmpty() const;
 
 private:

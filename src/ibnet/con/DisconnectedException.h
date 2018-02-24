@@ -39,7 +39,8 @@ public:
      */
     DisconnectedException() :
         Exception("Remote queue pair not available anymore")
-    {}
+    {
+    }
 
     /**
      * Constructor
@@ -49,7 +50,8 @@ public:
     explicit DisconnectedException(con::NodeId nodeId) :
         Exception("Remote queue pair of node 0x%X not available anymore",
             nodeId)
-    {}
+    {
+    }
 
     /**
      * Destructor

@@ -31,7 +31,7 @@ typedef uint16_t ConnectionId;
 class ConnectionManager;
 
 /**
- * Instance of a logical connection with a remote node. A connection can
+ * Interface of a logical connection with a remote node. A connection can
  * consist of one or multiple queue pairs
  *
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
@@ -52,7 +52,8 @@ public:
         m_connectionId(connectionId),
         m_refState(nullptr),
         m_remoteConnectionHeader()
-    {}
+    {
+    }
 
     /**
      * Destructor
@@ -60,37 +61,55 @@ public:
     virtual ~Connection() = default;
 
     /**
-     * Get the node id of the source (target) node
+     * Get the node id of the source node (this instance)
      */
-    NodeId GetSourceNodeId() const {
+    NodeId GetSourceNodeId() const
+    {
         return m_ownNodeId;
     }
 
     /**
      * Get the connection id
      */
-    ConnectionId GetConnectionId() const {
+    ConnectionId GetConnectionId() const
+    {
         return m_connectionId;
     }
 
     /**
-     * Get the node id of the remote node
+     * Get the node id of the remote/target node
      */
-    NodeId GetRemoteNodeId() const {
+    NodeId GetRemoteNodeId() const
+    {
         return m_remoteConnectionHeader.m_nodeId;
     }
 
-    uint32_t GetRemoteConnectionManIdent() const {
+    /**
+     * Get the connection manager identifier of the remote
+     */
+    uint32_t GetRemoteConnectionManIdent() const
+    {
         return m_remoteConnectionHeader.m_conManIdent;
     }
 
     /**
      * Check if the connection is up
      */
-    bool IsConnected() const {
+    bool IsConnected() const
+    {
         return m_refState->IsConnected();
     }
 
+    /**
+     * Create connection exchange data to be sent on connection creation to the
+     * remote node. This must include all necessary data like physical qp ids
+     * rkeys etc. necessary to create or completion a connection
+     *
+     * @param connectionDataBuffer Buffer to write connection data to
+     * @param connectionDataMaxSize Max size of data to write to the provided buffer
+     * @param connectionDataActualSize Pointer to a variable to return the size of
+     *        the data written to the buffer
+     */
     virtual void CreateConnectionExchangeData(void* connectionDataBuffer,
         size_t connectionDataMaxSize, size_t* connectionDataActualSize) = 0;
 
@@ -101,11 +120,15 @@ public:
      * Override this and implement any queue pair setup necessary to open
      * an IB connection to the remote
      *
-     * @param remoteInfo Remote info of node to connect to
+     * @param remoteConnectionHeader Connection header of the remote trying to
+     *        establish a connection with the current instance
+     * @param remoteConnectionData Pointer to a buffer with connection exchange
+     *        data from the remote
+     * @param remoteConnectionDataSize Size of the connection exchange data
      */
-    virtual void Connect(
-            const con::RemoteConnectionHeader& remoteConnectionHeader,
-            const void* remoteConnectionData, size_t remoteConnectionDataSize) {
+    virtual void Connect(const con::RemoteConnectionHeader& remoteConnectionHeader,
+        const void* remoteConnectionData, size_t remoteConnectionDataSize)
+    {
         m_remoteConnectionHeader = remoteConnectionHeader;
     }
 
@@ -115,14 +138,16 @@ public:
      * Override this and implement cleanup tasks to completely close the
      * IB connection to the remote.
      *
-     * @param force Force close connection
+     * @param force Force close connection and don't wait until queues are
+     *        empty etc
      */
     virtual void Close(bool force) = 0;
 
     /**
      * Enable output to an out stream
      */
-    friend std::ostream &operator<<(std::ostream& os, const Connection& o) {
+    friend std::ostream& operator<<(std::ostream& os, const Connection& o)
+    {
         return os <<
             "Connection: " << std::hex << o.m_ownNodeId << " -> " <<
             std::hex << o.m_remoteConnectionHeader.m_nodeId <<

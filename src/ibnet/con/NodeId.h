@@ -30,6 +30,7 @@ namespace con {
  *
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
  */
+
 typedef uint16_t NodeId;
 
 static const uint16_t NODE_ID_INVALID = 0xFFFF;

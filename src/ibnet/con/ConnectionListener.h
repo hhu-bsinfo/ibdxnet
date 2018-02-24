@@ -24,11 +24,27 @@
 namespace ibnet {
 namespace con {
 
+/**
+ * Interface for a connection listener (node connected/disconnected)
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 29.01.2018
+ */
 class ConnectionListener
 {
 public:
+    /**
+     * Called when a remote node is successfully connected
+     *
+     * @param connection Connection established to the remote
+     */
     virtual void NodeConnected(Connection& connection) = 0;
 
+    /**
+     * Called when a node disconnected and the connected got
+     * cleaned up
+     *
+     * @param nodeId Node id of the remote that disconencted
+     */
     virtual void NodeDisconnected(NodeId nodeId) = 0;
 
 protected:

@@ -28,7 +28,7 @@ JobQueue::JobQueue(uint32_t size) :
     m_front(0),
     m_back(0),
     m_backRes(0),
-    m_queue(new Job*[size])
+    m_queue(new Job* [size])
 {
 
 }
@@ -43,7 +43,7 @@ JobQueue::~JobQueue()
         front++;
     }
 
-    delete [] m_queue;
+    delete[] m_queue;
 }
 
 bool JobQueue::PushBack(Job* job)
@@ -59,13 +59,13 @@ bool JobQueue::PushBack(Job* job)
         }
 
         if (m_backRes.compare_exchange_weak(backRes, backRes + 1,
-                std::memory_order_relaxed)) {
+            std::memory_order_relaxed)) {
             m_queue[backRes % m_size] = job;
 
             // wait for any preceding reservations to complete before updating
             // back
             while (!m_back.compare_exchange_weak(backRes, backRes + 1,
-                    std::memory_order_release)) {
+                std::memory_order_release)) {
                 std::this_thread::yield();
             }
 

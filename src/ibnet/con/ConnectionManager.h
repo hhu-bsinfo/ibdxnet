@@ -36,15 +36,39 @@ namespace con {
 class ConnectionManager : public ExchangeDispatcher, JobDispatcher
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param name Name of the connection manager
+     * @param ownNodeId Node id of the current instance
+     * @param nodeConf Node config to use
+     * @param connectionCreationTimeoutMs Timeout for connection creation in ms
+     * @param maxNumConnections Max number of connections to manage
+     * @param refDevice Pointer to the IbDevice (managed by caller)
+     * @param refProtDom Pointer to the IbProtDom (managed by caller)
+     * @param refExchangeManager Pointer to exchange manager to use for
+     *        managing connections (managed by caller)
+     * @param refJobManager Pointer to job manager to use for managing
+     *        connections (managed by caller)
+     * @param refDiscoveryManager Pointer to discovery manager to use
+     *        (managed by caller)
+     */
     ConnectionManager(const std::string& name, NodeId ownNodeId,
         const NodeConf& nodeConf, uint32_t connectionCreationTimeoutMs,
         uint32_t maxNumConnections, core::IbDevice* refDevice,
         core::IbProtDom* refProtDom, ExchangeManager* refExchangeManager,
         JobManager* refJobManager, DiscoveryManager* refDiscoveryManager);
 
+    /**
+     * Destructor
+     */
     virtual ~ConnectionManager();
 
-    uint16_t GetMaxNumConnections() const {
+    /**
+     * Get the max number of simultaneous connections to handle
+     */
+    uint16_t GetMaxNumConnections() const
+    {
         return m_maxNumConnections;
     }
 
@@ -54,8 +78,9 @@ public:
      *
      * @param listener Listener to set
      */
-    void SetListener(ConnectionListener* listener) {
-        m_listener = listener;
+    void SetListener(ConnectionListener* refListener)
+    {
+        m_listener = refListener;
     }
 
     /**
@@ -64,7 +89,8 @@ public:
      * @param destination Remote node id
      * @return True if available, false otherwise
      */
-    bool IsConnectionAvailable(NodeId nodeId) {
+    bool IsConnectionAvailable(NodeId nodeId)
+    {
         return m_connectionStates[nodeId].m_available.load(
             std::memory_order_relaxed) >= ConnectionState::CONNECTION_AVAILABLE;
     }
@@ -72,21 +98,22 @@ public:
     /**
      * Get a connection
      *
-     * If called for the first time with a node id, this might establish the
-     * connection to the specified node but keeps it opened either until
+     * If called for the first time with a node id previously not used, this might establish the
+     * connection to the specified node and keeps it opened either until
      * closed or the max number of connections is exceeded and the connection
-     * must be suppressed.
+     * must be closed to make space for a new connection.
      *
      * @param nodeId Get the connection of the specified node
      * @return If successful, a reference to the established connection.
-     *          Throws exceptions on errors.
+     *         The caller does not have to manage the memory.
+     *         Throws exceptions on errors.
      */
     Connection* GetConnection(NodeId nodeId);
 
     /**
      * Return a connection that was retrieved on the GetConnection call.
      * This MUST be called for every GetConnection call to ensure
-     * consistency to keep track of currently used connections.
+     * consistency when keeping track of currently used connections.
      *
      * @param connection Connection to return
      */
@@ -98,20 +125,23 @@ public:
      * @param nodeId Node id of the connection to close
      * @param force True to force close (don't wait for queues to be emptied),
      *          false to empty the queues and ensure everything queued is still
-     *          being processed/
+     *          being processed
      */
     void CloseConnection(NodeId nodeId, bool force);
 
 protected:
-    NodeId _GetOwnNodeId() const {
+    NodeId _GetOwnNodeId() const
+    {
         return m_ownNodeId;
     }
 
-    core::IbDevice* _GetRefDevice() const {
+    core::IbDevice* _GetRefDevice() const
+    {
         return m_refDevice;
     }
 
-    core::IbProtDom* _GetRefProtDom() const {
+    core::IbProtDom* _GetRefProtDom() const
+    {
         return m_refProtDom;
     }
 
@@ -125,9 +155,13 @@ protected:
 protected:
     virtual Connection* _CreateConnection(ConnectionId connectionId) = 0;
 
-    virtual void _ConnectionOpened(Connection& connection) {};
+    virtual void _ConnectionOpened(Connection& connection)
+    {
+    };
 
-    virtual void _ConnectionClosed(NodeId nodeId) {};
+    virtual void _ConnectionClosed(NodeId nodeId)
+    {
+    };
 
 private:
     struct JobCreateConnection : public JobQueue::Job
@@ -137,7 +171,8 @@ private:
         JobCreateConnection(JobQueue::JobType type, NodeId targetNodeId) :
             JobQueue::Job(type),
             m_targetNodeId(targetNodeId)
-        {}
+        {
+        }
     };
 
     struct JobConnectConnection : public JobQueue::Job
@@ -147,17 +182,19 @@ private:
         const size_t m_remoteConnectionDataSize;
 
         JobConnectConnection(JobQueue::JobType type,
-                const RemoteConnectionHeader& remoteConnectionHeader,
-                const uint8_t* remoteConnectionData,
-                size_t remoteConnectionDataSize) :
+            const RemoteConnectionHeader& remoteConnectionHeader,
+            const uint8_t* remoteConnectionData,
+            size_t remoteConnectionDataSize) :
             JobQueue::Job(type),
             m_remoteConnectionHeader(remoteConnectionHeader),
             m_remoteConnectionData(remoteConnectionData),
             m_remoteConnectionDataSize(remoteConnectionDataSize)
-        {}
+        {
+        }
 
-        ~JobConnectConnection() override {
-            delete [] m_remoteConnectionData;
+        ~JobConnectConnection() override
+        {
+            delete[] m_remoteConnectionData;
         }
     };
 
@@ -168,12 +205,13 @@ private:
         const bool m_shutdown;
 
         JobCloseConnection(JobQueue::JobType type, NodeId nodeId,
-                bool force, bool shutdown) :
+            bool force, bool shutdown) :
             JobQueue::Job(type),
             m_nodeId(nodeId),
             m_force(force),
             m_shutdown(shutdown)
-        {}
+        {
+        }
     };
 
 private:
@@ -210,16 +248,21 @@ private:
     JobQueue::JobType m_closeConnectionJobType;
 
     void __AddJobCreateConnection(NodeId destNodeId);
+
     void __AddJobConnectConnection(
         const RemoteConnectionHeader& remoteConnectionHeader,
         const uint8_t remoteConnectionData[], size_t remoteConnectionDatSize);
+
     void __AddJobCloseConnection(NodeId nodeId, bool force, bool shutdown);
 
     void __JobDispatchCreateConnection(const JobCreateConnection& job);
+
     void __JobDispatchConnectConnection(const JobConnectConnection& job);
+
     void __JobDispatchCloseConnection(const JobCloseConnection& job);
 
     bool __AllocateConnection(NodeId remoteNodeId);
+
     void __SendConnectionExchgData(NodeId remoteNodeId,
         uint8_t exchgFalgs, uint8_t exchgFlagsRemote, uint32_t remoteNodeIPV4);
 };

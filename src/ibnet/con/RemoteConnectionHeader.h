@@ -52,30 +52,36 @@ struct RemoteConnectionHeader
         m_exchgFlagsRemote(0),
         m_lid(0xFFFF),
         m_conManIdent(0xFFFFFFFF)
-    {}
+    {
+    }
 
     /**
      * Constructor
      *
      * @param nodeId Node id of the remote node
+     * @param exchgFlags Connection exchg flags of the current instance
+     * @param remoteExchgFlags Connection exchg flags the current instance
+     *        knows about the remote
      * @param lid LID of the remote node
      * @param conManIdent Identifier of connection manager to detect
      *      rebooted nodes
      */
     RemoteConnectionHeader(con::NodeId nodeId, uint8_t exchgFlags,
-            uint8_t remoteExchgFlags, uint16_t lid, uint32_t conManIdent) :
+        uint8_t remoteExchgFlags, uint16_t lid, uint32_t conManIdent) :
         m_nodeId(nodeId),
         m_exchgFlags(exchgFlags),
         m_exchgFlagsRemote(remoteExchgFlags),
         m_lid(lid),
         m_conManIdent(conManIdent)
-    {}
+    {
+    }
 
     /**
      * Enable usage with out streams
      */
-    friend std::ostream &operator<<(std::ostream& os,
-            const RemoteConnectionHeader& o) {
+    friend std::ostream& operator<<(std::ostream& os,
+        const RemoteConnectionHeader& o)
+    {
         os << "NodeId: 0x" << std::hex << o.m_nodeId <<
             ", ExchgFlags: " << std::bitset<2>(o.m_exchgFlags) <<
             ", ExchgFlagsRemote: " << std::bitset<2>(o.m_exchgFlagsRemote) <<

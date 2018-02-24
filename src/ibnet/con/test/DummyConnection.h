@@ -27,18 +27,36 @@ namespace con {
 class DummyConnection : public Connection
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param ownNodeId Node id of the current instance
+     * @param connectionId Unique id assigned to the connection
+     */
     DummyConnection(NodeId ownNodeId, ConnectionId connectionId);
 
+    /**
+     * Destructor
+     */
     ~DummyConnection() override = default;
 
+    /**
+     * Overriding virtual function
+     */
     void CreateConnectionExchangeData(void* connectionDataBuffer,
         size_t connectionDataMaxSize, size_t* connectionDataActualSize)
-        override;
+    override;
 
+    /**
+     * Overriding virtual function
+     */
     void Connect(const con::RemoteConnectionHeader& remoteConnectionHeader,
         const void* remoteConnectionData, size_t remoteConnectionDataSize)
-        override;
+    override;
 
+    /**
+     * Overriding virtual function
+     */
     void Close(bool force) override;
 };
 

@@ -68,21 +68,24 @@ public:
         /**
          * Get the hostname
          */
-        const std::string& GetHostname() const {
+        const std::string& GetHostname() const
+        {
             return m_hostname;
         }
 
         /**
          * Get the IPV4 address of the host
          */
-        const sys::AddressIPV4& GetAddress() const {
+        const sys::AddressIPV4& GetAddress() const
+        {
             return m_address;
         }
 
         /**
          * Enable output to an out stream
          */
-        friend std::ostream &operator<<(std::ostream& os, const Entry& o) {
+        friend std::ostream& operator<<(std::ostream& os, const Entry& o)
+        {
             return os << o.m_hostname << ": " << o.m_address;
         }
 
@@ -111,14 +114,16 @@ public:
     /**
      * Get all entries
      */
-    const std::vector<Entry>& GetEntries() const {
+    const std::vector<Entry>& GetEntries() const
+    {
         return m_entries;
     }
 
     /**
      * Enable output to an out stream
      */
-    friend std::ostream &operator<<(std::ostream& os, const NodeConf& o) {
+    friend std::ostream& operator<<(std::ostream& os, const NodeConf& o)
+    {
         os << "IbNodeConf (" << o.m_entries.size() << "): ";
 
         for (auto& it : o.m_entries) {

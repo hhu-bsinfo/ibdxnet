@@ -39,7 +39,8 @@ public:
      */
     explicit NodeNotAvailableException(con::NodeId nodeId) :
         Exception("Node 0x%X not available", nodeId)
-    {}
+    {
+    }
 
     /**
      * Destructor

@@ -26,7 +26,7 @@ namespace ibnet {
 namespace con {
 
 DiscoveryManager::DiscoveryManager(NodeId ownNodeId, const NodeConf& nodeConf,
-        ExchangeManager* refExchangeManager, JobManager* refJobManager) :
+    ExchangeManager* refExchangeManager, JobManager* refJobManager) :
     m_ownNodeId(ownNodeId),
     m_refExchangeManager(refExchangeManager),
     m_refJobManager(refJobManager),
@@ -136,8 +136,8 @@ void DiscoveryManager::Invalidate(NodeId nodeId, bool shutdown)
 }
 
 void DiscoveryManager::_DispatchExchangeData(uint32_t sourceIPV4,
-        const ExchangeManager::PaketHeader* paketHeader,
-        const void* data)
+    const ExchangeManager::PaketHeader* paketHeader,
+    const void* data)
 {
     if (paketHeader->m_type == m_discoverReqExchgPaketType) {
         __ExchgSendDiscoveryResp(sourceIPV4);
@@ -162,7 +162,7 @@ void DiscoveryManager::_DispatchJob(const JobQueue::Job* job)
         // remove from processing list
         for (auto it = m_infoToGet.begin(); it != m_infoToGet.end(); it++) {
             if ((*it)->GetAddress().GetAddress() ==
-                    jobDiscovered->m_targetIPV4) {
+                jobDiscovered->m_targetIPV4) {
                 IBNET_LOG_INFO("Discovered node %s as node id 0x%X",
                     (*it)->GetAddress().GetAddressStr(),
                     jobDiscovered->m_nodeIdDiscovered);
@@ -208,7 +208,7 @@ void DiscoveryManager::__JobAddDiscover()
 }
 
 void DiscoveryManager::__JobAddDiscovered(uint32_t sourceIPV4,
-        NodeId sourceNodeIdDiscovered)
+    NodeId sourceNodeIdDiscovered)
 {
     m_refJobManager->AddJob(new JobDiscovered(m_discoveredJobType, sourceIPV4,
         sourceNodeIdDiscovered));

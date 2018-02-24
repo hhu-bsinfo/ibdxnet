@@ -45,7 +45,7 @@ ExchangeManager::~ExchangeManager()
     Stop();
 
     delete m_socket;
-    delete [] m_recvBuffer;
+    delete[] m_recvBuffer;
 }
 
 ExchangeManager::PaketType ExchangeManager::GeneratePaketTypeId()
@@ -64,7 +64,7 @@ ExchangeManager::PaketType ExchangeManager::GeneratePaketTypeId()
 }
 
 void ExchangeManager::SendData(PaketType type, uint32_t targetIPV4,
-        const void* data, uint32_t length)
+    const void* data, uint32_t length)
 {
     size_t sendSize = sizeof(PaketHeader) + length;
 
@@ -113,14 +113,14 @@ void ExchangeManager::_RunLoop()
 
         IBNET_LOG_TRACE(
             "Received paket from %s, magic 0x%X, type %d, nodeId 0x%X, "
-            "length %d", sys::AddressIPV4(recvAddr), header->m_magic,
+                "length %d", sys::AddressIPV4(recvAddr), header->m_magic,
             header->m_type, header->m_sourceNodeId, header->m_length);
 
         std::lock_guard<std::mutex> l(m_dispatcherLock);
 
         if (header->m_magic == PAKET_MAGIC &&
-                header->m_type < m_paketTypeIdCounter &&
-                sizeof(PaketHeader) + header->m_length <= MAX_PAKET_SIZE) {
+            header->m_type < m_paketTypeIdCounter &&
+            sizeof(PaketHeader) + header->m_length <= MAX_PAKET_SIZE) {
 
             if (!m_dispatcher[header->m_type].empty()) {
 

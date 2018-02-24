@@ -37,7 +37,8 @@ public:
      */
     InvalidNodeIdException() :
         Exception("The specified node id is invalid")
-    {}
+    {
+    }
 
     /**
      * Constructor
@@ -46,12 +47,13 @@ public:
      * @param format Printf style format message
      * @param args Parameters for format string
      */
-    template<typename... Args>
+    template <typename... Args>
     InvalidNodeIdException(con::NodeId nodeId, const std::string& format,
-            Args... args) :
+        Args... args) :
         Exception("The specified node id %X is not valid, reason: " + format,
             nodeId, args...)
-    {}
+    {
+    }
 
     /**
      * Destructor

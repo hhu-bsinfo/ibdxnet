@@ -24,20 +24,40 @@
 namespace ibnet {
 namespace con {
 
-
-//
-// Created by on 2/12/18.
-//
+/**
+ * Dummy implementation of a connection manager to test and debug
+ * connection management
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 12.02.2018
+ */
 class DummyConnectionManager : public ConnectionManager
 {
 public:
-    DummyConnectionManager(
-            NodeId ownNodeId, const NodeConf& nodeConf,
-            uint32_t connectionCreationTimeoutMs, uint32_t maxNumConnections,
-            core::IbDevice* refDevice, core::IbProtDom* refProtDom,
-            ExchangeManager* refExchangeManager, JobManager* refJobManager,
-            DiscoveryManager* refDiscoveryManager);
+    /**
+     * Constructor
+     *
+     * @param ownNodeId Node id of the current instance
+     * @param nodeConf Node config to use
+     * @param connectionCreationTimeoutMs Timeout for connection creation in ms
+     * @param maxNumConnections Max number of connections to manage
+     * @param refDevice Pointer to the IbDevice (managed by caller)
+     * @param refProtDom Pointer to the IbProtDom (managed by caller)
+     * @param refExchangeManager Pointer to exchange manager to use for
+     *        managing connections (managed by caller)
+     * @param refJobManager Pointer to job manager to use for managing
+     *        connections (managed by caller)
+     * @param refDiscoveryManager Pointer to discovery manager to use
+     *        (managed by caller)
+     */
+    DummyConnectionManager(NodeId ownNodeId, const NodeConf& nodeConf,
+        uint32_t connectionCreationTimeoutMs, uint32_t maxNumConnections,
+        core::IbDevice* refDevice, core::IbProtDom* refProtDom,
+        ExchangeManager* refExchangeManager, JobManager* refJobManager,
+        DiscoveryManager* refDiscoveryManager);
 
+    /**
+     * Destructor
+     */
     ~DummyConnectionManager() override = default;
 
 protected:

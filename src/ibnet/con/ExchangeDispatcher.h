@@ -27,19 +27,36 @@ namespace con {
 // forward declaration for friendship
 class ExchangeManager;
 
-//
-// Created by nothaas on 1/29/18.
-//
+/**
+ * Interface for a dispatcher for exchange data using the
+ * ExchangeManager (e.g. conenction exchange data)
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 29.01.2018
+ */
 class ExchangeDispatcher
 {
 public:
     friend class ExchangeManager;
 
 protected:
+    /**
+     * Constructor
+     */
     ExchangeDispatcher() = default;
 
+    /**
+     * Destructor
+     */
     virtual ~ExchangeDispatcher() = default;
 
+    /**
+     * Dispatch method to implement. This is called once new exchange data
+     * is received.
+     *
+     * @param sourceIPV4 IPV4 address of the source
+     * @param paketHeader Paket header of the data received
+     * @param data Pointer to a buffer with the received data (caller is managing memory)
+     */
     virtual void _DispatchExchangeData(uint32_t sourceIPV4,
         const ExchangeManager::PaketHeader* paketHeader,
         const void* data) = 0;

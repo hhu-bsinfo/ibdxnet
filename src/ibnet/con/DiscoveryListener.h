@@ -26,11 +26,27 @@
 namespace ibnet {
 namespace con {
 
+/**
+ * Listener to attach to the DiscoveryManager to listen to
+ * new node discoveries or updates
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 05.02.2018
+ */
 class DiscoveryListener
 {
 public:
+    /**
+     * Called if a node got discovered
+     *
+     * @param nodeId Node id of the node discovered
+     */
     virtual void NodeDiscovered(con::NodeId nodeId) = 0;
 
+    /**
+     * Called if a node got invalidated (e.g. not reachable anymore)
+     *
+     * @param nodeId Node id of the node invalidated
+     */
     virtual void NodeInvalidated(con::NodeId nodeId) = 0;
 
 protected:

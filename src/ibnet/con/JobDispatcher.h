@@ -27,20 +27,35 @@ namespace con {
 // forward declaration friendship
 class JobManager;
 
-//
-// Created by nothaas on 1/29/18.
-//
+/**
+ * Interface for a dispatcher handling a job that is executed
+ * by the JobManager
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 29.01.2018
+ */
 class JobDispatcher
 {
 public:
     friend JobManager;
 
 protected:
+    /**
+     * Constructor
+     */
     JobDispatcher() = default;
 
+    /**
+     * Destructor
+     */
     virtual ~JobDispatcher() = default;
 
-    virtual void _DispatchJob(const JobQueue::Job* const job) = 0;
+    /**
+     * Dispatcher method called by manager if a target job is
+     * executed.
+     *
+     * @param job Job to dispatch (caller is managing memory)
+     */
+    virtual void _DispatchJob(const JobQueue::Job* job) = 0;
 };
 
 }

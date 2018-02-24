@@ -26,6 +26,12 @@
 namespace ibnet {
 namespace msgrc {
 
+/**
+ * Structure for accessing data stored in the immediate data
+ * field.
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 29.01.2018
+ */
 struct ImmediateData
 {
     con::NodeId m_sourceNodeId;

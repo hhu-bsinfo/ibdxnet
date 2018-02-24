@@ -26,12 +26,35 @@
 namespace ibnet {
 namespace msgrc {
 
-//
-// Created by nothaas on 1/30/18.
-//
+/**
+ * Connection manager for reliable messaging using RC queue pairs
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 05.02.2018
+ */
 class ConnectionManager : public con::ConnectionManager
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param ownNodeId Node id of the current instance
+     * @param nodeConf Node config to use
+     * @param connectionCreationTimeoutMs Timeout for connection creation in ms
+     * @param maxNumConnections Max number of connections to manage
+     * @param refDevice Pointer to the IbDevice (managed by caller)
+     * @param refProtDom Pointer to the IbProtDom (managed by caller)
+     * @param refExchangeManager Pointer to exchange manager to use for
+     *        managing connections (managed by caller)
+     * @param refJobManager Pointer to job manager to use for managing
+     *        connections (managed by caller)
+     * @param refDiscoveryManager Pointer to discovery manager to use
+     *        (managed by caller)
+     * @param sendBufferSize Size of the send (ring) buffer in bytes
+     * @param ibSQSize Size of the send queue
+     * @param ibSRQSize Size of the shared receive queue
+     * @param ibSharedSCQSize Size of the shared send completion queue
+     * @param ibSharedRCQSize Size of the shared receive completion queue
+     */
     ConnectionManager(con::NodeId ownNodeId, const con::NodeConf& nodeConf,
         uint32_t connectionCreationTimeoutMs, uint32_t maxNumConnections,
         core::IbDevice* refDevice, core::IbProtDom* refProtDom,
@@ -41,33 +64,64 @@ public:
         uint16_t ibSQSize, uint16_t ibSRQSize, uint16_t ibSharedSCQSize,
         uint16_t ibSharedRCQSize);
 
+    /**
+     * Destructor
+     */
     ~ConnectionManager() override;
 
-    uint16_t GetIbSQSize() const {
+    /**
+     * Get the size of the send queue
+     */
+    uint16_t GetIbSQSize() const
+    {
         return m_ibSQSize;
     }
 
-    ibv_srq* GetIbSRQ() const {
+    /**
+     * Get the shared receive queue
+     */
+    ibv_srq* GetIbSRQ() const
+    {
         return m_ibSRQ;
     }
 
-    uint16_t GetIbSRQSize() const {
+    /**
+     * Get the size of the shared receive queue
+     */
+    uint16_t GetIbSRQSize() const
+    {
         return m_ibSRQSize;
     }
 
-    ibv_cq* GetIbSharedSCQ() const {
+    /**
+     * Get the shared send completion queue
+     */
+    ibv_cq* GetIbSharedSCQ() const
+    {
         return m_ibSharedSCQ;
     }
 
-    uint16_t GetIbSharedSCQSize() const {
+    /**
+     * Get the size of the shared send completion queue
+     */
+    uint16_t GetIbSharedSCQSize() const
+    {
         return m_ibSharedSCQSize;
     }
 
-    ibv_cq* GetIbSharedRCQ() const {
+    /**
+     * Get the shared receive completion queue
+     */
+    ibv_cq* GetIbSharedRCQ() const
+    {
         return m_ibSharedRCQ;
     }
 
-    uint16_t GetIbSharedRCQSize() const {
+    /**
+     * Get the size of the shared receive completion queue
+     */
+    uint16_t GetIbSharedRCQSize() const
+    {
         return m_ibSharedRCQSize;
     }
 
@@ -93,6 +147,7 @@ private:
 
 private:
     ibv_srq* __CreateSRQ(uint16_t size);
+
     ibv_cq* __CreateCQ(uint16_t size);
 };
 

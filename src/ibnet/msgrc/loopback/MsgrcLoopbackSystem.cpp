@@ -78,12 +78,12 @@ void MsgrcLoopbackSystem::Received(ReceivedPackage* recvPackage)
 }
 
 const SendHandler::NextWorkPackage* MsgrcLoopbackSystem::GetNextDataToSend(
-        const PrevWorkPackageResults* prevResults,
-        const SendHandler::CompletedWorkList* completionList)
+    const PrevWorkPackageResults* prevResults,
+    const SendHandler::CompletedWorkList* completionList)
 {
     // wait for all send target nodes to be available
     if (m_sendTargetNodeIds.size() > 0 &&
-            m_targetNodesAvailable.load(std::memory_order_acquire) >=
+        m_targetNodesAvailable.load(std::memory_order_acquire) >=
             m_sendTargetNodeIds.size()) {
 
         if (m_availableTargetNodes[m_sendTargetNodeIds[m_nodeToSendToPos]]) {
@@ -127,7 +127,7 @@ void MsgrcLoopbackSystem::_PostInit()
 }
 
 MsgrcSystem::Configuration* MsgrcLoopbackSystem::__ProcessCmdArgs(
-        int argc, char** argv)
+    int argc, char** argv)
 {
     auto* config = new Configuration();
 
@@ -154,8 +154,8 @@ MsgrcSystem::Configuration* MsgrcLoopbackSystem::__ProcessCmdArgs(
         {
             "targetNodeIds",
             {"-d", "--targetNodeIds"},
-                "A list of target node ids to send data to, e.g. 1,2,5. Leave"
-                    "empty if node is on receive, only",
+            "A list of target node ids to send data to, e.g. 1,2,5. Leave"
+                "empty if node is on receive, only",
             1
         },
         {
@@ -302,7 +302,7 @@ MsgrcSystem::Configuration* MsgrcLoopbackSystem::__ProcessCmdArgs(
     if (args["statisticsThreadPrintIntervalMs"]) {
         config->m_statisticsThreadPrintIntervalMs =
             args["statisticsThreadPrintIntervalMs"].as<uint32_t>(
-            config->m_statisticsThreadPrintIntervalMs);
+                config->m_statisticsThreadPrintIntervalMs);
     }
 
     if (args["portDiscMan"]) {
@@ -313,7 +313,7 @@ MsgrcSystem::Configuration* MsgrcLoopbackSystem::__ProcessCmdArgs(
     if (args["connectionCreationTimeoutMs"]) {
         config->m_connectionCreationTimeoutMs =
             args["connectionCreationTimeoutMs"].as<uint32_t>(
-            config->m_connectionCreationTimeoutMs);
+                config->m_connectionCreationTimeoutMs);
     }
 
     if (args["maxNumConnections"]) {
@@ -349,7 +349,7 @@ MsgrcSystem::Configuration* MsgrcLoopbackSystem::__ProcessCmdArgs(
     if (args["recvBufferPoolSize"]) {
         config->m_recvBufferPoolSizeBytes =
             args["recvBufferPoolSize"].as<uint64_t>(
-            config->m_recvBufferPoolSizeBytes);
+                config->m_recvBufferPoolSizeBytes);
     }
 
     if (args["recvBufferSize"]) {

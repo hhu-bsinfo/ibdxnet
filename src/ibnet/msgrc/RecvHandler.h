@@ -31,19 +31,33 @@ namespace msgrc {
 /**
  * Handle received buffers and flow control data from the receive dispatcher
  *
- * @author Stefan Nothaas, stefan.nothaas@hhu.de, 07.07.2017
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 30.01.2018
  */
 class RecvHandler
 {
 public:
+    /**
+     * Package with information about received data
+     */
     struct ReceivedPackage
     {
-        static size_t Sizeof(uint32_t maxCount) {
+        /**
+         * Get the size of the struct
+         *
+         * @param maxCount Max number of entry elements
+         * @return Size of the struct depending on the max num of entry elements
+         */
+        static size_t Sizeof(uint32_t maxCount)
+        {
             return sizeof(uint32_t) + maxCount * sizeof(Entry);
         }
 
         uint32_t m_count;
 
+        /**
+         * Single receive entry. If receiving data from multiple nodes,
+         * multiple entries are used in the receive package.
+         */
         struct Entry
         {
             con::NodeId m_sourceNodeId;
@@ -57,9 +71,9 @@ public:
     /**
      * Called when new buffer or FC data was received
      *
-     * @param sourceNodeId The source node id of the data
+     * @param recvPackage Pointer to a struct with information about any received data
+     *        (memory managed by caller)
      */
-    // TODO update doc
     virtual void Received(ReceivedPackage* recvPackage) = 0;
 
 protected:

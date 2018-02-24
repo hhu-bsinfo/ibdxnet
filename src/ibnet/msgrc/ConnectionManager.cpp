@@ -26,13 +26,13 @@ namespace ibnet {
 namespace msgrc {
 
 ConnectionManager::ConnectionManager(con::NodeId ownNodeId,
-        const con::NodeConf& nodeConf, uint32_t connectionCreationTimeoutMs,
-        uint32_t maxNumConnections, core::IbDevice* refDevice,
-        core::IbProtDom* refProtDom, con::ExchangeManager* refExchangeManager,
-        con::JobManager* refJobManager,
-        con::DiscoveryManager* refDiscoveryManager, uint32_t sendBufferSize,
-        uint16_t ibSQSize, uint16_t ibSRQSize, uint16_t ibSharedSCQSize,
-        uint16_t ibSharedRCQSize) :
+    const con::NodeConf& nodeConf, uint32_t connectionCreationTimeoutMs,
+    uint32_t maxNumConnections, core::IbDevice* refDevice,
+    core::IbProtDom* refProtDom, con::ExchangeManager* refExchangeManager,
+    con::JobManager* refJobManager,
+    con::DiscoveryManager* refDiscoveryManager, uint32_t sendBufferSize,
+    uint16_t ibSQSize, uint16_t ibSRQSize, uint16_t ibSharedSCQSize,
+    uint16_t ibSharedRCQSize) :
     con::ConnectionManager("MsgRC", ownNodeId, nodeConf,
         connectionCreationTimeoutMs, maxNumConnections, refDevice, refProtDom,
         refExchangeManager, refJobManager, refDiscoveryManager),
@@ -57,7 +57,7 @@ ConnectionManager::~ConnectionManager()
 }
 
 con::Connection* ConnectionManager::_CreateConnection(
-        con::ConnectionId connectionId)
+    con::ConnectionId connectionId)
 {
     return new msgrc::Connection(_GetOwnNodeId(), connectionId,
         m_sendBufferSize, m_ibSQSize, m_ibSRQ, m_ibSRQSize, m_ibSharedSCQ,

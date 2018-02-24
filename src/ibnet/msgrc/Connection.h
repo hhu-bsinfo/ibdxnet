@@ -28,35 +28,73 @@
 namespace ibnet {
 namespace msgrc {
 
-//
-// Created by nothaas on 1/30/18.
-//
+/**
+ * Implementation of a connection for messaging using RC queue pairs
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 30.01.2018
+ */
 class Connection : public con::Connection
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param ownNodeId Node id of the current instance
+     * @param connectionId Unique id assigned to the connection
+     * @param sendBufferSize Size of the send buffer (ring buffer) in bytes
+     * @param ibSQSize Size of the send queue
+     * @param refIbSRQ Pointer to the shared receive queue (memory managed by caller)
+     * @param ibSRQSize Size of the shared receive queue
+     * @param refIbSharedSCQ Pointer to the shared send completion queue (memory managed by caller)
+     * @param ibSharedSCQSize Size of the shared send completion queue
+     * @param refIbSharedRCQ Pointer to the shared receive completion queue (memory managed by caller)
+     * @param ibSharedRCQSize Size of the shared receive completion queue
+     * @param refProtDom Pointer to the IbProtDom (memory managed by caller)
+     */
     Connection(con::NodeId ownNodeId, con::ConnectionId connectionId,
         uint32_t sendBufferSize, uint16_t ibSQSize, ibv_srq* refIbSRQ,
         uint16_t ibSRQSize, ibv_cq* refIbSharedSCQ, uint16_t ibSharedSCQSize,
         ibv_cq* refIbSharedRCQ, uint16_t ibSharedRCQSize,
         core::IbProtDom* refProtDom);
 
+    /**
+     * Destructor
+     */
     ~Connection() override;
 
+    /**
+     * Overriding virtual function
+     */
     void CreateConnectionExchangeData(void* connectionDataBuffer,
         size_t connectionDataMaxSize, size_t* connectionDataActualSize)
-        override;
+    override;
 
+    /**
+     * Overriding virtual function
+     */
     void Connect(const con::RemoteConnectionHeader& remoteConnectionHeader,
         const void* remoteConnectionData, size_t remoteConnectionDataSize)
-        override;
+    override;
 
+    /**
+     * Overriding virtual function
+     */
     void Close(bool force) override;
 
-    core::IbMemReg* GetRefSendBuffer() const {
+    /**
+     * Get the pointer to the send buffer memory region
+     * (caller does not have to manage memory)
+     */
+    core::IbMemReg* GetRefSendBuffer() const
+    {
         return m_sendBuffer;
     }
 
-    ibv_qp* GetQP() const {
+    /**
+     * Get the ibv_qp of the connection
+     */
+    ibv_qp* GetQP() const
+    {
         return m_ibQP;
     }
 
@@ -91,8 +129,11 @@ private:
 
 private:
     void __CreateQP();
+
     void __SetInitStateQP();
+
     void __SetReadyToSend();
+
     void __SetReadyToRecv();
 };
 

@@ -35,31 +35,36 @@ namespace ibnet {
 namespace msgrc {
 
 /**
- * Dedicated thread for sending data.
+ * Execution unit getting new data to be sent from a SendHandler and
+ * sending it to the specified target using reliable queue pairs and
+ * messaging verbs.
  *
- * The thread is using the SendHandler to call into the java space to get the
- * next buffer/data to send. If data is available, it fills one or, if enough
- * data is available, multiple pinned infiniband buffers and posts them to the
- * infiniband work queue. Afterwards, the same amount of work completions are
- * polled for optimal utilization. However, handling flow control data is
- * prioritized and always comes first to avoid deadlocking.
- *
- * @author Stefan Nothaas, stefan.nothaas@hhu.de, 02.06.2017
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 30.01.2018
  */
-// TODO update doc
-//
-// Created by nothaas on 1/30/18.
-//
 class SendDispatcher : public dx::ExecutionUnit
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param recvBufferSize Size of a single receive buffer (from the RecvBufferPool)
+     * @param refConnectionManager Pointer to the connection manager (memory managed by caller)
+     * @param refStatisticsManager Pointer to the statistics manager (memory managed by caller)
+     * @param refSendHandler Pointer to a send handler which provides data to be sent (memory managed by caller)
+     */
     SendDispatcher(uint32_t recvBufferSize,
         ConnectionManager* refConnectionManager,
         stats::StatisticsManager* refStatisticsManager,
         SendHandler* refSendHandler);
 
+    /**
+     * Destructor
+     */
     ~SendDispatcher() override;
 
+    /**
+     * Overriding virtual function
+     */
     bool Dispatch() override;
 
 private:
@@ -96,8 +101,9 @@ private:
     void __SendData(Connection* connection,
         const SendHandler::NextWorkPackage* workPackage);
 
-    template<typename ExceptionType, typename... Args>
-    void __ThrowDetailedException(const std::string& reason, Args... args) {
+    template <typename ExceptionType, typename... Args>
+    void __ThrowDetailedException(const std::string& reason, Args... args)
+    {
         std::stringstream sendQueuePending;
 
         for (uint16_t i = 0; i < con::NODE_ID_MAX_NUM_NODES; i++) {
@@ -108,17 +114,16 @@ private:
         }
 
         throw ExceptionType(reason + "\n"
-            "SendDispatcher state:\n"
-            "m_prevWorkPackageResults: %s\n"
-            "m_completionList: %s\n"
-            "m_completionsPending: %s\n"
-            "m_sendQueuePending: %s\n"
-            "m_totalTime: %s\n"
-            "m_sentData: %s\n"
-            "m_sentFC: %s\n"
-            "m_throughputSentData: %s\n"
-            "m_throughputSentFC: %s"
-            , args...,
+                "SendDispatcher state:\n"
+                "m_prevWorkPackageResults: %s\n"
+                "m_completionList: %s\n"
+                "m_completionsPending: %s\n"
+                "m_sendQueuePending: %s\n"
+                "m_totalTime: %s\n"
+                "m_sentData: %s\n"
+                "m_sentFC: %s\n"
+                "m_throughputSentData: %s\n"
+                "m_throughputSentFC: %s", args...,
             *m_prevWorkPackageResults,
             *m_completionList,
             m_completionsPending,
@@ -130,9 +135,10 @@ private:
             *m_throughputSentFC);
     };
 
-    template<typename ExceptionType, typename... Args>
+    template <typename ExceptionType, typename... Args>
     void __ThrowDetailedException(int ret, const std::string& reason,
-            Args... args) {
+        Args... args)
+    {
         __ThrowDetailedException<ExceptionType>(reason + "\nError (%d): %s\n%s",
             args..., ret, strerror(ret));
     };
@@ -144,23 +150,26 @@ private:
         Stats(SendDispatcher* refParent) :
             Operation("SendDispatcherState"),
             m_refParent(refParent)
-        {}
+        {
+        }
 
         ~Stats() override = default;
 
-        void WriteOstream(std::ostream& os) const override {
+        void WriteOstream(std::ostream& os) const override
+        {
             os << "m_prevWorkPackageResults " <<
-               *m_refParent->m_prevWorkPackageResults << ", m_completionList "
-               << *m_refParent->m_completionList << ", m_completionsPending "
-               << m_refParent->m_completionsPending << ", m_sendQueuePending ";
+                *m_refParent->m_prevWorkPackageResults << ", m_completionList "
+                << *m_refParent->m_completionList << ", m_completionsPending "
+                << m_refParent->m_completionsPending << ", m_sendQueuePending ";
 
             for (uint16_t i = 0; i < con::NODE_ID_MAX_NUM_NODES; i++) {
                 if (m_refParent->m_sendQueuePending[i] > 0) {
                     os << std::hex << i << "|" << std::dec <<
-                       m_refParent->m_sendQueuePending[i] << " ";
+                        m_refParent->m_sendQueuePending[i] << " ";
                 }
             }
         }
+
     private:
         SendDispatcher* m_refParent;
     };

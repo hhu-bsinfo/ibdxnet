@@ -29,10 +29,10 @@ namespace ibnet {
 namespace msgrc {
 
 Connection::Connection(con::NodeId ownNodeId, con::ConnectionId connectionId,
-        uint32_t sendBufferSize, uint16_t ibSQSize, ibv_srq* refIbSRQ,
-        uint16_t ibSRQSize, ibv_cq* refIbSharedSCQ, uint16_t ibSharedSCQSize,
-        ibv_cq* refIbSharedRCQ, uint16_t ibSharedRCQSize,
-        core::IbProtDom* refProtDom) :
+    uint32_t sendBufferSize, uint16_t ibSQSize, ibv_srq* refIbSRQ,
+    uint16_t ibSRQSize, ibv_cq* refIbSharedSCQ, uint16_t ibSharedSCQSize,
+    ibv_cq* refIbSharedRCQ, uint16_t ibSharedRCQSize,
+    core::IbProtDom* refProtDom) :
     con::Connection(ownNodeId, connectionId),
     m_sendBufferSize(sendBufferSize),
     m_refProtDom(refProtDom),
@@ -87,7 +87,7 @@ Connection::~Connection()
 }
 
 void Connection::CreateConnectionExchangeData(void* connectionDataBuffer,
-        size_t connectionDataMaxSize, size_t* connectionDataActualSize)
+    size_t connectionDataMaxSize, size_t* connectionDataActualSize)
 {
     if (connectionDataMaxSize < sizeof(RemoteConnectionData)) {
         throw sys::IllegalStateException("Buffer too small");
@@ -102,8 +102,8 @@ void Connection::CreateConnectionExchangeData(void* connectionDataBuffer,
 }
 
 void Connection::Connect(
-        const con::RemoteConnectionHeader& remoteConnectionHeader,
-        const void* remoteConnectionData, size_t remoteConnectionDataSize)
+    const con::RemoteConnectionHeader& remoteConnectionHeader,
+    const void* remoteConnectionData, size_t remoteConnectionDataSize)
 {
     if (remoteConnectionDataSize < sizeof(RemoteConnectionData)) {
         throw sys::IllegalStateException("Buffer too small");
@@ -168,9 +168,9 @@ void Connection::__SetInitStateQP()
     ibv_qp_attr qp_attr = {};
     memset(&qp_attr, 0, sizeof(struct ibv_qp_attr));
 
-    qp_attr.qp_state        = IBV_QPS_INIT;
-    qp_attr.pkey_index      = 0;
-    qp_attr.port_num        = DEFAULT_IB_PORT;
+    qp_attr.qp_state = IBV_QPS_INIT;
+    qp_attr.pkey_index = 0;
+    qp_attr.port_num = DEFAULT_IB_PORT;
     qp_attr.qp_access_flags = IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE;
 
     // modify queue pair attributes
@@ -212,7 +212,7 @@ void Connection::__SetReadyToSend()
     IBNET_LOG_TRACE("ibv_modify_qp");
     result = ibv_modify_qp(m_ibQP, &attr,
         IBV_QP_STATE | IBV_QP_TIMEOUT | IBV_QP_RETRY_CNT | IBV_QP_RNR_RETRY |
-        IBV_QP_SQ_PSN | IBV_QP_MAX_QP_RD_ATOMIC);
+            IBV_QP_SQ_PSN | IBV_QP_MAX_QP_RD_ATOMIC);
 
     if (result != 0) {
         throw core::IbException("Setting queue pair to ready to send failed");
@@ -254,7 +254,7 @@ void Connection::__SetReadyToRecv()
     IBNET_LOG_TRACE("ibv_modify_qp");
     result = ibv_modify_qp(m_ibQP, &attr,
         IBV_QP_STATE | IBV_QP_AV | IBV_QP_PATH_MTU | IBV_QP_DEST_QPN |
-        IBV_QP_RQ_PSN | IBV_QP_MAX_DEST_RD_ATOMIC | IBV_QP_MIN_RNR_TIMER);
+            IBV_QP_RQ_PSN | IBV_QP_MAX_DEST_RD_ATOMIC | IBV_QP_MIN_RNR_TIMER);
 
     if (result != 0) {
         throw core::IbException(

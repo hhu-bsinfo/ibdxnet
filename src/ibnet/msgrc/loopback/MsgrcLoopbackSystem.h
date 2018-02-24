@@ -24,26 +24,57 @@
 namespace ibnet {
 namespace msgrc {
 
-//
-// Created by nothaas on 1/31/18.
-//
+/**
+ * Loopback test/debugging system for the RC messaging system. This simply
+ * sends out the same buffer over and over and discards any received data
+ * by putting buffers with received data right back to the buffer pool.
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 31.01.2018
+ */
 class MsgrcLoopbackSystem : public MsgrcSystem
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param argc Argc
+     * @param argv Argv
+     */
     MsgrcLoopbackSystem(int argc, char** argv);
 
+    /**
+     * Destructor
+     */
     ~MsgrcLoopbackSystem() override = default;
 
+    /**
+     * Overriding virtual function
+     */
     void NodeDiscovered(con::NodeId nodeId) override;
 
+    /**
+     * Overriding virtual function
+     */
     void NodeInvalidated(con::NodeId nodeId) override;
 
+    /**
+     * Overriding virtual function
+     */
     void NodeConnected(con::Connection& connection) override;
 
+    /**
+     * Overriding virtual function
+     */
     void NodeDisconnected(con::NodeId nodeId) override;
 
+    /**
+     * Overriding virtual function
+     */
     void Received(ReceivedPackage* recvPackage) override;
 
+    /**
+     * Overriding virtual function
+     */
     const SendHandler::NextWorkPackage* GetNextDataToSend(
         const PrevWorkPackageResults* prevResults,
         const SendHandler::CompletedWorkList* completionList) override;

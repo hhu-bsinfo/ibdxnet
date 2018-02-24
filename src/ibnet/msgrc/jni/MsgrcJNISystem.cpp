@@ -24,7 +24,7 @@ namespace ibnet {
 namespace msgrc {
 
 MsgrcJNISystem::MsgrcJNISystem(MsgrcSystem::Configuration* configuration,
-        JNIEnv* env, jobject callbackHandler) :
+    JNIEnv* env, jobject callbackHandler) :
     MsgrcSystem(),
     m_callbackHandler(env, callbackHandler),
     m_workPackage()
@@ -120,8 +120,8 @@ void MsgrcJNISystem::Received(ReceivedPackage* recvPackage)
 }
 
 const SendHandler::NextWorkPackage* MsgrcJNISystem::GetNextDataToSend(
-        const SendHandler::PrevWorkPackageResults* prevResults,
-        const SendHandler::CompletedWorkList* completionList)
+    const SendHandler::PrevWorkPackageResults* prevResults,
+    const SendHandler::CompletedWorkList* completionList)
 {
     return m_callbackHandler.GetNextDataToSend(prevResults, completionList);
 }

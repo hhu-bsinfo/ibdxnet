@@ -28,36 +28,88 @@
 namespace ibnet {
 namespace msgrc {
 
-//
-// Created by on 1/31/18.
-//
+/**
+ * System for hooking the RC messaging system to Java bindings.
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 31.01.2018
+ */
 class MsgrcJNISystem : public MsgrcSystem
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param configuration Configuration to set for MsgrcSystem (memory managed by system)
+     * @param env Pointer to the JNI environment
+     * @param callbackHandler Pointer to the jobject callback handler
+     */
     MsgrcJNISystem(MsgrcSystem::Configuration* configuration, JNIEnv* env,
         jobject callbackHandler);
 
+    /**
+     * Destructor
+     */
     ~MsgrcJNISystem() override = default;
 
+    /**
+     * Add a new node to the system (for discovery and connection management)
+     *
+     * @param ipv4 IPV4 address of the target node
+     */
     void AddNode(uint32_t ipv4);
 
-    // returns 0 for success, 1 for creation timeout, 2 for any other error
+    /**
+     * Actively create a connection to a target node
+     *
+     * @param nodeId Target node id to create a connection to
+     * @return 0 for success, 1 for creation timeout, 2 for any other error
+     */
     uint32_t CreateConnection(con::NodeId nodeId);
 
+    /**
+     * Get the memory region of the send buffer of a target connection
+     *
+     * @param targetNodeId Node id of the target connection
+     * @return Pointer to the memory region of the send buffer or nullptr
+     *         if the connection does not exist, yet.
+     */
     core::IbMemReg* GetSendBuffer(con::NodeId targetNodeId);
 
+    /**
+     * Return a receive buffer to the pool
+     *
+     * @param buffer Pointer to the buffer to return
+     */
     void ReturnRecvBuffer(core::IbMemReg* buffer);
 
+    /**
+     * Overriding virtual function
+     */
     void NodeDiscovered(con::NodeId nodeId) override;
 
+    /**
+     * Overriding virtual function
+     */
     void NodeInvalidated(con::NodeId nodeId) override;
 
+    /**
+     * Overriding virtual function
+     */
     void NodeConnected(con::Connection& connection) override;
 
+    /**
+     * Overriding virtual function
+     */
     void NodeDisconnected(con::NodeId nodeId) override;
 
+    /**
+     * Overriding virtual function
+     */
     void Received(ReceivedPackage* recvPackage) override;
 
+    /**
+     * Overriding virtual function
+     */
     const SendHandler::NextWorkPackage* GetNextDataToSend(
         const SendHandler::PrevWorkPackageResults* prevResults,
         const SendHandler::CompletedWorkList* completionList) override;

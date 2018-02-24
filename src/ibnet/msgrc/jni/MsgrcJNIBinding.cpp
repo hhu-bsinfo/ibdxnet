@@ -23,13 +23,13 @@
 static ibnet::msgrc::MsgrcJNISystem* g_system = nullptr;
 
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_init(
-        JNIEnv* p_env, jclass p_class, jobject p_callbackHandler,
-        jboolean p_pinSendRecvThreads, jboolean p_enableSignalHandler,
-        jint p_statisticsThreadPrintIntervalMs, jshort p_ownNodeId,
-        jint p_connectionCreationTimeoutMs, jint p_maxNumConnections,
-        jint p_sqSize, jint p_srqSize, jint p_sharedSCQSize,
-        jint p_sharedRCQSize, jint p_sendBufferSize,
-        jlong p_recvBufferPoolSize, jint p_recvBufferSize)
+    JNIEnv* p_env, jclass p_class, jobject p_callbackHandler,
+    jboolean p_pinSendRecvThreads, jboolean p_enableSignalHandler,
+    jint p_statisticsThreadPrintIntervalMs, jshort p_ownNodeId,
+    jint p_connectionCreationTimeoutMs, jint p_maxNumConnections,
+    jint p_sqSize, jint p_srqSize, jint p_sharedSCQSize,
+    jint p_sharedRCQSize, jint p_sendBufferSize,
+    jlong p_recvBufferPoolSize, jint p_recvBufferSize)
 {
     auto* configuration = new ibnet::msgrc::MsgrcSystem::Configuration();
     configuration->m_pinSendRecvThreads = p_pinSendRecvThreads;
@@ -69,7 +69,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_init(
 }
 
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_shutdown(
-        JNIEnv* p_env, jclass p_class)
+    JNIEnv* p_env, jclass p_class)
 {
     IBNET_LOG_INFO("Shutdown");
 
@@ -83,29 +83,29 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_shutdown(
 }
 
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_addNode(
-        JNIEnv* p_env, jclass p_class, jint p_ipv4)
+    JNIEnv* p_env, jclass p_class, jint p_ipv4)
 {
     g_system->AddNode(static_cast<uint32_t>(p_ipv4));
 }
 
 JNIEXPORT jint JNICALL
 Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_createConnection(JNIEnv* p_env,
-        jclass p_class, jshort p_nodeId)
+    jclass p_class, jshort p_nodeId)
 {
     return g_system->CreateConnection(static_cast<ibnet::con::NodeId>(p_nodeId));
 }
 
 JNIEXPORT jlong JNICALL
 Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_getSendBufferAddress(JNIEnv* p_env,
-        jclass p_class, jshort p_targetNodeId)
+    jclass p_class, jshort p_targetNodeId)
 {
     return (jlong) g_system->GetSendBuffer(
         static_cast<ibnet::con::NodeId>(p_targetNodeId))->GetAddress();
 }
 
 JNIEXPORT void JNICALL
-    Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_returnRecvBuffer(JNIEnv* p_env,
-        jclass p_class, jlong p_addr)
+Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_returnRecvBuffer(JNIEnv* p_env,
+    jclass p_class, jlong p_addr)
 {
     g_system->ReturnRecvBuffer((ibnet::core::IbMemReg*) p_addr);
 }

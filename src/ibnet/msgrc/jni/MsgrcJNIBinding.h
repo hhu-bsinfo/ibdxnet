@@ -30,7 +30,7 @@ extern "C" {
  * Signature: (Lde/hhu/bsinfo/net/ib/MsgrcJNIBinding/CallbackHandler;ZZISIIIIIIIJI)Z
  */
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_init
-    (JNIEnv *, jclass, jobject, jboolean, jboolean, jint, jshort, jint,
+    (JNIEnv*, jclass, jobject, jboolean, jboolean, jint, jshort, jint,
         jint, jint, jint, jint, jint, jint, jlong, jint);
 
 /*
@@ -39,7 +39,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_init
  * Signature: ()Z
  */
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_shutdown
-    (JNIEnv *, jclass);
+    (JNIEnv*, jclass);
 
 /*
  * Class:     de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding
@@ -47,7 +47,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_shutdown
  * Signature: (I)V
  */
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_addNode
-(JNIEnv *, jclass, jint);
+    (JNIEnv*, jclass, jint);
 
 /*
  * Class:     de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding
@@ -55,8 +55,8 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_addNode
  * Signature: (S)I
  */
 JNIEXPORT jint JNICALL
-    Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_createConnection
-    (JNIEnv *, jclass, jshort);
+Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_createConnection
+    (JNIEnv*, jclass, jshort);
 
 /*
  * Class:     de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding
@@ -64,8 +64,8 @@ JNIEXPORT jint JNICALL
  * Signature: (S)J
  */
 JNIEXPORT jlong JNICALL
-    Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_getSendBufferAddress
-    (JNIEnv *, jclass, jshort);
+Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_getSendBufferAddress
+    (JNIEnv*, jclass, jshort);
 
 /*
  * Class:     de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding
@@ -73,7 +73,7 @@ JNIEXPORT jlong JNICALL
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_returnRecvBuffer
-(JNIEnv *, jclass, jlong);
+    (JNIEnv*, jclass, jlong);
 
 #ifdef __cplusplus
 }

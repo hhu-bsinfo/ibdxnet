@@ -31,19 +31,35 @@
 namespace ibnet {
 namespace msgrc {
 
-//
-// Created by nothaas on 1/30/18.
-//
+/**
+ * Execution unit dispatching incoming data for the RC messaging subsystem
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 30.01.2018
+ */
 class RecvDispatcher : public dx::ExecutionUnit
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param refConnectionManager Pointer to the connection manager (managed by caller)
+     * @param refRecvBufferPool Pointer to the receive buffer pool used for incoming data (managed by caller)
+     * @param refStatisticsManager Pointer to the statistics manager (managed by caller)
+     * @param refRecvHandler Pointer to the receive handler to dispatch the received data to (managed by caller)
+     */
     RecvDispatcher(ConnectionManager* refConnectionManager,
         dx::RecvBufferPool* refRecvBufferPool,
         stats::StatisticsManager* refStatisticsManager,
         RecvHandler* refRecvHandler);
 
+    /**
+     * Destructor
+     */
     ~RecvDispatcher() override;
 
+    /**
+     * Overring virtual function
+     */
     bool Dispatch() override;
 
 private:
@@ -70,17 +86,17 @@ private:
 
     void __Refill();
 
-    template<typename ExceptionType, typename... Args>
-    void __ThrowDetailedException(const std::string& reason, Args... args) {
+    template <typename ExceptionType, typename... Args>
+    void __ThrowDetailedException(const std::string& reason, Args... args)
+    {
         throw ExceptionType(reason + "\n"
-            "SendDispatcher state:\n"
-            "m_recvQueuePending: %d\n"
-            "m_totalTime: %s\n"
-            "m_receivedData: %s\n"
-            "m_receivedFC: %s\n"
-            "m_throughputReceivedData: %s\n"
-            "m_throughputReceivedFC: %s"
-            , args...,
+                "SendDispatcher state:\n"
+                "m_recvQueuePending: %d\n"
+                "m_totalTime: %s\n"
+                "m_receivedData: %s\n"
+                "m_receivedFC: %s\n"
+                "m_throughputReceivedData: %s\n"
+                "m_throughputReceivedFC: %s", args...,
             m_recvQueuePending,
             *m_totalTime,
             *m_receivedData,
@@ -89,9 +105,10 @@ private:
             *m_throughputReceivedFC);
     };
 
-    template<typename ExceptionType, typename... Args>
+    template <typename ExceptionType, typename... Args>
     void __ThrowDetailedException(int ret, const std::string& reason,
-            Args... args) {
+        Args... args)
+    {
         __ThrowDetailedException<ExceptionType>(reason + "\nError (%d): %s",
             args..., ret, strerror(ret));
     };

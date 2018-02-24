@@ -22,7 +22,7 @@ namespace ibnet {
 namespace msgrc {
 
 MsgrcJNIBindingCallbackHandler::MsgrcJNIBindingCallbackHandler(JNIEnv* env,
-        jobject object) :
+    jobject object) :
     m_vm(nullptr),
     m_object(env->NewGlobalRef(object)),
     m_midNodeDiscovered(sys::JNIHelper::GetAndVerifyMethod(env, object,

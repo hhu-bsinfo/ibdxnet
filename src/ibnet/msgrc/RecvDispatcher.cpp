@@ -31,9 +31,9 @@ namespace ibnet {
 namespace msgrc {
 
 RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
-        dx::RecvBufferPool* refRecvBufferPool,
-        stats::StatisticsManager* refStatisticsManager,
-        RecvHandler* refRecvHandler) :
+    dx::RecvBufferPool* refRecvBufferPool,
+    stats::StatisticsManager* refStatisticsManager,
+    RecvHandler* refRecvHandler) :
     ExecutionUnit("MsgRCRecv"),
     m_refConnectionManager(refConnectionManager),
     m_refRecvBufferPool(refRecvBufferPool),
@@ -41,22 +41,22 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
     m_refRecvHandler(refRecvHandler),
     m_recvPackage(static_cast<RecvHandler::ReceivedPackage*>(
         aligned_alloc(static_cast<size_t>(getpagesize()),
-        RecvHandler::ReceivedPackage::Sizeof(
-        refConnectionManager->GetIbSRQSize())))),
+            RecvHandler::ReceivedPackage::Sizeof(
+                refConnectionManager->GetIbSRQSize())))),
     m_recvQueuePending(0),
     m_workComps(static_cast<ibv_wc*>(
         aligned_alloc(static_cast<size_t>(getpagesize()),
-        sizeof(ibv_wc) * refConnectionManager->GetIbSRQSize()))),
+            sizeof(ibv_wc) * refConnectionManager->GetIbSRQSize()))),
     m_firstWc(true),
     m_memRegRefillBuffer(static_cast<core::IbMemReg**>(
         aligned_alloc(static_cast<size_t>(getpagesize()),
-        sizeof(core::IbMemReg*) * refConnectionManager->GetIbSRQSize()))),
+            sizeof(core::IbMemReg*) * refConnectionManager->GetIbSRQSize()))),
     m_sgeList(static_cast<ibv_sge*>(
         aligned_alloc(static_cast<size_t>(getpagesize()),
-        sizeof(ibv_sge) * refConnectionManager->GetIbSRQSize()))),
+            sizeof(ibv_sge) * refConnectionManager->GetIbSRQSize()))),
     m_recvWrList(static_cast<ibv_recv_wr*>(
         aligned_alloc(static_cast<size_t>(getpagesize()),
-        sizeof(ibv_recv_wr) * refConnectionManager->GetIbSRQSize()))),
+            sizeof(ibv_recv_wr) * refConnectionManager->GetIbSRQSize()))),
     m_totalTime(new stats::Time("RecvTotalTime")),
     m_receivedData(new stats::Unit("RecvData", stats::Unit::e_Base2)),
     m_receivedFC(new stats::Unit("RecvFC", stats::Unit::e_Base10)),
@@ -149,9 +149,9 @@ uint32_t RecvDispatcher::__Poll()
                         if (m_firstWc) {
                             __ThrowDetailedException<core::IbException>(
                                 "First work completion of queue failed, it's "
-                                "very likely your connection attributes are "
-                                "wrong or the remote site isn't in a state to "
-                                "respond");
+                                    "very likely your connection attributes are "
+                                    "wrong or the remote site isn't in a state to "
+                                    "respond");
                         } else {
                             throw con::DisconnectedException();
                         }
@@ -160,7 +160,7 @@ uint32_t RecvDispatcher::__Poll()
                         __ThrowDetailedException<core::IbException>(
                             "Found failed work completion (%d), status %s",
                             i, core::WORK_COMPLETION_STATUS_CODE[
-                            m_workComps[i].status]);
+                                m_workComps[i].status]);
 
                 }
             }

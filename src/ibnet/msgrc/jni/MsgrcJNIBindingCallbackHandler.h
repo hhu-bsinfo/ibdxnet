@@ -29,9 +29,11 @@
 namespace ibnet {
 namespace msgrc {
 
-//
-// Created by nothaas on 2/1/18.
-//
+/**
+ * Wrapper for callbacks to exposed native interface in Java
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.02.2018
+ */
 class MsgrcJNIBindingCallbackHandler
 {
 public:
@@ -84,8 +86,8 @@ public:
     }
 
     inline const SendHandler::NextWorkPackage* GetNextDataToSend(
-            const SendHandler::PrevWorkPackageResults* prevResults,
-            const SendHandler::CompletedWorkList* completionList)
+        const SendHandler::PrevWorkPackageResults* prevResults,
+        const SendHandler::CompletedWorkList* completionList)
     {
         IBNET_LOG_TRACE_FUNC;
 

@@ -32,9 +32,9 @@ namespace ibnet {
 namespace msgrc {
 
 SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
-        ConnectionManager* refConectionManager,
-        stats::StatisticsManager* refStatisticsManager,
-        SendHandler* refSendHandler) :
+    ConnectionManager* refConectionManager,
+    stats::StatisticsManager* refStatisticsManager,
+    SendHandler* refSendHandler) :
     ExecutionUnit("MsgRCSend"),
     m_recvBufferSize(recvBufferSize),
     m_refConnectionManager(refConectionManager),
@@ -42,24 +42,24 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     m_refSendHandler(refSendHandler),
     m_prevWorkPackageResults(static_cast<SendHandler::PrevWorkPackageResults*>(
         aligned_alloc(static_cast<size_t>(getpagesize()),
-        sizeof(SendHandler::PrevWorkPackageResults)))),
+            sizeof(SendHandler::PrevWorkPackageResults)))),
     m_completionList(static_cast<SendHandler::CompletedWorkList*>(
         aligned_alloc(static_cast<size_t>(getpagesize()),
-        SendHandler::CompletedWorkList::Sizeof(
-        refConectionManager->GetMaxNumConnections())))),
+            SendHandler::CompletedWorkList::Sizeof(
+                refConectionManager->GetMaxNumConnections())))),
     m_completionsPending(0),
     m_sendQueuePending(),
     m_firstWc(true),
     m_ignoreFlushErrOnPendingCompletions(0),
     m_sgeLists(static_cast<ibv_sge*>(
         aligned_alloc(static_cast<size_t>(getpagesize()),
-        sizeof(ibv_sge) * m_refConnectionManager->GetIbSQSize()))),
+            sizeof(ibv_sge) * m_refConnectionManager->GetIbSQSize()))),
     m_sendWrs(static_cast<ibv_send_wr*>(
         aligned_alloc(static_cast<size_t>(getpagesize()),
-        sizeof(ibv_send_wr) * m_refConnectionManager->GetIbSQSize()))),
+            sizeof(ibv_send_wr) * m_refConnectionManager->GetIbSQSize()))),
     m_workComp(static_cast<ibv_wc*>(
         aligned_alloc(static_cast<size_t>(getpagesize()),
-        sizeof(ibv_wc) * m_refConnectionManager->GetIbSharedSCQSize()))),
+            sizeof(ibv_wc) * m_refConnectionManager->GetIbSharedSCQSize()))),
     m_totalTime(new stats::Time("SendTotalTime")),
     m_pollCompletions(new stats::Time("PollCompletionsTime")),
     m_sendData(new stats::Time("SendDataTime")),
@@ -74,7 +74,7 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     m_nonEmptyCompletionPolls(new stats::Unit("SendNonEmptyCompletionPolls")),
     m_completionBatches(new stats::Unit("SendCompletionBatches")),
     m_nextWorkPackageRatio(new stats::Ratio("SendNextWorkPackageRatio",
-         m_nonEmptyNextWorkPackage, m_emptyNextWorkPackage)),
+        m_nonEmptyNextWorkPackage, m_emptyNextWorkPackage)),
     m_sendDataFullBuffersRatio(new stats::Ratio("SendDataFullBuffersRatio",
         m_nonEmptyNextWorkPackage, m_emptyNextWorkPackage)),
     m_emptyCompletionPollsRatio(new stats::Ratio(
@@ -312,9 +312,9 @@ bool SendDispatcher::__PollCompletions()
                             if (m_firstWc) {
                                 __ThrowDetailedException<core::IbException>(
                                     "First work completion of queue failed,"
-                                    " it's very likely your connection "
-                                    "attributes are wrong or the remote"
-                                    " isn't in a state to respond");
+                                        " it's very likely your connection "
+                                        "attributes are wrong or the remote"
+                                        " isn't in a state to respond");
                             } else {
                                 throw con::DisconnectedException();
                             }
@@ -333,11 +333,11 @@ bool SendDispatcher::__PollCompletions()
                         (WorkRequestIdCtx*) &m_workComp[i].wr_id;
 
                     if (m_completionList->m_numBytesWritten[
-                            ctx->m_targetNodeId] == 0 && m_completionList->
-                            m_fcDataWritten[ctx->m_targetNodeId] == 0) {
+                        ctx->m_targetNodeId] == 0 && m_completionList->
+                        m_fcDataWritten[ctx->m_targetNodeId] == 0) {
                         m_completionList->m_nodeIds[
                             m_completionList->m_numNodes++] =
-                                ctx->m_targetNodeId;
+                            ctx->m_targetNodeId;
                     }
 
                     m_completionList->m_numBytesWritten[ctx->m_targetNodeId] +=
@@ -363,7 +363,7 @@ bool SendDispatcher::__PollCompletions()
 }
 
 void SendDispatcher::__SendData(Connection* connection,
-        const SendHandler::NextWorkPackage* workPackage)
+    const SendHandler::NextWorkPackage* workPackage)
 {
     IBNET_STATS(m_sendData->Start());
 
@@ -395,7 +395,7 @@ void SendDispatcher::__SendData(Connection* connection,
 
     // slice area of send buffer into chunks fitting receive buffers
     while (m_sendQueuePending[nodeId] + chunks < queueSize &&
-           (posBack != posFront || fcData)) {
+        (posBack != posFront || fcData)) {
         uint32_t posEnd = posFront;
 
         // ring buffer wrap around detected: first, send everything
@@ -412,8 +412,8 @@ void SendDispatcher::__SendData(Connection* connection,
             posEnd = posFront;
         }
 
-       // edge case: wrap around exactly on buffer size and no new data after
-       // wrap around
+        // edge case: wrap around exactly on buffer size and no new data after
+        // wrap around
         if (posBack == posEnd && !fcData) {
             break;
         }

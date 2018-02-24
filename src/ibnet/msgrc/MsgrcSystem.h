@@ -45,13 +45,19 @@
 namespace ibnet {
 namespace msgrc {
 
-//
-// Created by nothaas on 1/31/18.
-//
+/**
+ * Subsystem providing reliable messaging using InfiniBand messaging
+ * verbs over RC queue pairs
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 31.01.2018
+ */
 class MsgrcSystem : public con::DiscoveryListener,
-        public con::ConnectionListener, public RecvHandler, public SendHandler
+    public con::ConnectionListener, public RecvHandler, public SendHandler
 {
 public:
+    /**
+     * Configuration struct with configurables values for the subsystem
+     */
     struct Configuration
     {
         bool m_pinSendRecvThreads = true;
@@ -71,20 +77,21 @@ public:
             static_cast<uint64_t>(1024 * 1024 * 1024 * 2ll);
         uint32_t m_recvBufferSize = 1024 * 16;
 
-        friend std::ostream &operator<<(std::ostream& os,
-                const Configuration& o) {
+        friend std::ostream& operator<<(std::ostream& os,
+            const Configuration& o)
+        {
             return os << "MsgrcSystem Configuration:" << std::endl <<
                 "m_pinSendRecvThreads: " << o.m_pinSendRecvThreads <<
-                    std::endl <<
+                std::endl <<
                 "m_enableSignalHandler: " << o.m_enableSignalHandler <<
-                    std::endl <<
+                std::endl <<
                 "m_statisticsThreadPrintIntervalMs: " <<
-                    o.m_statisticsThreadPrintIntervalMs << std::endl <<
+                o.m_statisticsThreadPrintIntervalMs << std::endl <<
                 "m_ownNodeId: " << std::hex << o.m_ownNodeId << std::endl <<
                 "m_portDiscMan: " << std::dec << o.m_portDiscMan << std::endl <<
                 "m_nodeConfig: " << o.m_nodeConfig << std::endl <<
                 "m_connectionCreationTimeoutMs: " <<
-                    o.m_connectionCreationTimeoutMs << std::endl <<
+                o.m_connectionCreationTimeoutMs << std::endl <<
                 "m_maxNumConnections: " << o.m_maxNumConnections << std::endl <<
                 "m_SQSize: " << o.m_SQSize << std::endl <<
                 "m_SRQSize: " << o.m_SRQSize << std::endl <<
@@ -92,24 +99,37 @@ public:
                 "m_sharedRCQSize: " << o.m_sharedRCQSize << std::endl <<
                 "m_sendBufferSize: " << o.m_sendBufferSize << std::endl <<
                 "m_recvBufferPoolSizeBytes: " << o.m_recvBufferPoolSizeBytes <<
-                    std::endl <<
+                std::endl <<
                 "m_recvBufferSize: " << o.m_recvBufferSize << std::endl;
         }
     };
 
 public:
+    /**
+     * Constructor
+     */
     MsgrcSystem();
 
+    /**
+     * Destructor
+     */
     virtual ~MsgrcSystem();
 
+    /**
+     * Init the subsystem
+     */
     void Init();
 
+    /**
+     * Shutdown the subsystem
+     */
     void Shutdown();
 
 protected:
     Configuration* m_configuration;
 
-    void _SetConfiguration(Configuration* configuration) {
+    void _SetConfiguration(Configuration* configuration)
+    {
         if (m_configuration) {
             throw sys::IllegalStateException("Configuration already set");
         }
@@ -117,7 +137,9 @@ protected:
         m_configuration = configuration;
     }
 
-    virtual void _PostInit() {};
+    virtual void _PostInit()
+    {
+    };
 
 protected:
     backward::SignalHandling* m_signalHandler;

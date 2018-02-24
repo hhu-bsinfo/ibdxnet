@@ -41,7 +41,7 @@ public:
      *
      * @param totalPoolSize Total size of the pool in bytes
      * @param recvBufferSize Size of a single receive buffer in the pool
-     * @param protDom Protection domain to register all buffers at
+     * @param protDom Protection domain to register all buffers at (Pointer managed by caller)
      */
     RecvBufferPool(uint64_t totalPoolSize, uint32_t recvBufferSize,
         core::IbProtDom* refProtDom);
@@ -52,22 +52,39 @@ public:
     ~RecvBufferPool();
 
     /**
-     * Get a buffer from the pool. If the pool is empty, no new buffers are
-     * allocated and the caller is waiting actively until a buffer is returned.
+     * Get a buffer from the pool. If the pool is empty, this call is blocking with
+     * no new buffers being allocated. The caller is blocked until a buffer is
+     * available to be returend.
      *
-     * @return Buffer
+     * @return Buffer from the pool
      */
     core::IbMemReg* GetBuffer();
 
+    /**
+     * Get multiple buffers on a single call from the queue.
+     *
+     * @param retBuffers Pointer to an array to store the addresses of the
+     *        buffers to return
+     * @param count Number of buffers to request (size of the array)
+     * @return The number of buffers actually returned. This might be less than count
+     *         if not enough buffers are available, currently.
+     */
     uint32_t GetBuffers(core::IbMemReg** retBuffers, uint32_t count);
 
     /**
-     * Return a buffer to be reused
+     * Return a buffer to the pool to be reused
      *
-     * @param buffer Buffer to return
+     * @param buffer Buffer to return to the pool
      */
     void ReturnBuffer(core::IbMemReg* buffer);
 
+    /**
+     * Return multiple buffers back to the pool
+     *
+     * @param buffers Pointer to an array of buffers previously retreived
+     *        from the pool
+     * @param count Number of elements in the array
+     */
     void ReturnBuffers(core::IbMemReg** buffers, uint32_t count);
 
 private:

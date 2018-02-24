@@ -24,23 +24,46 @@
 namespace ibnet {
 namespace dx {
 
-//
-// Created by nothaas on 1/30/18.
-//
+/**
+ * Interface for an execution unit for the execution engine
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 30.01.2018
+ */
 class ExecutionUnit
 {
 public:
-    const std::string& GetName() const {
+    /**
+     * Get the name of the unit
+     */
+    const std::string& GetName() const
+    {
         return m_name;
     }
 
+    /**
+     * Dispatch work to be executed. Put your code/task whatever
+     * getting executed by a worker here.
+     *
+     * @return True if your unit executed actual work, false if there was nothing
+     *         to do/process. This controls the worker to enter into an idling state
+     *         if all assigned units are idling for a certain period of time.
+     */
     virtual bool Dispatch() = 0;
 
 protected:
+    /**
+     * Constructor
+     *
+     * @param name Name of the unit
+     */
     explicit ExecutionUnit(const std::string& name) :
         m_name(name)
-    {}
+    {
+    }
 
+    /**
+     * Destructor
+     */
     virtual ~ExecutionUnit() = default;
 
 private:

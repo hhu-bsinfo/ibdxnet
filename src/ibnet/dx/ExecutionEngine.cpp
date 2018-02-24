@@ -24,7 +24,7 @@ namespace ibnet {
 namespace dx {
 
 ExecutionEngine::ExecutionEngine(uint16_t threadCount,
-        stats::StatisticsManager* refStatisticsManager) :
+    stats::StatisticsManager* refStatisticsManager) :
     m_refStatisticsManager(refStatisticsManager)
 {
     for (uint16_t i = 0; i < threadCount; i++) {
@@ -50,14 +50,13 @@ void ExecutionEngine::PinWorker(uint16_t workerId, uint16_t cpuid)
     m_workers[workerId]->Pin(cpuid);
 }
 
-void ExecutionEngine::AddExecutionUnit(uint16_t workerId,
-        ExecutionUnit* executionUnit)
+void ExecutionEngine::AddExecutionUnit(uint16_t workerId, ExecutionUnit* refExecutionUnit)
 {
     if (workerId >= m_workers.size()) {
         throw sys::IllegalStateException("Worker id invalid: %d", workerId);
     }
 
-    m_workers[workerId]->AddExecutionUnit(executionUnit);
+    m_workers[workerId]->AddExecutionUnit(refExecutionUnit);
 }
 
 void ExecutionEngine::Start()
@@ -84,7 +83,7 @@ void ExecutionEngine::Stop()
 }
 
 ExecutionEngine::Worker::Worker(uint16_t id,
-        stats::StatisticsManager* refStatisticsManager) :
+    stats::StatisticsManager* refStatisticsManager) :
     ThreadLoop("ExecutionEngineWorker-" + std::to_string(id)),
     m_id(id),
     m_refStatisticsManager(refStatisticsManager),

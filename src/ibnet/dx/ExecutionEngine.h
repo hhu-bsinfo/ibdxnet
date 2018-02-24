@@ -31,26 +31,62 @@
 namespace ibnet {
 namespace dx {
 
-//
-// Created by on 1/30/18.
-//
+/**
+ * Engine executing (execution) units with a specified number of workers. The EUs
+ * are explicitly assigned to a specific worker and not scheduled dynamically.
+ * This simply supports creating static execution flows more easily instead of
+ * hardcoding them.
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 30.01.2018
+ */
 class ExecutionEngine
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param threadCount Number of worker threads to spawn
+     * @param refStatisticsManager Pointer to statistics manager (caller has to manage)
+     */
     explicit ExecutionEngine(uint16_t threadCount,
         stats::StatisticsManager* refStatisticsManager);
 
+    /**
+     * Destructor
+     */
     ~ExecutionEngine();
 
+    /**
+     * Pin a specific worker to a single virtual/physical CPU core
+     *
+     * @param workerId Worker to pin
+     * @param cpuid Target cpuid of the core
+     */
     void PinWorker(uint16_t workerId, uint16_t cpuid);
 
-    void AddExecutionUnit(uint16_t workerId, ExecutionUnit* executionUnit);
+    /**
+     * Add a execution unit to a worker. The EUs are executed in the order
+     * they are added and repeated in the same order
+     *
+     * @param workerId Target worker id
+     * @param executionUnit Execution unit to add (caller has to manage memory)
+     */
+    void AddExecutionUnit(uint16_t workerId, ExecutionUnit* refExecutionUnit);
 
+    /**
+     * Start the engine
+     */
     void Start();
 
+    /**
+     * Stop the engine
+     */
     void Stop();
 
 private:
+    /**
+     * Worker thread of the engine
+     */
     class Worker : public sys::ThreadLoop
     {
     public:

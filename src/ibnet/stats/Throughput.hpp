@@ -25,26 +25,47 @@
 namespace ibnet {
 namespace stats {
 
-//
-// Created by nothaas on 2/1/18.
-//
+/**
+ * Statistic operation caluclating throughput of a Unit and Time operation
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.02.2018
+ */
 class Throughput : public Operation
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param name Name of the statistic operation
+     */
     explicit Throughput(const std::string& name) :
         Operation(name),
         m_refs(false),
         m_unit(new Unit(name)),
         m_time(new Time(name))
-    {}
+    {
+    }
 
+    /**
+     * Constructor
+     *
+     * The operations provided are not free'd on destruction of this object.
+     *
+     * @param name Name of the statistic operation
+     * @param refUnit Pointer to a unit for the throughput (numerator)
+     * @param refTime Pointer to a time for the throughput (denominator)
+     */
     Throughput(const std::string& name, Unit* refUnit, Time* refTime) :
         Operation(name),
         m_refs(true),
         m_unit(refUnit),
         m_time(refTime)
-    {}
+    {
+    }
 
+    /**
+     * Destructor
+     */
     ~Throughput() override
     {
         if (!m_refs) {
@@ -53,40 +74,67 @@ public:
         }
     }
 
+    /**
+     * Start measuring time
+     */
     inline void Start()
     {
         m_time->Start();
     }
 
-    inline void Add(uint64_t units) {
+    /**
+     * Add data sent/received/processed
+     *
+     * @param units Number of units to add
+     */
+    inline void Add(uint64_t units)
+    {
         m_unit->Add(units);
     }
 
+    /**
+     * Stop the timer
+     *
+     * @param units Units to add before stopping
+     */
     inline void Stop(uint64_t units = 0)
     {
         m_unit->Add(units);
         m_time->Stop();
     }
 
-    inline double GetThroughput(
-            Unit::Metric metric = Unit::e_MetricDefault) const {
+    /**
+     * Get the current throughput
+     *
+     * @param metric Metric of the throughput (b, kb, mb etc)
+     * @return Current throughput in the specified metric
+     */
+    inline double GetThroughput(Unit::Metric metric = Unit::e_MetricDefault) const
+    {
         return m_unit->GetTotalValue(metric) / m_time->GetTotalTime();
     }
 
-    template<typename _Time>
-    inline double GetThroughput(
-            Unit::Metric metric = Unit::e_MetricDefault) const {
+    /**
+     *
+     * @tparam _Time
+     * @param metric
+     * @return
+     */
+    template <typename _Time>
+    inline double GetThroughput(Unit::Metric metric = Unit::e_MetricDefault) const
+    {
         return m_unit->GetTotalValue(metric) / m_time->GetTotalTime<_Time>();
     }
 
-    void WriteOstream(std::ostream& os) const override {
+    void WriteOstream(std::ostream& os) const override
+    {
         for (uint8_t i = Unit::e_MetricKilo; i < Unit::e_MetricCount; i++) {
 
             if (m_unit->GetTotalValue() < m_unit->GetMetricFactor(
-                    static_cast<Unit::Metric>(i))) {
+                static_cast<Unit::Metric>(i))) {
                 os << "throughput " << m_unit->GetTotalValue(
-                   static_cast<Unit::Metric>(i - 1)) / m_time->GetTotalTime() <<
-                   " " << ms_metricTableNames[i - 1];
+                    static_cast<Unit::Metric>(i - 1)) / m_time->GetTotalTime() <<
+                    " " << ms_metricTableNames[i - 1];
                 break;
             }
         }

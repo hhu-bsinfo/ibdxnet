@@ -26,6 +26,9 @@
 
 #include "Operation.hpp"
 
+/**
+ * Compiler flag to disable statistics
+ */
 //#define IBNET_DISABLE_STATISTICS
 #ifdef IBNET_DISABLE_STATISTICS
 #define IBNET_STATS(...)
@@ -36,32 +39,61 @@
 namespace ibnet {
 namespace stats {
 
-//
-// Created by nothaas on 2/1/18.
-//
+/**
+ * Manager for statistic operations. A dedicated thread prints all registered
+ * statistics periodically if enabled.
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.02.2018
+ */
 class StatisticsManager : public sys::ThreadLoop
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param printIntervalMs Interval in ms to print all registered
+     *        statistics (0 to disable printing)
+     */
     explicit StatisticsManager(uint32_t printIntervalMs);
 
+    /**
+     * Destructor
+     */
     ~StatisticsManager() = default;
 
-    void Register(const Operation* operation) {
+    /**
+     * Register a statistic operation
+     *
+     * @param refOperation Operation to register (caller has to manage memory)
+     */
+    void Register(const Operation* refOperation)
+    {
         std::lock_guard<std::mutex> l(m_mutex);
-        m_operations.push_back(operation);
+        m_operations.push_back(refOperation);
     }
 
-    void Deregister(const Operation* operation) {
+    /**
+     * Deregister an already registered operation
+     *
+     * Ensure to call this before deleting the operation
+     *
+     * @param refOperation Operation to deregister
+     */
+    void Deregister(const Operation* refOperation)
+    {
         std::lock_guard<std::mutex> l(m_mutex);
 
         for (auto it = m_operations.begin(); it != m_operations.end(); it++) {
-            if (*it == operation) {
+            if (*it == refOperation) {
                 m_operations.erase(it);
                 break;
             }
         }
     }
 
+    /**
+     * Print the current state of all registerted statistics to stdout
+     */
     void PrintStatistics();
 
 protected:

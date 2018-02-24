@@ -27,26 +27,47 @@
 namespace ibnet {
 namespace stats {
 
-//
-// Created by nothaas on 2/5/18.
-//
+/**
+ * Statistic operation calculating a ratio of two units
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 05.02.2018
+ */
 class Ratio : public Operation
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param name Name of the statistic operation
+     */
     explicit Ratio(const std::string& name) :
         Operation(name),
         m_refs(false),
         m_unit1(new Unit(name + "-Unit1")),
         m_unit2(new Unit(name + "-Unit2"))
-    {}
+    {
+    }
 
+    /**
+     * Constructor
+     *
+     * The Units provided are not free'd on destruction of this object.
+     *
+     * @param name Name of the statistic operation
+     * @param refUnit1 Pointer to a unit to use for the ratio (numerator)
+     * @param refUnit2 Pointer to a unit to use for the ratio (denominator)
+     */
     Ratio(const std::string& name, Unit* refUnit1, Unit* refUnit2) :
         Operation(name),
         m_refs(true),
         m_unit1(refUnit1),
         m_unit2(refUnit2)
-    {}
+    {
+    }
 
+    /**
+     * Destructor
+     */
     ~Ratio() override
     {
         if (!m_refs) {
@@ -55,27 +76,47 @@ public:
         }
     }
 
-    inline double GetRatioCounter() const {
+    /**
+     * Get the ratio of the Units' counters
+     */
+    inline double GetRatioCounter() const
+    {
         double tmp = m_unit2->GetCounter();
         return m_unit1->GetCounter() / (tmp == 0.0 ? 1.0 : tmp);
     }
 
-    inline double GetRatioTotalValue() const {
+    /**
+     * Get the ratio of the Units' total values
+     */
+    inline double GetRatioTotalValue() const
+    {
         double tmp = m_unit2->GetTotalValue();
         return m_unit1->GetTotalValue() / (tmp == 0.0 ? 1.0 : tmp);
     }
 
-    inline double GetRatioMinValue() const {
+    /**
+     * Get the ratio of the Units' min values
+     */
+    inline double GetRatioMinValue() const
+    {
         double tmp = m_unit2->GetMinValue();
         return m_unit1->GetMinValue() / (tmp == 0.0 ? 1.0 : tmp);
     }
 
-    inline double GetRatioMaxValue() const {
+    /**
+     * Get the ratio of the Units' max values
+     */
+    inline double GetRatioMaxValue() const
+    {
         double tmp = m_unit2->GetMaxValue();
         return m_unit1->GetMaxValue() / (tmp == 0.0 ? 1.0 : tmp);
     }
 
-    void WriteOstream(std::ostream& os) const override {
+    /**
+     * Overriding virtual method
+     */
+    void WriteOstream(std::ostream& os) const override
+    {
         std::ios::fmtflags flags(os.flags());
 
         os << "counter " << std::fixed << std::setw(10) << std::setprecision(10)

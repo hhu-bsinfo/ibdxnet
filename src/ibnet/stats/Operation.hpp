@@ -25,25 +25,54 @@
 namespace ibnet {
 namespace stats {
 
-//
-// Created by nothaas on 2/1/18.
-//
+/**
+ * Base class for a statistics operation
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.02.2018
+ */
 class Operation
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param name Name of the operation
+     */
     explicit Operation(const std::string& name) :
         m_name(name)
-    {}
+    {
+    }
 
+    /**
+     * Destructor
+     */
     virtual ~Operation() = default;
 
-    const std::string& GetName() const {
+    /**
+     * Get the name of the operation
+     */
+    const std::string& GetName() const
+    {
         return m_name;
     }
 
+    /**
+     * Write the current state of the operation as well as (debugging) info
+     * to a ostream
+     *
+     * @param os Ostream object to write the output to
+     */
     virtual void WriteOstream(std::ostream& os) const = 0;
 
-    friend std::ostream &operator<<(std::ostream& os, const Operation& o) {
+    /**
+     * Overloading << operator for printing to ostreams
+     *
+     * @param os Ostream to output to
+     * @param o Operation to generate output for
+     * @return Ostream object
+     */
+    friend std::ostream& operator<<(std::ostream& os, const Operation& o)
+    {
         os << '[' << o.m_name << "] ";
         o.WriteOstream(os);
         return os;

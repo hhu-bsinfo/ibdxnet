@@ -43,20 +43,21 @@ public:
     /**
      * Current state of the port of an InfiniBand HCA
      */
-    enum PortState {
+    enum PortState
+    {
         e_PortStateInvalid = -1,
 
         /**
          * Reserved value, which shouldn't be observed
          */
-        e_PortStateNop = 0,
+            e_PortStateNop = 0,
 
         /**
          * Logical link is down. The physical link of the port isn't up.
          * In this state, the link layer discards all packets presented to
          * it for transmission
          */
-        e_PortStateDown = 1,
+            e_PortStateDown = 1,
 
         /**
          * Logical link is Initializing. The physical link of the port is up,
@@ -65,7 +66,7 @@ public:
          * link packets, other types of packets presented to it for
          * transmission are discarded
          */
-        e_PortStateInit = 2,
+            e_PortStateInit = 2,
 
         /**
          * Logical link is Armed. The physical link of the port is up,
@@ -74,26 +75,27 @@ public:
          * link packets, other types of packets can be received, but discards
          * non SMP packets for sending
          */
-        e_PortStateArmed = 3,
+            e_PortStateArmed = 3,
 
         /**
          * Logical link is Active. The link layer can transmit and receive
          * all packet types
          */
-        e_PortStateActive = 4,
+            e_PortStateActive = 4,
 
         /**
          * Logical link is in Active Deferred. The logical link was Active,
          * but the physical link suffered from a failure. If the error will
          * be recovered within a timeout, the logical link will return to
          */
-        e_PortStateActiveDefer = 5,
+            e_PortStateActiveDefer = 5,
     };
 
     /**
      * Possible MTU sizes in bytes (support depends on the HCA used)
      */
-    enum MtuSize {
+    enum MtuSize
+    {
         e_MtuSizeInvalid = 0,
         e_MtuSize256 = 1,
         e_MtuSize512 = 2,
@@ -105,7 +107,8 @@ public:
     /**
      * Link width of a port
      */
-    enum LinkWidth {
+    enum LinkWidth
+    {
         e_LinkWidthInvalid = 0,
         e_LinkWidth1X = 1,
         e_LinkWidth4X = 4,
@@ -116,7 +119,8 @@ public:
     /**
      * Active link speed of a port in Gbps
      */
-    enum LinkSpeed {
+    enum LinkSpeed
+    {
         e_LinkSpeedInvalid = 0,
         e_LinkSpeed2p5 = 25,
         e_LinkSpeed5 = 50,
@@ -128,7 +132,8 @@ public:
     /**
      * Physical link state of a port
      */
-    enum LinkState {
+    enum LinkState
+    {
         e_LinkStateInvalid = 0,
 
         /**
@@ -136,43 +141,43 @@ public:
          * to received data. In this state, the link is deactivated
          * without powering off the port
          */
-        e_LinkStateSleep = 1,
+            e_LinkStateSleep = 1,
 
         /**
          * The port transmits training sequences and responds to receive
          * training sequences.
          */
-        e_LinkStatePolling = 2,
+            e_LinkStatePolling = 2,
 
         /**
          * The port drives its output to quiescent levels and does not
          * respond to receive data
          */
-        e_LinkStateDisabled = 3,
+            e_LinkStateDisabled = 3,
 
         /**
          * Both transmitter and receive active and the port is attempting to
          * configure and transition to the LinkUp state
          */
-        e_LinkStatePortConfTrain = 4,
+            e_LinkStatePortConfTrain = 4,
 
         /**
          * The port is available to send and receive packets
          */
-        e_LinkStateLinkUp = 5,
+            e_LinkStateLinkUp = 5,
 
         /**
          * Port attempts to re-synchronize the link and return it to
          * normal operation
          */
-        e_LinkStateLinkErrRecovery = 6,
+            e_LinkStateLinkErrRecovery = 6,
 
         /**
          * Port allows the transmitter and received circuitry to be tested by
          * external test equipment for compliance with the transmitter
          * and receiver specifications
          */
-        e_LinkStatePhytest = 7
+            e_LinkStatePhytest = 7
     };
 
     /**
@@ -201,56 +206,64 @@ public:
     /**
      * Get the GUID of the device
      */
-    uint64_t GetGuid() const {
+    uint64_t GetGuid() const
+    {
         return m_ibDevGuid;
     }
 
     /**
      * Get the name of the device
      */
-    const std::string& GetName() const {
+    const std::string& GetName() const
+    {
         return m_ibDevName;
     }
 
     /**
      * Get the device's LID
      */
-    uint16_t GetLid() const {
+    uint16_t GetLid() const
+    {
         return m_lid;
     }
 
     /**
      * Get the link's width
      */
-    LinkWidth GetLinkWidth() const {
+    LinkWidth GetLinkWidth() const
+    {
         return m_linkWidth;
     }
 
     /**
      * Get the link's speed
      */
-    LinkSpeed GetLinkSpeed() const {
+    LinkSpeed GetLinkSpeed() const
+    {
         return m_linkSpeed;
     }
 
     /**
      * Get the current state of the link
      */
-    LinkState GetLinkState() const {
+    LinkState GetLinkState() const
+    {
         return m_linkState;
     }
 
     /**
      * Get the InfiniBand context provided by the opened device
      */
-    ibv_context* GetIBCtx() const {
+    ibv_context* GetIBCtx() const
+    {
         return m_ibCtx;
     }
 
     /**
      * Enable output to an out stream
      */
-    friend std::ostream &operator<<(std::ostream& os, const IbDevice& o) {
+    friend std::ostream& operator<<(std::ostream& os, const IbDevice& o)
+    {
         return os
             << "0x" << std::hex << o.m_ibDevGuid
             << ", " << o.m_ibDevName

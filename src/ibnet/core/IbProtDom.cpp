@@ -66,7 +66,7 @@ void IbProtDom::Register(IbMemReg* refMemReg)
     }
 
     IBNET_LOG_TRACE("[%s] Registering memory region %p, size %d",
-            m_name, refMemReg->m_addr, refMemReg->m_size);
+        m_name, refMemReg->m_addr, refMemReg->m_size);
 
     refMemReg->m_ibMemReg = ibv_reg_mr(m_ibProtDom, refMemReg->m_addr,
         refMemReg->m_size, IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);

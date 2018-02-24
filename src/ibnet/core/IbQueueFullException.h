@@ -40,10 +40,11 @@ public:
      * @param format Printf style format message
      * @param args Parameters for format string
      */
-    template<typename... Args>
+    template <typename... Args>
     explicit IbQueueFullException(const std::string& format, Args... args) :
         IbException(format, args...)
-    {}
+    {
+    }
 
     /**
      * Destructor

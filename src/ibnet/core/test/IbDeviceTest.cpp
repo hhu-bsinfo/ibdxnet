@@ -26,6 +26,11 @@
 
 static bool g_loop = true;
 
+/**
+ * Signal handler to abort execution (on SIGINT)
+ *
+ * @param signal Signal triggered
+ */
 static void SignalHandler(int signal)
 {
     if (signal == SIGINT) {
@@ -33,6 +38,13 @@ static void SignalHandler(int signal)
     }
 }
 
+/**
+ * Main entry point
+ *
+ * @param argc Argc
+ * @param argv Argc
+ * @return Exit code
+ */
 int main(int argc, char** argv)
 {
     ibnet::sys::Logger::Setup();

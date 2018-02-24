@@ -52,47 +52,56 @@ public:
     ~IbProtDom();
 
     /**
-     * Register a region of allocated memory with the protection domain.
+     * Register an allocated memory region with the protection domain.
      *
-     * This also pins the memory.
+     * The memory is not managed by the protection domain. The caller has to take care of
+     * allocation and free'ing memory.
      *
      * @note If this call fails with "Not enough resources available", ensure
      *          your current user has the capability flag which allows
      *          memory pinning set (CAP_IPC_LOCK). This is not necessary if
      *          you are running your application as root.
-     * @param addr Address of an allocated buffer to register
-     * @param size Size of the allocated buffer
-     * @param freeOnCleanup True to free the buffer if the protection domain is
-     *          destroyed, false if the caller takes care of memory management
-     * @return Pointer to a IbMemReg object registered at the protected domain
+     * @param refMemReg Pointer to memory region to register (caller has to manage pointer)
      */
-     // TODO update doc
     void Register(IbMemReg* refMemReg);
 
+    /**
+     * Deregister an already registered memory region. Ensure to call this for every
+     * memory region registered before destroying/free'ing them
+     *
+     * @param refMemReg Memory region to deregister
+     */
     void Deregister(IbMemReg* refMemReg);
 
     /**
      * Get the IB protection domain object
      */
-    ibv_pd* GetIBProtDom() const {
+    ibv_pd* GetIBProtDom() const
+    {
         return m_ibProtDom;
     }
 
-    uint64_t GetTotalMemoryRegionsRegistered() const {
+    /**
+     * Get the total number of memory regions registered
+     */
+    uint64_t GetTotalMemoryRegionsRegistered() const
+    {
         return m_memoryRegionsRegistered;
     }
 
     /**
      * Get the total amount of memory registered (in bytes)
      */
-    uint64_t GetTotalMemoryRegistered() const {
+    uint64_t GetTotalMemoryRegistered() const
+    {
         return m_totalMemRegistered;
     }
 
     /**
      * Enable output to an out stream
      */
-    friend std::ostream &operator<<(std::ostream& os, const IbProtDom& o) {
+    friend std::ostream& operator<<(std::ostream& os, const IbProtDom& o)
+    {
         return os << o.m_name << " (" << std::dec <<
             o.GetTotalMemoryRegionsRegistered() << " regions with a total of "
             << o.GetTotalMemoryRegistered() << " bytes)";

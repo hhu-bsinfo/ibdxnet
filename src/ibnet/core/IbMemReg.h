@@ -37,8 +37,7 @@ namespace core {
 class IbProtDom;
 
 /**
- * A memory region that can be registered with a protection domain bound to
- * a HCA
+ * A memory region that can be registered with a protection domain bound to a HCA
  *
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
  */
@@ -57,24 +56,33 @@ public:
      *          caller.
      */
     IbMemReg(void* addr, uint64_t size, bool freeOnCleanup = true) :
-            m_addr(addr),
-            m_size(size),
-            m_freeOnCleanup(freeOnCleanup),
-            m_ibMemReg(nullptr) {
+        m_addr(addr),
+        m_size(size),
+        m_freeOnCleanup(freeOnCleanup),
+        m_ibMemReg(nullptr)
+    {
         IBNET_ASSERT_PTR(addr);
     }
 
-    // TODO doc
+    /**
+     * Constructor
+     *
+     * @param addr Address of an allocated memory region
+     * @param size Size of the allocated memory region
+     * @param refParentMemory Pointer to a parent memory region that contains the region
+     *        specified by addr and size (e.g. slice one huge block into multiple chunks)
+     */
     IbMemReg(void* addr, uint64_t size, IbMemReg* refParentMemory) :
         m_addr(addr),
         m_size(size),
         m_freeOnCleanup(false),
-        m_ibMemReg(refParentMemory->m_ibMemReg) {
+        m_ibMemReg(refParentMemory->m_ibMemReg)
+    {
         IBNET_ASSERT_PTR(addr);
 
         if (size >= 0x7FFFFFFF) {
             throw IbException("Invalid size (%d) for memory region with parent "
-                "region: %p (%d)", size, refParentMemory->GetAddress(),
+                    "region: %p (%d)", size, refParentMemory->GetAddress(),
                 refParentMemory->GetSize());
         }
     }
@@ -82,7 +90,8 @@ public:
     /**
      * Destructor
      */
-    ~IbMemReg() {
+    ~IbMemReg()
+    {
         if (m_freeOnCleanup) {
             free(m_addr);
         }
@@ -92,7 +101,8 @@ public:
      * Get the local key assigned to the region when registered with a
      * protection domain
      */
-    uint32_t GetLKey() const {
+    uint32_t GetLKey() const
+    {
         return m_ibMemReg->lkey;
     }
 
@@ -100,25 +110,32 @@ public:
      * Get the remote key assigned to the region when registered with a
      * protection domain
      */
-    uint32_t GetRKey() const {
+    uint32_t GetRKey() const
+    {
         return m_ibMemReg->rkey;
     }
 
     /**
      * Get the address/pointer of the allocated memory
      */
-    void* GetAddress() const {
+    void* GetAddress() const
+    {
         return m_addr;
     }
 
-    uint32_t GetSizeBuffer() const {
+    /**
+     * Get the size of the allocated memory region
+     */
+    uint32_t GetSizeBuffer() const
+    {
         return static_cast<uint32_t>(m_size);
     }
 
     /**
      * Get the size of the allocated memory region
      */
-    uint64_t GetSize() const {
+    uint64_t GetSize() const
+    {
         return m_size;
     }
 
@@ -129,7 +146,8 @@ public:
      * @param offset Offset inside memory region to start copying to
      * @param length Number of bytes to copy
      */
-    void Memcpy(void* data, uint32_t offset, uint32_t length) {
+    void Memcpy(void* data, uint32_t offset, uint32_t length)
+    {
         if (offset > m_size) {
             throw IbException("Memcpy to IbMemReg failed: offset > m_size");
         }
@@ -142,7 +160,8 @@ public:
      *
      * @return Protection domain state as string
      */
-    std::string ToString() const {
+    std::string ToString() const
+    {
         std::string str;
         str += sys::StringUtils::ToHexString(m_ibMemReg->lkey);
         str += ", " + sys::StringUtils::ToHexString(m_ibMemReg->rkey);
@@ -156,12 +175,13 @@ public:
     /**
      * Enable output to an out stream
      */
-    friend std::ostream &operator<<(std::ostream& os, const IbMemReg& o) {
+    friend std::ostream& operator<<(std::ostream& os, const IbMemReg& o)
+    {
         return os << "0x" << std::hex << o.m_ibMemReg->lkey
-                  << ", 0x" << std::hex << o.m_ibMemReg->rkey
-                  << ", 0x" << std::hex << (uintptr_t) o.m_addr
-                  << ", " <<  std::dec << o.m_size
-                  << ", " << o.m_freeOnCleanup;
+            << ", 0x" << std::hex << o.m_ibMemReg->rkey
+            << ", 0x" << std::hex << (uintptr_t) o.m_addr
+            << ", " << std::dec << o.m_size
+            << ", " << o.m_freeOnCleanup;
     }
 
 private:

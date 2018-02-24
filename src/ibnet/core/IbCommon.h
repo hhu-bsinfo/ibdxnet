@@ -22,6 +22,15 @@
 namespace ibnet {
 namespace core {
 
+/**
+ * Some common stuff for the core namespace
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.02.2018
+ */
+
+/**
+ * Translate libverb's work completion status codes to readable strings
+ */
 static const char* WORK_COMPLETION_STATUS_CODE[] = {
     "IBV_WC_SUCCESS",
     "IBV_WC_LOC_LEN_ERR",

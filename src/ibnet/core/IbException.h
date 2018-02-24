@@ -38,10 +38,11 @@ public:
      * @param format Printf style format message
      * @param args Parameters for format string
      */
-    template<typename... Args>
+    template <typename... Args>
     explicit IbException(const std::string& format, Args... args) :
         Exception(format, args...)
-    {}
+    {
+    }
 
     /**
      * Destructor

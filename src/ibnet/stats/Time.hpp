@@ -16,12 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-#ifndef IBNET_SYS_PROFILETIMER_HPP
-#define IBNET_SYS_PROFILETIMER_HPP
+#ifndef IBNET_STATS_TIME_HPP
+#define IBNET_STATS_TIME_HPP
 
-#include <chrono>
 #include <cstdint>
 #include <iostream>
+
+#include "ibnet/sys/Timer.hpp"
 
 #include "Operation.hpp"
 
@@ -29,28 +30,39 @@ namespace ibnet {
 namespace stats {
 
 /**
- * Timer class to acurately measure time for profiling code sections
+ * Statistic operation to measure time
  *
- * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.06.2017
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.02.2018
  */
- // TODO update doc
 class Time : public Operation
 {
 public:
     /**
+     * Time metrics
+     */
+    enum Metric
+    {
+        e_MetricNano = 1,
+        e_MetricMicro = 2,
+        e_MetricMilli = 3,
+        e_MetricSec = 4
+    };
+
+public:
+    /**
      * Constructor
      *
-     * @param name Name for this timer (to identify on debug output)
+     * @param name Name of the statistic operation
      */
     explicit Time(const std::string& name) :
         Operation(name),
         m_counter(0),
-        m_start(),
-        m_total(std::chrono::nanoseconds(0)),
-        // over a year should be sufficient
-        m_best(std::chrono::hours(10000)),
-        m_worst(std::chrono::seconds(0))
-    {};
+        m_timer(),
+        m_total(0),
+        m_best(0xFFFFFFFFFFFFFFFF),
+        m_worst(0)
+    {
+    };
 
     /**
      * Destructor
@@ -58,23 +70,23 @@ public:
     ~Time() override = default;
 
     /**
-     * Enter a section to be profiled/measured. Call this once, requires a call
-     * to exit before calling again
+     * Start measuring time. A call to Stop() must follow this at the end of
+     * the section you want to measure
      */
     inline void Start()
     {
         m_counter++;
-        m_start = std::chrono::high_resolution_clock::now();
+        m_timer.Start();
     }
 
     /**
-     * Requires a call to enter first. Finish measuring the section to be
-     * profiled
+     * Stop measuring time. A call to Start() must preceed this call.
      */
     inline void Stop()
     {
-        std::chrono::duration<uint64_t, std::nano> delta(
-            std::chrono::high_resolution_clock::now() - m_start);
+        m_timer.Stop();
+
+        uint64_t delta = m_timer.GetTimeNs();
 
         m_total += delta;
 
@@ -88,133 +100,101 @@ public:
     }
 
     /**
-     * Get number of times the section was profiled (enter was called)
+     * Get the number of times the section was measured
      */
-    inline uint64_t GetCounter() const {
+    inline uint64_t GetCounter() const
+    {
         return m_counter;
     }
 
     /**
-     * Get the total execution time of the section(s) enclosed by enter and
-     * exit
+     * Get the total execution time of the section(s) enclosed by Start and
+     * Stop
      *
-     * @return Total time in seconds
+     * @param metric Metric of time to return
+     * @return Total time in the metric specified
      */
-    inline double GetTotalTime() const {
-        return std::chrono::duration<double>(m_total).count();
+    inline double GetTotalTime(Metric metric = e_MetricSec) const
+    {
+        return m_total / ms_metricTable[metric];
     }
 
     /**
-     * Get the total execution time of the section(s) enclosed by enter and
-     * exit
+     * Get the average execution time of the section(s) enclosed by Start and
+     * Stop
      *
-     * @tparam _Unit Time unit to return
-     * @return Total time
+     * @param metric Metric of time to return
+     * @return Average time in the metric specified
      */
-    template<typename _Unit>
-    inline double GetTotalTime() const {
-        return std::chrono::duration<double, _Unit>(m_total).count();
-    }
-
-    /**
-     * Get the average execution time of the section(s) enclosed by enter and
-     * exit
-     *
-     * @return Average execution time in seconds
-     */
-    inline double GetAverageTime() const
+    inline double GetAverageTime(Metric metric = e_MetricSec) const
     {
         if (m_counter == 0) {
             return 0;
         } else {
-            return std::chrono::duration<double>(m_total).count() / m_counter;
+            return (m_total / ms_metricTable[metric]) / m_counter;
         }
     }
 
     /**
-     * Get the average execution time of the section(s) enclosed by enter and
-     * exit
+     * Get the best execution time of the section(s) enclosed by Start and
+     * Stop
      *
-     * @tparam _Unit Time unit to return
-     * @return Total time
+     * @param metric Metric of time to return
+     * @return Best time in the metric specified
      */
-    template<typename _Unit>
-    inline double GetAverageTime() const
+    inline double GetBestTime(Metric metric = e_MetricSec) const
     {
-        if (m_counter == 0) {
-            return 0;
-        } else {
-            return std::chrono::duration<double, _Unit>(m_total).count() / m_counter;
-        }
+        return m_best / ms_metricTable[metric];
     }
 
     /**
-     * Get the best execution time of the section(s) enclosed by enter and
-     * exit
+     * Get the worst execution time of the section(s) enclosed by Start and
+     * Stop
      *
-     * @return Best execution time in seconds
+     * @param metric Metric of time to return
+     * @return Worst time in the metric specified
      */
-    inline double GetBestTime() const {
-        return std::chrono::duration<double>(m_best).count();
+    inline double GetWorstTime(Metric metric = e_MetricSec) const
+    {
+        return m_worst / ms_metricTable[metric];
     }
 
     /**
-     * Get the best execution time of the section(s) enclosed by enter and
-     * exit
-     *
-     * @tparam _Unit Time unit to return
-     * @return Best time
+     * Overriding virtual function
      */
-    template<typename _Unit>
-    inline double GetBestTime() const {
-        return std::chrono::duration<double, _Unit>(m_best).count();
-    }
-
-    /**
-     * Get the worst execution time of the section(s) enclosed by enter and
-     * exit
-     *
-     * @return Worst execution time in seconds
-     */
-    inline double GetWorstTime() const {
-        return std::chrono::duration<double>(m_worst).count();
-    }
-
-    /**
-     * Get the worst execution time of the section(s) enclosed by enter and
-     * exit
-     *
-     * @tparam _Unit Time unit to return
-     * @return Worst time
-     */
-    template<typename _Unit>
-    inline double GetWorstTime() const {
-        return std::chrono::duration<double, _Unit>(m_worst).count();
-    }
-
-    void WriteOstream(std::ostream& os) const override {
+    void WriteOstream(std::ostream& os) const override
+    {
         os << "counter " << GetCounter();
-        __FormatTime(os, "total", GetTotalTime<std::nano>());
-        __FormatTime(os, "avg", GetAverageTime<std::nano>());
-        __FormatTime(os, "best", GetBestTime<std::nano>());
-        __FormatTime(os, "worst", GetWorstTime<std::nano>());
+        __FormatTime(os, "total", GetTotalTime(e_MetricNano));
+        __FormatTime(os, "avg", GetAverageTime(e_MetricNano));
+        __FormatTime(os, "best", GetBestTime(e_MetricNano));
+        __FormatTime(os, "worst", GetWorstTime(e_MetricNano));
     }
+
+private:
+    static constexpr double ms_metricTable[e_MetricSec] = {
+        1.0,
+        1000.0,
+        1000.0 * 1000.0,
+        1000.0 * 1000.0 * 1000.0
+    };
 
 private:
     uint64_t m_counter;
 
-    std::chrono::high_resolution_clock::time_point m_start;
+    sys::Timer m_timer;
 
-    std::chrono::duration<uint64_t, std::nano> m_total;
-    std::chrono::duration<uint64_t, std::nano> m_best;
-    std::chrono::duration<uint64_t, std::nano> m_worst;
+    uint64_t m_total;
+    uint64_t m_best;
+    uint64_t m_worst;
 
 private:
-    static inline void __FormatTime(std::ostream& os,const std::string& name,
-            double timeNs) {
+    static inline void __FormatTime(std::ostream& os, const std::string& name,
+        double timeNs)
+    {
         if (timeNs > 1000.0 * 1000.0 * 1000.0) {
             os << ";" << name << " " << timeNs / 1000.0 * 1000.0 * 1000.0 <<
-               " sec";
+                " sec";
         } else if (timeNs > 1000.0 * 1000.0) {
             os << ";" << name << " " << timeNs / 1000.0 * 1000.0 << " ms";
         } else if (timeNs > 1000.0) {
@@ -228,4 +208,4 @@ private:
 }
 }
 
-#endif //IBNET_SYS_PROFILETIMER_HPP
+#endif //IBNET_STATS_TIME_HPP

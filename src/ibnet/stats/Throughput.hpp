@@ -109,23 +109,15 @@ public:
      * @param metric Metric of the throughput (b, kb, mb etc)
      * @return Current throughput in the specified metric
      */
-    inline double GetThroughput(Unit::Metric metric = Unit::e_MetricDefault) const
+    inline double GetThroughput(Unit::Metric metric = Unit::e_MetricDefault,
+        Time::Metric metricTime = Time::e_MetricSec) const
     {
-        return m_unit->GetTotalValue(metric) / m_time->GetTotalTime();
+        return m_unit->GetTotalValue(metric) / m_time->GetTotalTime(metricTime);
     }
 
     /**
-     *
-     * @tparam _Time
-     * @param metric
-     * @return
+     * Overriding virtual function
      */
-    template <typename _Time>
-    inline double GetThroughput(Unit::Metric metric = Unit::e_MetricDefault) const
-    {
-        return m_unit->GetTotalValue(metric) / m_time->GetTotalTime<_Time>();
-    }
-
     void WriteOstream(std::ostream& os) const override
     {
         for (uint8_t i = Unit::e_MetricKilo; i < Unit::e_MetricCount; i++) {

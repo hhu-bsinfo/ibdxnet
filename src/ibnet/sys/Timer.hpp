@@ -250,7 +250,7 @@ public:
     /**
      * Get the measured time in nanoseconds
      */
-    inline double GetTimeNs()
+    inline uint64_t GetTimeNs()
     {
         if (m_running) {
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC

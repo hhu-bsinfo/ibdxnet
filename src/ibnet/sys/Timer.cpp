@@ -21,8 +21,11 @@
 namespace ibnet {
 namespace sys {
 
+#if defined(IBNET_SYS_TIMER_MODE_RDTSC) || \
+    defined(IBNET_SYS_TIMER_MODE_RDTSCP)
 uint64_t Timer::ms_overhead = 0;
 double Timer::ms_cyclesPerSec = 0.0;
+#endif
 
 }
 }

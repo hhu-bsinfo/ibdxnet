@@ -193,10 +193,10 @@ private:
         double timeNs)
     {
         if (timeNs > 1000.0 * 1000.0 * 1000.0) {
-            os << ";" << name << " " << timeNs / 1000.0 * 1000.0 * 1000.0 <<
+            os << ";" << name << " " << timeNs / (1000.0 * 1000.0 * 1000.0) <<
                 " sec";
         } else if (timeNs > 1000.0 * 1000.0) {
-            os << ";" << name << " " << timeNs / 1000.0 * 1000.0 << " ms";
+            os << ";" << name << " " << timeNs / (1000.0 * 1000.0) << " ms";
         } else if (timeNs > 1000.0) {
             os << ";" << name << " " << timeNs / 1000.0 << " us";
         } else {

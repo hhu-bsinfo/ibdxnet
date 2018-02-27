@@ -28,8 +28,8 @@
 //#define IBNET_SYS_TIMER_MODE_RDTSCP
 
 // Default to RDTSCP for timer
-#if !defined(IBNET_SYS_TIMER_MODE_NORMAL) || \
-    !defined(IBNET_SYS_TIMER_MODE_RDTSC) || \
+#if !defined(IBNET_SYS_TIMER_MODE_NORMAL) && \
+    !defined(IBNET_SYS_TIMER_MODE_RDTSC) && \
     !defined(IBNET_SYS_TIMER_MODE_RDTSCP)
 #define IBNET_SYS_TIMER_MODE_RDTSCP
 #endif
@@ -37,8 +37,10 @@
 #include <chrono>
 
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC
+
 #include <pt/pttsc.h>
 #include <pt/ptutil.h>
+
 #elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
 
 #include <pt/pttscp.h>
@@ -70,6 +72,8 @@ public:
         m_accuNs(0)
     {
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC
+        m_start = 0;
+
         if (ms_overhead == 0 || ms_cyclesPerSec == 0.0) {
             if (!pttsc_support()) {
                 IBNET_LOG_ERROR("RDTSC instruction not supported. Recompile to "
@@ -78,13 +82,15 @@ public:
             }
 
             ms_overhead = pttsc_overhead(1000000);
-            ms_cyclesPerSec = ptutil_cycles_per_sec(pttsc_start, pttsc_end,
+            ms_cyclesPerSec = ptutil_cycles_per_sec(pttsc_start, pttsc_end_strong,
                 ms_overhead);
 
             IBNET_LOG_INFO("perf-timer RDTSC initialized: overhead %d cycles, "
                 "cycles per sec %f", ms_overhead, ms_cyclesPerSec);
         }
 #elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
+        m_start = 0;
+
         if (ms_overhead == 0 || ms_cyclesPerSec == 0.0) {
             if (!pttscp_support()) {
                 IBNET_LOG_ERROR("RDTSCP instruction not supported. Recompile to "
@@ -93,7 +99,7 @@ public:
             }
 
             ms_overhead = pttscp_overhead(1000000);
-            ms_cyclesPerSec = ptutil_cycles_per_sec(pttscp_start, pttscp_end, ms_overhead);
+            ms_cyclesPerSec = ptutil_cycles_per_sec(pttscp_start, pttscp_end_strong, ms_overhead);
 
             IBNET_LOG_INFO("perf-timer RDTSCP initialized: overhead %d cycles, "
                 "cycles per sec %f", ms_overhead, ms_cyclesPerSec);
@@ -155,12 +161,16 @@ public:
             m_running = false;
 
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC
-            uint64_t end = pttsc_end();
-            m_accuNs += ptutil_cycles_to_ns(end - m_start - ms_overhead,
+            // Use the weak version for less overhead and higher throughput and less latency
+            uint64_t end = pttsc_end_weak();
+            uint64_t delta = end - m_start;
+            m_accuNs += ptutil_cycles_to_ns(delta < ms_overhead ? 0 : delta - ms_overhead,
                 ms_cyclesPerSec);
 #elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
-            uint64_t end = pttscp_end();
-            m_accuNs += ptutil_cycles_to_ns(end - m_start - ms_overhead,
+            // Use the weak version for less overhead and higher throughput and less latency
+            uint64_t end = pttscp_end_weak();
+            uint64_t delta = end - m_start;
+            m_accuNs += ptutil_cycles_to_ns(delta < ms_overhead ? 0 : delta - ms_overhead,
                 ms_cyclesPerSec);
 #else
             std::chrono::high_resolution_clock::time_point stop =
@@ -188,14 +198,18 @@ public:
     {
         if (m_running) {
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC
-            return m_accuNs + ptutil_cycles_to_sec(pttsc_end() - m_start -
-                ms_overhead, ms_cyclesPerSec);
+            // Use the weak version for less overhead and higher throughput and less latency
+            uint64_t end = pttsc_end_weak();
+            uint64_t delta = end - m_start;
+            return m_accuNs + ptutil_cycles_to_sec(delta < ms_overhead ? 0 : delta - ms_overhead, ms_cyclesPerSec);
 #elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
-            return m_accuNs + ptutil_cycles_to_sec(pttscp_end() - m_start -
-                ms_overhead, ms_cyclesPerSec);
+            // Use the weak version for less overhead and higher throughput and less latency
+            uint64_t end = pttscp_end_weak();
+            uint64_t delta = end - m_start;
+            return m_accuNs + ptutil_cycles_to_sec(delta < ms_overhead ? 0 : delta - ms_overhead, ms_cyclesPerSec);
 #else
             return (m_accuNs + std::chrono::duration<uint64_t, std::nano>(
-                    std::chrono::high_resolution_clock::now() -
+                std::chrono::high_resolution_clock::now() -
                     m_start).count()) / 1000.0 / 1000.0 / 1000.0;
 #endif
         } else {
@@ -210,14 +224,18 @@ public:
     {
         if (m_running) {
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC
-            return m_accuNs + ptutil_cycles_to_ms(pttsc_end() - m_start -
-                                                   ms_overhead, ms_cyclesPerSec);
+            // Use the weak version for less overhead and higher throughput and less latency
+            uint64_t end = pttsc_end_weak();
+            uint64_t delta = end - m_start;
+            return m_accuNs + ptutil_cycles_to_ms(delta < ms_overhead ? 0 : delta - ms_overhead, ms_cyclesPerSec);
 #elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
-            return m_accuNs + ptutil_cycles_to_ms(pttscp_end() - m_start -
-                ms_overhead, ms_cyclesPerSec);
+            // Use the weak version for less overhead and higher throughput and less latency
+            uint64_t end = pttscp_end_weak();
+            uint64_t delta = end - m_start;
+            return m_accuNs + ptutil_cycles_to_ms(delta < ms_overhead ? 0 : delta - ms_overhead, ms_cyclesPerSec);
 #else
             return (m_accuNs + std::chrono::duration<uint64_t, std::nano>(
-                    std::chrono::high_resolution_clock::now() -
+                std::chrono::high_resolution_clock::now() -
                     m_start).count()) / 1000.0 / 1000.0;
 #endif
         } else {
@@ -232,14 +250,18 @@ public:
     {
         if (m_running) {
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC
-            return m_accuNs + ptutil_cycles_to_us(pttsc_end() - m_start -
-                                                  ms_overhead, ms_cyclesPerSec);
+            // Use the weak version for less overhead and higher throughput and less latency
+            uint64_t end = pttsc_end_weak();
+            uint64_t delta = end - m_start;
+            return m_accuNs + ptutil_cycles_to_us(delta < ms_overhead ? 0 : delta - ms_overhead, ms_cyclesPerSec);
 #elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
-            return m_accuNs + ptutil_cycles_to_us(pttscp_end() - m_start -
-                ms_overhead, ms_cyclesPerSec);
+            // Use the weak version for less overhead and higher throughput and less latency
+            uint64_t end = pttscp_end_weak();
+            uint64_t delta = end - m_start;
+            return m_accuNs + ptutil_cycles_to_us(delta < ms_overhead ? 0 : delta - ms_overhead, ms_cyclesPerSec);
 #else
             return (m_accuNs + std::chrono::duration<uint64_t, std::nano>(
-                    std::chrono::high_resolution_clock::now() -
+                std::chrono::high_resolution_clock::now() -
                     m_start).count()) / 1000.0;
 #endif
         } else {
@@ -254,14 +276,18 @@ public:
     {
         if (m_running) {
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC
-            return m_accuNs + ptutil_cycles_to_ns(pttsc_end() - m_start -
-                                                  ms_overhead, ms_cyclesPerSec);
+            // Use the weak version for less overhead and higher throughput and less latency
+            uint64_t end = pttsc_end_weak();
+            uint64_t delta = end - m_start;
+            return m_accuNs + ptutil_cycles_to_ns(delta < ms_overhead ? 0 : delta - ms_overhead, ms_cyclesPerSec);
 #elif defined(IBNET_SYS_TIMER_MODE_RDTSCP)
-            return m_accuNs + ptutil_cycles_to_ns(pttscp_end() - m_start -
-                ms_overhead, ms_cyclesPerSec);
+            // Use the weak version for less overhead and higher throughput and less latency
+            uint64_t end = pttscp_end_weak();
+            uint64_t delta = end - m_start;
+            return m_accuNs + ptutil_cycles_to_ns(delta < ms_overhead ? 0 : delta - ms_overhead, ms_cyclesPerSec);
 #else
             return (m_accuNs + std::chrono::duration<uint64_t, std::nano>(
-                    std::chrono::high_resolution_clock::now() -
+                std::chrono::high_resolution_clock::now() -
                     m_start).count());
 #endif
         } else {

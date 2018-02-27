@@ -40,7 +40,7 @@ static inline bool pttscp_support()
 
 /**
  * Start time measurement
- * 
+ *
  * @return Current "time" in clock cycles
  */
 static inline uint64_t pttscp_start()
@@ -48,29 +48,60 @@ static inline uint64_t pttscp_start()
     uint32_t lo;
     uint32_t hi;
 
-    asm volatile ("CPUID\n\t" 
-        "RDTSC\n\t" 
-        "mov %%edx, %0\n\t" 
-        "mov %%eax, %1\n\t": "=r" (hi), "=r" (lo):: 
-        "%rax", "%rbx", "%rcx", "%rdx");
+    asm volatile ("rdtscp\n\t"
+        "mov %%edx, %0\n\t"
+        "mov %%eax, %1\n\t": "=r" (hi), "=r" (lo)::
+        "%rax", "%rcx", "%rdx");
 
     return (uint64_t) hi << 32 | lo;
 }
 
 /**
- * End time measurement
- * 
+ * End time measurement (weak version)
+ *
+ * This version has a lower overhead because it doesn't
+ * serialize after the rdtscp instruction which avoids
+ * out of order execution of all following instructions
+ * together with the rdtscp instruction. This might result
+ * in minor inaccuracies but yields better performance.
+ *
  * @return Current "time" in clock cycles
  */
-static inline uint64_t pttscp_end()
+static inline uint64_t pttscp_end_weak()
 {
     uint32_t lo;
     uint32_t hi;
 
-    asm volatile("RDTSCP\n\t" 
-        "mov %%edx, %0\n\t" 
-        "mov %%eax, %1\n\t" 
-        "CPUID\n\t": "=r" (hi), "=r" (lo):: "%rax", "%rbx", "%rcx", "%rdx");
+    asm volatile("rdtscp\n\t"
+        "mov %%edx, %0\n\t"
+        "mov %%eax, %1\n\t": "=r" (hi), "=r" (lo)::
+        "%rax", "%rcx", "%rdx");
+
+    return (uint64_t) hi << 32 | lo;
+}
+
+/**
+ * End time measurement (strong version)
+ *
+ * This version has a higher overhead than the weak one
+ * but guarantees higher accuracy for the measured time.
+ * It serializes execution after the rdtscp instruction
+ * to avoid out of order execution of any following
+ * instruction before the rdtscp call completed. However,
+ * this comes at a cost of higher overhead.
+ *
+ * @return Current "time" in clock cycles
+ */
+static inline uint64_t pttscp_end_strong()
+{
+    uint32_t lo;
+    uint32_t hi;
+
+    asm volatile("rdtscp\n\t"
+        "mov %%edx, %0\n\t"
+        "mov %%eax, %1\n\t"
+        "cpuid\n\t": "=r" (hi), "=r" (lo)::
+        "%rax", "%rbx", "%rcx", "%rdx");
 
     return (uint64_t) hi << 32 | lo;
 }
@@ -78,52 +109,28 @@ static inline uint64_t pttscp_end()
 /**
  * Measure the minimal overhead when using rdtscp for time measurements. This
  * value must be considered when measuring times using rdtscp
- * 
+ *
  * @return Overead when using rdtscp to measure time in cycles
  */
 static uint64_t pttscp_overhead(uint32_t samples)
 {
-    uint32_t cycles_low;
-    uint32_t cycles_high;
-    uint32_t cycles_low1;
-    uint32_t cycles_high1;
-
     uint64_t start;
     uint64_t end;
     uint64_t min = 0;
-    
-    /* Warm up the instruction cache to avoid spurious measurements due to 
+
+    /* Warm up the instruction cache to avoid spurious measurements due to
        cache effects */
 
-    asm volatile ("CPUID\n\t" 
-        "RDTSC\n\t" 
-        "mov %%edx, %0\n\t" 
-        "mov %%eax, %1\n\t": "=r" (cycles_high), "=r" (cycles_low):: 
-        "%rax", "%rbx", "%rcx", "%rdx"); 
-
-    asm volatile("RDTSCP\n\t"
-         "mov %%edx, %0\n\t" 
-         "mov %%eax, %1\n\t" 
-         "CPUID\n\t": "=r" (cycles_high1), "=r" (cycles_low1):: 
-         "%rax", "%rbx", "%rcx", "%rdx"); 
-    
-    asm volatile ("CPUID\n\t" 
-          "RDTSC\n\t" 
-          "mov %%edx, %0\n\t" 
-          "mov %%eax, %1\n\t": "=r" (cycles_high), "=r" (cycles_low):: 
-          "%rax", "%rbx", "%rcx", "%rdx"); 
-    
-    asm volatile("RDTSCP\n\t" 
-         "mov %%edx, %0\n\t" 
-         "mov %%eax, %1\n\t" 
-         "CPUID\n\t": "=r" (cycles_high1), "=r" (cycles_low1):: 
-         "%rax", "%rbx", "%rcx", "%rdx");
+    pttscp_start();
+    pttscp_end_strong();
+    pttscp_start();
+    pttscp_end_strong();
 
     /* Execute overhead measurements. The minimum is the guaranteed overhead. */
 
     for (uint32_t i = 0; i < samples; i++) {
         start = pttscp_start();
-        end = pttscp_end();
+        end = pttscp_end_strong();
 
         if (end < start) {
             return (uint64_t) -1;

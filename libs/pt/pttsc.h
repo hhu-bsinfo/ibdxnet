@@ -40,7 +40,7 @@ static inline bool pttsc_support()
 
 /**
  * Start time measurement
- * 
+ *
  * @return Current "time" in clock cycles
  */
 static inline uint64_t pttsc_start()
@@ -48,30 +48,63 @@ static inline uint64_t pttsc_start()
     uint32_t lo;
     uint32_t hi;
 
-    asm volatile("CPUID\n\t" 
-        "RDTSC\n\t" 
-        "mov %%edx, %0\n\t" 
-        "mov %%eax, %1\n\t": "=r" (hi), "=r" (lo):: 
-        "%rax", "%rbx", "%rcx", "%rdx"); 
+    asm volatile("cpuid\n\t"
+        "rdtsc\n\t"
+        "mov %%edx, %0\n\t"
+        "mov %%eax, %1\n\t": "=r" (hi), "=r" (lo)::
+        "%rax", "%rbx", "%rcx", "%rdx");
 
     return (uint64_t) hi << 32 | lo;
 }
 
 /**
- * End time measurement
- * 
+ * End time measurement (weak version)
+ *
+ * This version has a lower overhead because it doesn't
+ * serialize after the rdtsc instruction which avoids
+ * out of order execution of all following instructions
+ * together with the rdtsc instruction. This might result
+ * in minor inaccuracies but yields better performance.
+ *
  * @return Current "time" in clock cycles
  */
-static inline uint64_t pttsc_end()
+static inline uint64_t pttsc_end_weak()
 {
     uint32_t lo;
     uint32_t hi;
 
-    asm volatile("CPUID\n\t" 
-        "RDTSC\n\t" 
-        "mov %%edx, %0\n\t" 
-        "mov %%eax, %1\n\t": "=r" (hi), "=r" (lo):: 
-        "%rax", "%rbx", "%rcx", "%rdx"); 
+    asm volatile("cpuid\n\t"
+        "rdtsc\n\t"
+        "mov %%edx, %0\n\t"
+        "mov %%eax, %1\n\t": "=r" (hi), "=r" (lo)::
+        "%rax", "%rbx", "%rcx", "%rdx");
+
+    return (uint64_t) hi << 32 | lo;
+}
+
+/**
+ * End time measurement (strong version)
+ *
+ * This version has a higher overhead than the weak one
+ * but guarantees higher accuracy for the measured time.
+ * It serializes execution after the rdtsc instruction
+ * to avoid out of order execution of any following
+ * instruction before the rdtsc call completed. However,
+ * this comes at a cost of higher overhead.
+ *
+ * @return Current "time" in clock cycles
+ */
+static inline uint64_t pttsc_end_strong()
+{
+    uint32_t lo;
+    uint32_t hi;
+
+    asm volatile("cpuid\n\t"
+        "rdtsc\n\t"
+        "mov %%edx, %0\n\t"
+        "mov %%eax, %1\n\t"
+        "cpuid\n\t": "=r" (hi), "=r" (lo)::
+        "%rax", "%rbx", "%rcx", "%rdx");
 
     return (uint64_t) hi << 32 | lo;
 }
@@ -79,14 +112,11 @@ static inline uint64_t pttsc_end()
 /**
  * Measure the minimal overhead when using rdtsc for time measurements. This
  * value must be considered when measuring times using rdtsc
- * 
+ *
  * @return Overead when using rdtsc to measure time in cycles
  */
 static uint64_t pttsc_overhead(uint32_t samples)
 {
-    uint32_t cycles_low;
-    uint32_t cycles_high;
-
     uint64_t start;
     uint64_t end;
     uint64_t min = 0;
@@ -97,28 +127,16 @@ static uint64_t pttsc_overhead(uint32_t samples)
 
     /* Warm up the instruction cache to avoid spurious measurements due to cache effects */
 
-    asm volatile ("CPUID\n\t" 
-        "RDTSC\n\t" 
-        "mov %%edx, %0\n\t" 
-        "mov %%eax, %1\n\t": "=r" (cycles_high), "=r" (cycles_low):: 
-        "%rax", "%rbx", "%rcx", "%rdx"); 
-    
-    asm volatile ("CPUID\n\t" 
-        "RDTSC\n\t" 
-        "CPUID\n\t" 
-        "RDTSC\n\t" 
-        "mov %%edx, %0\n\t" 
-        "mov %%eax, %1\n\t": "=r" (cycles_high), "=r" (cycles_low):: 
-        "%rax", "%rbx", "%rcx", "%rdx"); 
-    
-    asm volatile ("CPUID\n\t" 
-        "RDTSC\n\t"::: "%rax", "%rbx", "%rcx", "%rdx");
+    pttsc_start();
+    pttsc_end_strong();
+    pttsc_start();
+    pttsc_end_strong();
 
     /* Execute overhead measurements. The minimum is the guaranteed overhead. */
 
     for (uint32_t i = 0; i < samples; i++) {
         start = pttsc_start();
-        end = pttsc_end();
+        end = pttsc_end_strong();
 
         if (end < start) {
             return (uint64_t) -1;

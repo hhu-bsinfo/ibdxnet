@@ -88,7 +88,8 @@ public:
     void ReturnBuffers(core::IbMemReg** buffers, uint32_t count);
 
 private:
-    const uint64_t m_bufferPoolSize;
+    const uint32_t m_bufferPoolSize;
+    const uint32_t m_bufferPoolSizeGapped;
     const uint32_t m_bufferSize;
 
     core::IbProtDom* m_refProtDom;
@@ -98,6 +99,7 @@ private:
     std::atomic<uint32_t> m_dataBuffersBackRes;
 
     core::IbMemReg* m_memoryPool;
+    core::IbMemReg** m_bufferPool;
     core::IbMemReg** m_dataBuffers;
 
     std::atomic<uint64_t> m_insufficientBufferCounter;

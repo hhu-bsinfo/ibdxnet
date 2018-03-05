@@ -26,14 +26,14 @@ namespace dx {
 
 RecvBufferPool::RecvBufferPool(uint64_t totalPoolSize,
         uint32_t recvBufferSize, core::IbProtDom* refProtDom) :
-    m_bufferPoolSize(totalPoolSize / recvBufferSize),
+    m_bufferPoolSize(
+        static_cast<const uint32_t>(totalPoolSize / recvBufferSize)),
+    m_bufferPoolSizeGapped(m_bufferPoolSize + 1),
     m_bufferSize(recvBufferSize),
     m_refProtDom(refProtDom),
     m_dataBuffersFront(0),
-    m_dataBuffersBack(
-        (uint32_t) (totalPoolSize / recvBufferSize - 1)),
-    m_dataBuffersBackRes(
-        (uint32_t) (totalPoolSize / recvBufferSize - 1)),
+    m_dataBuffersBack(m_bufferPoolSize),
+    m_dataBuffersBackRes(m_bufferPoolSize),
     m_insufficientBufferCounter(0)
 {
     // allocate a single region and slice it into multiple buffers for the pool
@@ -51,13 +51,24 @@ RecvBufferPool::RecvBufferPool(uint64_t totalPoolSize,
     IBNET_LOG_INFO("Allocating %d data buffers, size %d each for total pool "
         "size %d...", m_bufferPoolSize, recvBufferSize, totalPoolSize);
 
-    m_dataBuffers = new core::IbMemReg*[m_bufferPoolSize];
+    // This is just used to keep track of the pool entries and not when
+    // handing out and returning entries
+    m_bufferPool = new core::IbMemReg*[m_bufferPoolSize];
+
+    // size +1: we need a gap entry for the front and back pointers to avoid
+    // overlapping if pool is full. otherwise, we can't determine if a pool
+    // is full or empty. Here: if front == back: pool empty
+    m_dataBuffers = new core::IbMemReg*[m_bufferPoolSizeGapped];
 
     for (uint32_t i = 0; i < m_bufferPoolSize; i++) {
-        m_dataBuffers[i] = new core::IbMemReg((void*)
+        m_bufferPool[i] = new core::IbMemReg((void*)
             (((uintptr_t) m_memoryPool->GetAddress()) + i * recvBufferSize),
             recvBufferSize, m_memoryPool);
+        m_dataBuffers[i] = m_bufferPool[i];
     }
+
+    // gap, see above
+    m_dataBuffers[m_bufferPoolSize] = nullptr;
 
     IBNET_LOG_INFO("Allocation finished");
 }
@@ -68,9 +79,10 @@ RecvBufferPool::~RecvBufferPool()
     delete m_memoryPool;
 
     for (uint32_t i = 0; i < m_bufferPoolSize; i++) {
-        delete m_dataBuffers[i];
+        delete m_bufferPool[i];
     }
 
+    delete [] m_bufferPool;
     delete [] m_dataBuffers;
 }
 
@@ -84,7 +96,7 @@ core::IbMemReg* RecvBufferPool::GetBuffer()
     while (true) {
         back = m_dataBuffersBack.load(std::memory_order_relaxed);
 
-        if (front % m_bufferPoolSize == back % m_bufferPoolSize) {
+        if (front % m_bufferPoolSizeGapped == back % m_bufferPoolSizeGapped) {
             uint64_t counter = m_insufficientBufferCounter.fetch_add(1,
                 std::memory_order_relaxed);
 
@@ -101,7 +113,15 @@ core::IbMemReg* RecvBufferPool::GetBuffer()
             continue;
         }
 
-        buffer = m_dataBuffers[front % m_bufferPoolSize];
+        buffer = m_dataBuffers[front % m_bufferPoolSizeGapped];
+
+        if (buffer == nullptr) {
+            throw sys::IllegalStateException(
+                "Got invalid (null) buffer from pool, pos %d",
+                front % m_bufferSize);
+        }
+
+        m_dataBuffers[front % m_bufferPoolSizeGapped] = nullptr;
 
         m_dataBuffersFront.fetch_add(1, std::memory_order_release);
 
@@ -120,7 +140,7 @@ uint32_t RecvBufferPool::GetBuffers(core::IbMemReg** retBuffers,
     while (true) {
         back = m_dataBuffersBack.load(std::memory_order_relaxed);
 
-        if (front % m_bufferPoolSize == back % m_bufferPoolSize) {
+        if (front % m_bufferPoolSizeGapped == back % m_bufferPoolSizeGapped) {
             uint64_t counter = m_insufficientBufferCounter.fetch_add(1,
                 std::memory_order_relaxed);
 
@@ -150,7 +170,15 @@ uint32_t RecvBufferPool::GetBuffers(core::IbMemReg** retBuffers,
         }
 
         for (uint32_t i = 0; i < count; i++) {
-            retBuffers[i] = m_dataBuffers[(front + i) % m_bufferPoolSize];
+            retBuffers[i] = m_dataBuffers[(front + i) % m_bufferPoolSizeGapped];
+
+            if (retBuffers[i] == nullptr) {
+                throw sys::IllegalStateException(
+                    "Got invalid (null) buffer from pool, pos %d",
+                    front % m_bufferSize);
+            }
+
+            m_dataBuffers[(front + i) % m_bufferPoolSizeGapped] = nullptr;
         }
 
         m_dataBuffersFront.fetch_add(count, std::memory_order_release);
@@ -169,7 +197,8 @@ void RecvBufferPool::ReturnBuffer(core::IbMemReg* buffer)
     while (true) {
         front = m_dataBuffersFront.load(std::memory_order_relaxed);
 
-        if ((backRes + 1) % m_bufferPoolSize == front % m_bufferPoolSize) {
+        if ((backRes + 1) % m_bufferPoolSizeGapped ==
+                front % m_bufferPoolSizeGapped) {
             throw sys::IllegalStateException(
                 "Pool overflow, this should not happen: backRes %d, front %d",
                 backRes, front);
@@ -177,7 +206,14 @@ void RecvBufferPool::ReturnBuffer(core::IbMemReg* buffer)
 
         if (m_dataBuffersBackRes.compare_exchange_weak(backRes, backRes + 1,
                 std::memory_order_relaxed)) {
-            m_dataBuffers[backRes % m_bufferPoolSize] = buffer;
+            if (m_dataBuffers[backRes % m_bufferPoolSizeGapped]) {
+                throw sys::IllegalStateException(
+                    "Overwriting existing buffer %p at pos %d with %p",
+                    (void*) m_dataBuffers[backRes % m_bufferPoolSizeGapped],
+                    backRes % m_bufferPoolSizeGapped, (void*) buffer);
+            }
+
+            m_dataBuffers[backRes % m_bufferPoolSizeGapped] = buffer;
 
             // if two buffers are returned at the same time, the first return
             // could be interrupt by a second return. the reserve of the first
@@ -210,7 +246,8 @@ void RecvBufferPool::ReturnBuffers(core::IbMemReg** buffers, uint32_t count)
     while (true) {
         front = m_dataBuffersFront.load(std::memory_order_relaxed);
 
-        if ((backRes + count) % m_bufferPoolSize == front % m_bufferPoolSize) {
+        if ((backRes + count) % m_bufferPoolSizeGapped ==
+                front % m_bufferPoolSizeGapped) {
             throw sys::IllegalStateException(
                 "Pool overflow, this should not happen: backRes %d, front %d, "
                 "count %d", backRes, front, count);
@@ -220,7 +257,16 @@ void RecvBufferPool::ReturnBuffers(core::IbMemReg** buffers, uint32_t count)
                 std::memory_order_relaxed)) {
 
             for (uint32_t i = 0; i < count; i++) {
-                m_dataBuffers[(backRes + i) % m_bufferPoolSize] = buffers[i];
+                if (m_dataBuffers[(backRes + i) % m_bufferPoolSizeGapped]) {
+                    throw sys::IllegalStateException(
+                        "Overwriting existing buffer %p at pos %d with %p",
+                        (void*) m_dataBuffers[(backRes + i) %
+                        m_bufferPoolSizeGapped],
+                        (backRes + i) % m_bufferPoolSizeGapped,
+                        (void*) buffers[i]);
+                }
+
+                m_dataBuffers[(backRes + i) % m_bufferPoolSizeGapped] = buffers[i];
             }
 
             // if two buffers are returned at the same time, the first return

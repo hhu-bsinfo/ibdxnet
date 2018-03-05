@@ -26,7 +26,7 @@ namespace ibnet {
 namespace stats {
 
 /**
- * Statistic operation caluclating throughput of a Unit and Time operation
+ * Statistic operation calculating throughput of a Unit and Time operation
  *
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 01.02.2018
  */
@@ -41,7 +41,7 @@ public:
     explicit Throughput(const std::string& name) :
         Operation(name),
         m_refs(false),
-        m_unit(new Unit(name)),
+        m_unit(new Unit(name, Unit::e_Base2)),
         m_time(new Time(name))
     {
     }

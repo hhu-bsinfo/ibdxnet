@@ -172,12 +172,7 @@ public:
     }
 
 private:
-    static constexpr double ms_metricTable[e_MetricSec] = {
-        1.0,
-        1000.0,
-        1000.0 * 1000.0,
-        1000.0 * 1000.0 * 1000.0
-    };
+    static const double ms_metricTable[e_MetricSec + 1];
 
 private:
     uint64_t m_counter;

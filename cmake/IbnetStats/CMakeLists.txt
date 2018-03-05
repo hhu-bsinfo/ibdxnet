@@ -23,6 +23,7 @@ include_directories(${IBNET_SRC_DIR})
 set(SOURCE_FILES
         ${IBNET_SRC_DIR}/ibnet/stats/Throughput.cpp
         ${IBNET_SRC_DIR}/ibnet/stats/StatisticsManager.cpp
+        ${IBNET_SRC_DIR}/ibnet/stats/Time.cpp
         ${IBNET_SRC_DIR}/ibnet/stats/Unit.cpp)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})

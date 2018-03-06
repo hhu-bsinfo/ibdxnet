@@ -24,6 +24,7 @@
 
 #include "ibnet/stats/StatisticsManager.h"
 #include "ibnet/stats/Throughput.hpp"
+#include "ibnet/stats/Timeline.hpp"
 
 #include "ConnectionManager.h"
 #include "RecvHandler.h"
@@ -115,31 +116,13 @@ private:
 
 private:
     stats::Time* m_totalTime;
+    stats::Timeline* m_recvTimeline;
 
     stats::Unit* m_receivedData;
     stats::Unit* m_receivedFC;
 
     stats::Throughput* m_throughputReceivedData;
     stats::Throughput* m_throughputReceivedFC;
-
-//    stats::Time m_recievedData;
-//    stats::Time m_recievedFC;
-
-    // TODO statistics
-//    uint64_t m_recvBytes;
-//    uint64_t m_recvCounter;
-//    uint64_t m_recvChunks;
-//    uint64_t m_recvFlowControl;
-//    uint64_t m_recvStallsCount;
-//
-//    uint64_t m_pollCompCounter;
-//
-//    sys::Time m_timer;
-//    sys::Time m_timer2;
-//    sys::Time m_timer3;
-//    sys::Time m_timer4;
-//
-//    std::chrono::high_resolution_clock::time_point m_start;
 };
 
 }

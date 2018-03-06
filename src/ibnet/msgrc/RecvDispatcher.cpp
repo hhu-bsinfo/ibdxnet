@@ -57,7 +57,8 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
     m_recvWrList(static_cast<ibv_recv_wr*>(
         aligned_alloc(static_cast<size_t>(getpagesize()),
             sizeof(ibv_recv_wr) * refConnectionManager->GetIbSRQSize()))),
-    m_totalTime(new stats::Time("RecvTotalTime")),
+    m_totalTime(new stats::Time("TotalRecv")),
+    m_recvTimeline(new stats::Timeline("Recv", {"Poll", "ProcessRecv", "Refill", "EE-Sched"})),
     m_receivedData(new stats::Unit("RecvData", stats::Unit::e_Base2)),
     m_receivedFC(new stats::Unit("RecvFC", stats::Unit::e_Base10)),
     m_throughputReceivedData(new stats::Throughput("RecvThroughputData",
@@ -77,6 +78,7 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
         sizeof(ibv_sge) * refConnectionManager->GetIbSRQSize());
 
     m_refStatisticsManager->Register(m_totalTime);
+    m_refStatisticsManager->Register(m_recvTimeline);
     m_refStatisticsManager->Register(m_receivedData);
     m_refStatisticsManager->Register(m_receivedFC);
     m_refStatisticsManager->Register(m_throughputReceivedData);
@@ -88,6 +90,7 @@ RecvDispatcher::~RecvDispatcher()
     free(m_recvPackage);
 
     m_refStatisticsManager->Deregister(m_totalTime);
+    m_refStatisticsManager->Deregister(m_recvTimeline);
     m_refStatisticsManager->Deregister(m_receivedData);
     m_refStatisticsManager->Deregister(m_receivedFC);
     m_refStatisticsManager->Deregister(m_throughputReceivedData);
@@ -107,16 +110,20 @@ RecvDispatcher::~RecvDispatcher()
 
 bool RecvDispatcher::Dispatch()
 {
-    if (m_totalTime->GetCounter() == 0) {
-        IBNET_STATS(m_totalTime->Start());
-    } else {
-        IBNET_STATS(m_totalTime->Stop());
-        IBNET_STATS(m_totalTime->Start());
-    }
+    IBNET_STATS(m_recvTimeline->Stop());
+    IBNET_STATS(m_recvTimeline->Start());
 
     uint32_t receivedCount = __Poll();
+
+    IBNET_STATS(m_recvTimeline->NextSection());
+
     __ProcessReceived(receivedCount);
+
+    IBNET_STATS(m_recvTimeline->NextSection());
+
     __Refill();
+
+    IBNET_STATS(m_recvTimeline->NextSection());
 
     return receivedCount > 0;
 }

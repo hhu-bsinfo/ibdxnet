@@ -121,14 +121,10 @@ public:
     {
         std::ios::fmtflags flags(os.flags());
 
-        os << indent << "counter " << std::fixed << std::setw(10) << std::setprecision(10)
-            << std::setfill('0') << GetRatioCounter() << ";" <<
-            "total " << std::fixed << std::setw(10) << std::setprecision(10)
-            << std::setfill('0') << GetRatioTotalValue() << ";" <<
-            "min " << std::fixed << std::setw(10) << std::setprecision(10)
-            << std::setfill('0') << GetRatioMinValue() << ";" <<
-            "max " << std::fixed << std::setw(10) << std::setprecision(10)
-            << std::setfill('0') << GetRatioMaxValue();
+        os << std::fixed << std::setw(5) << std::setprecision(5);
+
+        os << indent << "counter " << GetRatioCounter() << ";" << "total " << GetRatioTotalValue() << ";" <<
+            "min " << GetRatioMinValue() << ";" << "max " << GetRatioMaxValue();
 
         os.flags(flags);
     }

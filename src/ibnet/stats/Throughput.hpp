@@ -124,11 +124,15 @@ public:
     {
         for (uint8_t i = Unit::e_MetricKilo; i < Unit::e_MetricCount; i++) {
 
-            if (m_unit->GetTotalValue() < m_unit->GetMetricFactor(
-                static_cast<Unit::Metric>(i))) {
-                os << indent << "throughput " << m_unit->GetTotalValue(
-                    static_cast<Unit::Metric>(i - 1)) / m_time->GetTotalTime() <<
+            if (m_unit->GetTotalValue() < m_unit->GetMetricFactor(static_cast<Unit::Metric>(i))) {
+                std::ios::fmtflags f(os.flags());
+
+                os << indent << "throughput " << std::setprecision(3) << std::fixed <<
+                    m_unit->GetTotalValue(static_cast<Unit::Metric>(i - 1)) / m_time->GetTotalTime() <<
                     " " << ms_metricTableNames[i - 1];
+
+                os.flags(f);
+
                 break;
             }
         }

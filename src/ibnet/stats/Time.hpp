@@ -21,6 +21,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <iomanip>
 
 #include "ibnet/sys/Timer.hpp"
 
@@ -188,6 +189,10 @@ private:
     static inline void __FormatTime(std::ostream& os, const std::string& name,
         double timeNs)
     {
+        std::ios::fmtflags f(os.flags());
+
+        os << std::setprecision(3) << std::fixed;
+
         if (timeNs > 1000.0 * 1000.0 * 1000.0) {
             os << ";" << name << " " << timeNs / (1000.0 * 1000.0 * 1000.0) <<
                 " sec";
@@ -198,6 +203,8 @@ private:
         } else {
             os << ";" << name << " " << timeNs << " ns";
         }
+
+        os.flags(f);
     }
 };
 

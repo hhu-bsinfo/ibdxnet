@@ -70,12 +70,12 @@ public:
         for (size_t i = 0; i < m_refTimes.size(); i++) {
             os << indent << '(' << i << ") " << m_refTimes[i]->GetName();
 
-            std::ios::fmtflags f(std::cout.flags());
+            std::ios::fmtflags f(os.flags());
 
             os << ": dist " << std::setprecision(2) << std::fixed;
             os << (m_refTimes[i]->GetTotalTime(Time::Metric::e_MetricNano) / totalTime * 100) << " %;";
 
-            std::cout.flags(f);
+            os.flags(f);
 
             m_refTimes[i]->WriteOstream(os, "");
 

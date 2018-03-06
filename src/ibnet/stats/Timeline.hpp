@@ -116,12 +116,12 @@ public:
         for (size_t i = 0; i < m_times.size(); i++) {
             os << indent << '(' << i << ") " << m_times[i].GetName();
 
-            std::ios::fmtflags f(std::cout.flags());
+            std::ios::fmtflags f(os.flags());
 
             os << ": dist " << std::setprecision(2) << std::fixed;
             os << (m_times[i].GetTotalTime(Time::Metric::e_MetricNano) / totalTime * 100) << " %;";
 
-            std::cout.flags(f);
+            os.flags(f);
 
             m_times[i].WriteOstream(os, "");
 

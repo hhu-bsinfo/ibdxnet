@@ -21,6 +21,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <iomanip>
 
 #include "Operation.hpp"
 
@@ -249,9 +250,13 @@ private:
     {
         for (uint8_t i = 1; i < e_MetricCount; i++) {
             if (units < m_metricTable[i]) {
-                os << ";" << name << " " <<
-                    (double) units / m_metricTable[i - 1] << " " <<
-                    ms_metricTableNames[i - 1];
+                std::ios::fmtflags f(os.flags());
+
+                os << ";" << name << " " << std::setprecision(3) << std::fixed <<
+                    (double) units / m_metricTable[i - 1] << " " << ms_metricTableNames[i - 1];
+
+                os.flags(f);
+
                 break;
             }
         }

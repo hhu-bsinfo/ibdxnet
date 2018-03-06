@@ -26,6 +26,7 @@
 #include "ibnet/stats/StatisticsManager.h"
 #include "ibnet/stats/Ratio.hpp"
 #include "ibnet/stats/Throughput.hpp"
+#include "ibnet/stats/TimelineFragmented.hpp"
 
 #include "Connection.h"
 #include "ConnectionManager.h"
@@ -176,8 +177,19 @@ private:
 
 private:
     stats::Time* m_totalTime;
-    stats::Time* m_pollCompletions;
-    stats::Time* m_sendData;
+
+    stats::Time* m_getNextDataToSendTime;
+    stats::Time* m_pollCompletionsTotalTime;
+    stats::Time* m_pollCompletionsActiveTime;
+    stats::Time* m_getConnectionTime;
+    stats::Time* m_sendDataTotalTime;
+    stats::Time* m_sendDataProcessingTime;
+    stats::Time* m_sendDataPostingTime;
+    stats::Time* m_eeScheduleTime;
+
+    stats::TimelineFragmented* m_totalTimeline;
+    stats::TimelineFragmented* m_pollTimeline;
+    stats::TimelineFragmented* m_sendTimeline;
 
     stats::Unit* m_sentData;
     stats::Unit* m_sentFC;

@@ -61,8 +61,20 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
         aligned_alloc(static_cast<size_t>(getpagesize()),
             sizeof(ibv_wc) * m_refConnectionManager->GetIbSharedSCQSize()))),
     m_totalTime(new stats::Time("SendDispatcher", "SendTotalTime")),
-    m_pollCompletions(new stats::Time("SendDispatcher", "PollCompletionsTime")),
-    m_sendData(new stats::Time("SendDispatcher", "SendDataTime")),
+    m_getNextDataToSendTime(new stats::Time("SendDispatcher", "GetNextDataToSend")),
+    m_pollCompletionsTotalTime(new stats::Time("SendDispatcher", "PollCompletionsTotal")),
+    m_pollCompletionsActiveTime(new stats::Time("SendDispatcher", "PollCompletions")),
+    m_getConnectionTime(new stats::Time("SendDispatcher", "GetConnection")),
+    m_sendDataTotalTime(new stats::Time("SendDispatcher", "SendDataTotal")),
+    m_sendDataProcessingTime(new stats::Time("SendDispatcher", "SendDataProcessing")),
+    m_sendDataPostingTime(new stats::Time("SendDispatcher", "SendDataPosting")),
+    m_eeScheduleTime(new stats::Time("SendDispatcher", "EESchedule")),
+    m_totalTimeline(new stats::TimelineFragmented("SendDispatcher", "Total", m_totalTime, {m_getNextDataToSendTime,
+        m_pollCompletionsTotalTime, m_getConnectionTime, m_sendDataTotalTime, m_eeScheduleTime})),
+    m_pollTimeline(new stats::TimelineFragmented("SendDispatcher", "Poll", m_pollCompletionsTotalTime,
+        {m_pollCompletionsActiveTime})),
+    m_sendTimeline(new stats::TimelineFragmented("SendDispatcher", "Send", m_sendDataTotalTime,
+        {m_sendDataProcessingTime, m_sendDataPostingTime})),
     m_sentData(new stats::Unit("SendDispatcher", "SentData", stats::Unit::e_Base2)),
     m_sentFC(new stats::Unit("SendDispatcher", "SentFC", stats::Unit::e_Base10)),
     m_emptyNextWorkPackage(new stats::Unit("SendDispatcher", "SendEmptyNextWorkPackage")),
@@ -104,9 +116,9 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     memset(m_workComp, 0,
         sizeof(ibv_wc) * m_refConnectionManager->GetIbSharedSCQSize());
 
-    m_refStatisticsManager->Register(m_totalTime);
-    m_refStatisticsManager->Register(m_pollCompletions);
-    m_refStatisticsManager->Register(m_sendData);
+    m_refStatisticsManager->Register(m_totalTimeline);
+    m_refStatisticsManager->Register(m_pollTimeline);
+    m_refStatisticsManager->Register(m_sendTimeline);
 
     m_refStatisticsManager->Register(m_sentData);
     m_refStatisticsManager->Register(m_sentFC);
@@ -134,9 +146,9 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
 
 SendDispatcher::~SendDispatcher()
 {
-    m_refStatisticsManager->Deregister(m_totalTime);
-    m_refStatisticsManager->Deregister(m_pollCompletions);
-    m_refStatisticsManager->Deregister(m_sendData);
+    m_refStatisticsManager->Deregister(m_totalTimeline);
+    m_refStatisticsManager->Deregister(m_pollTimeline);
+    m_refStatisticsManager->Deregister(m_sendTimeline);
 
     m_refStatisticsManager->Deregister(m_sentData);
     m_refStatisticsManager->Deregister(m_sentFC);
@@ -169,8 +181,19 @@ SendDispatcher::~SendDispatcher()
     free(m_workComp);
 
     delete m_totalTime;
-    delete m_pollCompletions;
-    delete m_sendData;
+    delete m_pollTimeline;
+    delete m_sendTimeline;
+
+    delete m_getNextDataToSendTime;
+    delete m_pollCompletionsTotalTime;
+    delete m_pollCompletionsActiveTime;
+    delete m_getConnectionTime;
+    delete m_sendDataTotalTime;
+    delete m_sendDataProcessingTime;
+    delete m_sendDataPostingTime;
+    delete m_eeScheduleTime;
+
+    delete m_totalTimeline;
 
     delete m_sentData;
     delete m_sentFC;
@@ -198,6 +221,8 @@ SendDispatcher::~SendDispatcher()
 
 bool SendDispatcher::Dispatch()
 {
+    IBNET_STATS(m_eeScheduleTime->Stop());
+
     if (m_totalTime->GetCounter() == 0) {
         IBNET_STATS(m_totalTime->Start());
     } else {
@@ -205,9 +230,13 @@ bool SendDispatcher::Dispatch()
         IBNET_STATS(m_totalTime->Start());
     }
 
+    IBNET_STATS(m_getNextDataToSendTime->Start());
+
     const SendHandler::NextWorkPackage* workPackage =
         m_refSendHandler->GetNextDataToSend(m_prevWorkPackageResults,
             m_completionList);
+
+    IBNET_STATS(m_getNextDataToSendTime->Stop());
 
     if (workPackage == nullptr) {
         __ThrowDetailedException<sys::IllegalStateException>(
@@ -219,36 +248,57 @@ bool SendDispatcher::Dispatch()
     m_completionList->Reset();
 
     Connection* connection = nullptr;
+    bool ret;
 
     try {
         // nothing to send, poll completions
         if (workPackage->m_nodeId == con::NODE_ID_INVALID) {
             IBNET_STATS(m_emptyNextWorkPackage->Inc());
-            return __PollCompletions();
+
+            IBNET_STATS(m_pollCompletionsTotalTime->Start());
+
+            ret = __PollCompletions();
+
+            IBNET_STATS(m_pollCompletionsTotalTime->Stop());
+        } else {
+            IBNET_STATS(m_nonEmptyNextWorkPackage->Inc());
+
+            IBNET_STATS(m_getConnectionTime->Start());
+
+            connection = (Connection*)
+                m_refConnectionManager->GetConnection(workPackage->m_nodeId);
+
+            IBNET_STATS(m_getConnectionTime->Stop());
+            IBNET_STATS(m_sendDataTotalTime->Start());
+
+            // send data
+            __SendData(connection, workPackage);
+
+            IBNET_STATS(m_sentData->Add(
+                m_prevWorkPackageResults->m_numBytesPosted));
+            IBNET_STATS(m_sentFC->Add(m_prevWorkPackageResults->m_fcDataPosted));
+
+            IBNET_STATS(m_sendDataTotalTime->Stop());
+
+            // TODO trigger park start not correct, yet
+
+            IBNET_STATS(m_pollCompletionsTotalTime->Start());
+
+            // after sending data, try polling for more completions
+            ret = __PollCompletions();
+
+            IBNET_STATS(m_pollCompletionsTotalTime->Stop());
         }
-
-        IBNET_STATS(m_nonEmptyNextWorkPackage->Inc());
-
-        connection = (Connection*)
-            m_refConnectionManager->GetConnection(workPackage->m_nodeId);
-
-        // send data
-        __SendData(connection, workPackage);
-
-        IBNET_STATS(m_sentData->Add(
-            m_prevWorkPackageResults->m_numBytesPosted));
-        IBNET_STATS(m_sentFC->Add(m_prevWorkPackageResults->m_fcDataPosted));
-
-        // TODO trigger park start not correct, yet
-
-        // after sending data, try polling for more completions
-        return __PollCompletions();
     } catch (sys::TimeoutException& e) {
         IBNET_LOG_WARN("TimeoutException: %s", e.what());
 
+        IBNET_STATS(m_pollCompletionsTotalTime->Start());
+
         // timeout on initial connection creation
         // try polling work completions and return
-        return __PollCompletions();
+        ret = __PollCompletions();
+
+        IBNET_STATS(m_pollCompletionsTotalTime->Stop());
     } catch (con::DisconnectedException& e) {
         IBNET_LOG_WARN("DisconnectedException: %s", e.what());
 
@@ -261,15 +311,21 @@ bool SendDispatcher::Dispatch()
 
         m_ignoreFlushErrOnPendingCompletions += m_completionsPending;
 
-        return true;
+        IBNET_STATS(m_eeScheduleTime->Start());
+
+        ret = true;
     }
+
+    IBNET_STATS(m_eeScheduleTime->Start());
+
+    return ret;
 }
 
 bool SendDispatcher::__PollCompletions()
 {
     // anything to poll from the shared completion queue
     if (m_completionsPending > 0) {
-        IBNET_STATS(m_pollCompletions->Start());
+        IBNET_STATS(m_pollCompletionsActiveTime->Start());
 
         // poll in batches
         int ret = ibv_poll_cq(m_refConnectionManager->GetIbSharedSCQ(),
@@ -355,7 +411,7 @@ bool SendDispatcher::__PollCompletions()
             IBNET_STATS(m_emptyCompletionPolls->Inc());
         }
 
-        IBNET_STATS(m_pollCompletions->Stop());
+        IBNET_STATS(m_pollCompletionsActiveTime->Stop());
     }
 
     return m_completionsPending > 0;
@@ -364,7 +420,7 @@ bool SendDispatcher::__PollCompletions()
 void SendDispatcher::__SendData(Connection* connection,
     const SendHandler::NextWorkPackage* workPackage)
 {
-    IBNET_STATS(m_sendData->Start());
+    IBNET_STATS(m_sendDataProcessingTime->Start());
 
     uint32_t totalBytesProcessed = 0;
 
@@ -491,6 +547,9 @@ void SendDispatcher::__SendData(Connection* connection,
         chunks++;
     }
 
+    IBNET_STATS(m_sendDataProcessingTime->Stop());
+    IBNET_STATS(m_sendDataPostingTime->Start());
+
     if (chunks > 0) {
         // connect all work requests
         for (uint16_t i = 0; i < chunks - 1; i++) {
@@ -539,7 +598,7 @@ void SendDispatcher::__SendData(Connection* connection,
     m_prevWorkPackageResults->m_numBytesNotPosted =
         totalBytesToProcess - totalBytesProcessed;
 
-    IBNET_STATS(m_sendData->Stop());
+    IBNET_STATS(m_sendDataPostingTime->Stop());
 }
 
 }

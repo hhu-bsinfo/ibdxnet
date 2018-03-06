@@ -27,6 +27,11 @@
 namespace ibnet {
 namespace stats {
 
+/**
+ * Statistic operation to time multiple sections to generate a full breakdown
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 06.03.2018
+ */
 class Timeline : public Operation
 {
 public:
@@ -47,12 +52,18 @@ public:
         }
     }
 
+    /**
+     * Start with the first section to time starting the timeline
+     */
     void Start()
     {
         m_pos = 0;
         m_times[m_pos].Start();
     }
 
+    /**
+     * Stop the previous section and continue to the next section
+     */
     void NextSection()
     {
         m_times[m_pos].Stop();
@@ -65,6 +76,9 @@ public:
         m_times[m_pos].Start();
     }
 
+    /**
+     * Stop the previous section and end the timeline here
+     */
     void Stop()
     {
         if (m_pos == 0) {
@@ -74,6 +88,9 @@ public:
         m_times[m_pos].Stop();
     }
 
+    /**
+     * Overriding virtual method
+     */
     void WriteOstream(std::ostream& os, const std::string& indent) const override
     {
         double totalTime = 0;

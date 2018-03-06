@@ -58,7 +58,21 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
         aligned_alloc(static_cast<size_t>(getpagesize()),
             sizeof(ibv_recv_wr) * refConnectionManager->GetIbSRQSize()))),
     m_totalTime(new stats::Time("RecvDispatcher", "Total")),
-    m_recvTimeline(new stats::Timeline("RecvDispatcher", "Recv", {"Poll", "ProcessRecv", "Refill", "EE-Sched"})),
+    m_pollTime(new stats::Time("RecvDispatcher", "Poll")),
+    m_processRecvTotalTime(new stats::Time("RecvDispatcher", "ProcessRecvTotal")),
+    m_processRecvAvailTime(new stats::Time("RecvDispatcher", "ProcessRecvAvail")),
+    m_processRecvHandleTime(new stats::Time("RecvDispatcher", "ProcessRecvHandle")),
+    m_refillTotalTime(new stats::Time("RecvDispatcher", "RefillTotal")),
+    m_refillAvailTime(new stats::Time("RecvDispatcher", "RefillAvail")),
+    m_refillGetBuffersTime(new stats::Time("RecvDispatcher", "RefillGetBuffers")),
+    m_refillPostTime(new stats::Time("RecvDispatcher", "RefillPost")),
+    m_eeSchedTime(new stats::Time("RecvDispatcher", "EESched")),
+    m_recvTimeline(new stats::TimelineFragmented("RecvDispatcher", "Recv", m_totalTime, {m_pollTime,
+        m_processRecvTotalTime, m_refillTotalTime, m_eeSchedTime})),
+    m_processRecvTimeline(new stats::TimelineFragmented("RecvDispatcher", "ProcessRecv", m_processRecvTotalTime,
+        {m_processRecvAvailTime, m_processRecvHandleTime})),
+    m_refillTimeline(new stats::TimelineFragmented("RecvDispatcher", "Refill", m_refillTotalTime, {m_refillAvailTime,
+        m_refillGetBuffersTime, m_refillPostTime})),
     m_receivedData(new stats::Unit("RecvDispatcher", "Data", stats::Unit::e_Base2)),
     m_receivedFC(new stats::Unit("RecvDispatcher", "FC", stats::Unit::e_Base10)),
     m_throughputReceivedData(new stats::Throughput("RecvDispatcher", "ThroughputData",
@@ -79,6 +93,8 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
 
     m_refStatisticsManager->Register(m_totalTime);
     m_refStatisticsManager->Register(m_recvTimeline);
+    m_refStatisticsManager->Register(m_processRecvTimeline);
+    m_refStatisticsManager->Register(m_refillTimeline);
     m_refStatisticsManager->Register(m_receivedData);
     m_refStatisticsManager->Register(m_receivedFC);
     m_refStatisticsManager->Register(m_throughputReceivedData);
@@ -91,6 +107,8 @@ RecvDispatcher::~RecvDispatcher()
 
     m_refStatisticsManager->Deregister(m_totalTime);
     m_refStatisticsManager->Deregister(m_recvTimeline);
+    m_refStatisticsManager->Deregister(m_processRecvTimeline);
+    m_refStatisticsManager->Deregister(m_refillTimeline);
     m_refStatisticsManager->Deregister(m_receivedData);
     m_refStatisticsManager->Deregister(m_receivedFC);
     m_refStatisticsManager->Deregister(m_throughputReceivedData);
@@ -102,7 +120,21 @@ RecvDispatcher::~RecvDispatcher()
     free(m_recvWrList);
 
     delete m_totalTime;
+
+    delete m_pollTime;
+    delete m_processRecvTotalTime;
+    delete m_processRecvAvailTime;
+    delete m_processRecvHandleTime;
+    delete m_refillTotalTime;
+    delete m_refillAvailTime;
+    delete m_refillGetBuffersTime;
+    delete m_refillPostTime;
+    delete m_eeSchedTime;
+
     delete m_recvTimeline;
+    delete m_processRecvTimeline;
+    delete m_refillTimeline;
+
     delete m_receivedData;
     delete m_receivedFC;
     delete m_throughputReceivedData;
@@ -111,6 +143,8 @@ RecvDispatcher::~RecvDispatcher()
 
 bool RecvDispatcher::Dispatch()
 {
+    IBNET_STATS(m_eeSchedTime->Stop());
+
     if (m_totalTime->GetCounter() == 0) {
         IBNET_STATS(m_totalTime->Start());
     } else {
@@ -118,20 +152,22 @@ bool RecvDispatcher::Dispatch()
         IBNET_STATS(m_totalTime->Start());
     }
 
-    IBNET_STATS(m_recvTimeline->Stop());
-    IBNET_STATS(m_recvTimeline->Start());
+    IBNET_STATS(m_pollTime->Start());
 
     uint32_t receivedCount = __Poll();
 
-    IBNET_STATS(m_recvTimeline->NextSection());
+    IBNET_STATS(m_pollTime->Stop());
+    IBNET_STATS(m_processRecvTotalTime->Start());
 
     __ProcessReceived(receivedCount);
 
-    IBNET_STATS(m_recvTimeline->NextSection());
+    IBNET_STATS(m_processRecvTotalTime->Stop());
+    IBNET_STATS(m_refillTotalTime->Start());
 
     __Refill();
 
-    IBNET_STATS(m_recvTimeline->NextSection());
+    IBNET_STATS(m_refillTotalTime->Stop());
+    IBNET_STATS(m_eeSchedTime->Start());
 
     return receivedCount > 0;
 }
@@ -192,6 +228,8 @@ uint32_t RecvDispatcher::__Poll()
 void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
 {
     if (receivedCount > 0) {
+        IBNET_STATS(m_processRecvAvailTime->Start());
+
         // create batch for handler
 
         // batch process all completions
@@ -234,20 +272,33 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
 
         m_recvPackage->m_count = receivedCount;
 
+        IBNET_STATS(m_processRecvHandleTime->Start());
+
         // buffers are returned to recv buffer pool async
         m_refRecvHandler->Received(m_recvPackage);
+
+        IBNET_STATS(m_processRecvHandleTime->Stop());
+
         m_recvPackage->m_count = 0;
+
+        IBNET_STATS(m_processRecvAvailTime->Stop());
     }
 }
 
 void RecvDispatcher::__Refill()
 {
     if (m_recvQueuePending < m_refConnectionManager->GetIbSRQSize()) {
+        IBNET_STATS(m_refillAvailTime->Start());
+
         uint32_t count =
             m_refConnectionManager->GetIbSRQSize() - m_recvQueuePending;
 
+        IBNET_STATS(m_refillGetBuffersTime->Start());
+
         uint32_t numBufs = m_refRecvBufferPool->GetBuffers(m_memRegRefillBuffer,
             count);
+
+        IBNET_STATS(m_refillGetBuffersTime->Stop());
 
         // TODO track the batch sizes pulled from the completion queue and added back to the recv queue
 
@@ -273,8 +324,12 @@ void RecvDispatcher::__Refill()
             m_recvWrList[i].next = &m_recvWrList[i + 1];
         }
 
+        IBNET_STATS(m_refillPostTime->Start());
+
         int ret = ibv_post_srq_recv(m_refConnectionManager->GetIbSRQ(),
             &m_recvWrList[0], &bad_wr);
+
+        IBNET_STATS(m_refillPostTime->Stop());
 
         if (ret != 0) {
             switch (ret) {
@@ -290,6 +345,8 @@ void RecvDispatcher::__Refill()
         }
 
         m_recvQueuePending += numBufs;
+
+        IBNET_STATS(m_refillAvailTime->Stop());
     }
 }
 

@@ -24,7 +24,7 @@
 
 #include "ibnet/stats/StatisticsManager.h"
 #include "ibnet/stats/Throughput.hpp"
-#include "ibnet/stats/Timeline.hpp"
+#include "ibnet/stats/TimelineFragmented.hpp"
 
 #include "ConnectionManager.h"
 #include "RecvHandler.h"
@@ -116,7 +116,20 @@ private:
 
 private:
     stats::Time* m_totalTime;
-    stats::Timeline* m_recvTimeline;
+
+    stats::Time* m_pollTime;
+    stats::Time* m_processRecvTotalTime;
+    stats::Time* m_processRecvAvailTime;
+    stats::Time* m_processRecvHandleTime;
+    stats::Time* m_refillTotalTime;
+    stats::Time* m_refillAvailTime;
+    stats::Time* m_refillGetBuffersTime;
+    stats::Time* m_refillPostTime;
+    stats::Time* m_eeSchedTime;
+
+    stats::TimelineFragmented* m_recvTimeline;
+    stats::TimelineFragmented* m_processRecvTimeline;
+    stats::TimelineFragmented* m_refillTimeline;
 
     stats::Unit* m_receivedData;
     stats::Unit* m_receivedFC;

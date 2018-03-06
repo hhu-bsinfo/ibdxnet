@@ -20,6 +20,7 @@
 #define IBNET_DX_STATISTICSMANAGER_H
 
 #include <mutex>
+#include <unordered_map>
 #include <vector>
 
 #include "ibnet/sys/ThreadLoop.h"
@@ -66,11 +67,7 @@ public:
      *
      * @param refOperation Operation to register (caller has to manage memory)
      */
-    void Register(const Operation* refOperation)
-    {
-        std::lock_guard<std::mutex> l(m_mutex);
-        m_operations.push_back(refOperation);
-    }
+    void Register(const Operation* refOperation);
 
     /**
      * Deregister an already registered operation
@@ -79,17 +76,7 @@ public:
      *
      * @param refOperation Operation to deregister
      */
-    void Deregister(const Operation* refOperation)
-    {
-        std::lock_guard<std::mutex> l(m_mutex);
-
-        for (auto it = m_operations.begin(); it != m_operations.end(); it++) {
-            if (*it == refOperation) {
-                m_operations.erase(it);
-                break;
-            }
-        }
-    }
+    void Deregister(const Operation* refOperation);
 
     /**
      * Print the current state of all registerted statistics to stdout
@@ -103,7 +90,7 @@ private:
     const uint32_t m_printIntervalMs;
 
     std::mutex m_mutex;
-    std::vector<const Operation*> m_operations;
+    std::unordered_map<std::string, std::vector<const Operation*>> m_operations;
 };
 
 }

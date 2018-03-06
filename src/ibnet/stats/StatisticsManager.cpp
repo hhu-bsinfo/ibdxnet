@@ -31,6 +31,36 @@ StatisticsManager::StatisticsManager(uint32_t printIntervalMs) :
 #endif
 }
 
+void StatisticsManager::Register(const Operation* refOperation)
+{
+    std::lock_guard<std::mutex> l(m_mutex);
+
+    auto it = m_operations.find(refOperation->GetCategoryName());
+
+    if (it == m_operations.end()) {
+        m_operations.insert(std::make_pair(refOperation->GetCategoryName(),
+            std::vector<const Operation*>({refOperation})));
+    } else {
+        it->second.push_back(refOperation);
+    }
+}
+
+void StatisticsManager::Deregister(const Operation* refOperation)
+{
+    std::lock_guard<std::mutex> l(m_mutex);
+
+    auto it = m_operations.find(refOperation->GetCategoryName());
+
+    if (it != m_operations.end()) {
+        for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++) {
+            if (*it2 == refOperation) {
+                it->second.erase(it2);
+                break;
+            }
+        }
+    }
+}
+
 void StatisticsManager::PrintStatistics()
 {
     std::cout << "================= Statistics =================" << std::endl;
@@ -39,13 +69,21 @@ void StatisticsManager::PrintStatistics()
     std::cout << "DISABLED DISABLED DISABLED DISABLED DISABLED" << std::endl;
 #endif
 
+    std::stringstream sstr;
+
     m_mutex.lock();
 
     for (auto& it : m_operations) {
-        std::cout << *it << std::endl;
+        sstr << ">>> " << it.first << std::endl;
+
+        for (auto& it2 : it.second) {
+            sstr << *it2 << std::endl;
+        }
     }
 
     m_mutex.unlock();
+
+    std::cout << sstr.str();
 }
 
 void StatisticsManager::_RunLoop()

@@ -38,7 +38,8 @@ public:
      *
      * @param name Name of the operation
      */
-    explicit Operation(const std::string& name) :
+    explicit Operation(const std::string& categoryName, const std::string& name) :
+        m_categoryName(categoryName),
         m_name(name)
     {
     }
@@ -47,6 +48,14 @@ public:
      * Destructor
      */
     virtual ~Operation() = default;
+
+    /**
+     * Get the category name of the operation
+     */
+    const std::string& GetCategoryName() const
+    {
+        return m_categoryName;
+    }
 
     /**
      * Get the name of the operation
@@ -62,7 +71,7 @@ public:
      *
      * @param os Ostream object to write the output to
      */
-    virtual void WriteOstream(std::ostream& os) const = 0;
+    virtual void WriteOstream(std::ostream& os, const std::string& indent) const = 0;
 
     /**
      * Overloading << operator for printing to ostreams
@@ -73,12 +82,13 @@ public:
      */
     friend std::ostream& operator<<(std::ostream& os, const Operation& o)
     {
-        os << '[' << o.m_name << "] ";
-        o.WriteOstream(os);
+        os << "  [" << o.m_name << "]\n";
+        o.WriteOstream(os, "    ");
         return os;
     }
 
 private:
+    const std::string m_categoryName;
     const std::string m_name;
 };
 

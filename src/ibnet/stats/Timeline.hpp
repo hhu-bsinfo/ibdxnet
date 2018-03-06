@@ -30,12 +30,20 @@ namespace stats {
 class Timeline : public Operation
 {
 public:
-    Timeline(const std::string& name, const std::vector<std::string> sectionNames) :
-        Operation(name),
+    /**
+     * Constructor
+     *
+     * @param category Name for the category (for sorting), e.g. class name
+     * @param name Name of the statistic operation
+     * @param sectionNames Names for the sections (this also determines the total section count)
+     */
+    Timeline(const std::string& category, const std::string& name, const std::vector<std::string> sectionNames) :
+        Operation(category, name),
+        m_times(),
         m_pos(0)
     {
         for (auto& it : sectionNames) {
-            m_times.push_back(Time(it));
+            m_times.push_back(Time(category, it));
         }
     }
 
@@ -66,7 +74,7 @@ public:
         m_times[m_pos].Stop();
     }
 
-    void WriteOstream(std::ostream& os) const override
+    void WriteOstream(std::ostream& os, const std::string& indent) const override
     {
         double totalTime = 0;
 
@@ -75,10 +83,10 @@ public:
         }
 
         for (size_t i = 0; i < m_times.size(); i++) {
-            os << '(' << i << ')' << m_times[i].GetName();
+            os << indent << '(' << i << ") " << m_times[i].GetName();
             os << ": dist " << std::setprecision(2);
             os << (m_times[i].GetTotalTime(Time::Metric::e_MetricNano) / totalTime * 100) << " %;";
-            m_times[i].WriteOstream(os);
+            m_times[i].WriteOstream(os, "");
 
             if (i + 1 < m_times.size()) {
                 os << '\n';

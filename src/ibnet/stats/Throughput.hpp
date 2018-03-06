@@ -36,13 +36,14 @@ public:
     /**
      * Constructor
      *
+     * @param category Name for the category (for sorting), e.g. class name
      * @param name Name of the statistic operation
      */
-    explicit Throughput(const std::string& name) :
-        Operation(name),
+    explicit Throughput(const std::string& category, const std::string& name) :
+        Operation(category, name),
         m_refs(false),
-        m_unit(new Unit(name, Unit::e_Base2)),
-        m_time(new Time(name))
+        m_unit(new Unit(category, name, Unit::e_Base2)),
+        m_time(new Time(category, name))
     {
     }
 
@@ -51,12 +52,13 @@ public:
      *
      * The operations provided are not free'd on destruction of this object.
      *
+     * @param category Name for the category (for sorting), e.g. class name
      * @param name Name of the statistic operation
      * @param refUnit Pointer to a unit for the throughput (numerator)
      * @param refTime Pointer to a time for the throughput (denominator)
      */
-    Throughput(const std::string& name, Unit* refUnit, Time* refTime) :
-        Operation(name),
+    Throughput(const std::string& category, const std::string& name, Unit* refUnit, Time* refTime) :
+        Operation(category, name),
         m_refs(true),
         m_unit(refUnit),
         m_time(refTime)
@@ -118,13 +120,13 @@ public:
     /**
      * Overriding virtual function
      */
-    void WriteOstream(std::ostream& os) const override
+    void WriteOstream(std::ostream& os, const std::string& indent) const override
     {
         for (uint8_t i = Unit::e_MetricKilo; i < Unit::e_MetricCount; i++) {
 
             if (m_unit->GetTotalValue() < m_unit->GetMetricFactor(
                 static_cast<Unit::Metric>(i))) {
-                os << "throughput " << m_unit->GetTotalValue(
+                os << indent << "throughput " << m_unit->GetTotalValue(
                     static_cast<Unit::Metric>(i - 1)) / m_time->GetTotalTime() <<
                     " " << ms_metricTableNames[i - 1];
                 break;

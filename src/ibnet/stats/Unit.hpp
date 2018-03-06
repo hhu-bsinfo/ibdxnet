@@ -64,11 +64,12 @@ public:
     /**
      * Constructor
      *
+     * @param category Name for the category (for sorting), e.g. class name
      * @param name Name of the statistic operation
      * @param base Base to use for converting to different metrics
      */
-    explicit Unit(const std::string& name, Base base = e_Base10) :
-        Operation(name),
+    explicit Unit(const std::string& category, const std::string& name, Base base = e_Base10) :
+        Operation(category, name),
         m_base(base),
         m_metricTable(),
         m_counter(0),
@@ -221,9 +222,9 @@ public:
     /**
      * Overriding virtual method
      */
-    void WriteOstream(std::ostream& os) const override
+    void WriteOstream(std::ostream& os, const std::string& indent) const override
     {
-        os << "counter " << GetCounter();
+        os << indent << "counter " << GetCounter();
         __FormatUnit(os, "total", GetTotalValue());
         __FormatUnit(os, "avg", GetAvgValue());
         __FormatUnit(os, "min", GetMinValue());

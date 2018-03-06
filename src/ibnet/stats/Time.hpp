@@ -52,10 +52,11 @@ public:
     /**
      * Constructor
      *
+     * @param category Name for the category (for sorting), e.g. class name
      * @param name Name of the statistic operation
      */
-    explicit Time(const std::string& name) :
-        Operation(name),
+    explicit Time(const std::string& category, const std::string& name) :
+        Operation(category, name),
         m_counter(0),
         m_timer(),
         m_total(0),
@@ -162,9 +163,9 @@ public:
     /**
      * Overriding virtual function
      */
-    void WriteOstream(std::ostream& os) const override
+    void WriteOstream(std::ostream& os, const std::string& indent) const override
     {
-        os << "counter " << GetCounter();
+        os << indent << "counter " << GetCounter();
         __FormatTime(os, "total", GetTotalTime(e_MetricNano));
         __FormatTime(os, "avg", GetAverageTime(e_MetricNano));
         __FormatTime(os, "best", GetBestTime(e_MetricNano));

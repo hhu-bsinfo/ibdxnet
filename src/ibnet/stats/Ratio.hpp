@@ -38,13 +38,14 @@ public:
     /**
      * Constructor
      *
+     * @param category Name for the category (for sorting), e.g. class name
      * @param name Name of the statistic operation
      */
-    explicit Ratio(const std::string& name) :
-        Operation(name),
+    explicit Ratio(const std::string& category, const std::string& name) :
+        Operation(category, name),
         m_refs(false),
-        m_unit1(new Unit(name + "-Unit1")),
-        m_unit2(new Unit(name + "-Unit2"))
+        m_unit1(new Unit(category, name + "-Unit1")),
+        m_unit2(new Unit(category, name + "-Unit2"))
     {
     }
 
@@ -53,12 +54,13 @@ public:
      *
      * The Units provided are not free'd on destruction of this object.
      *
+     * @param category Name for the category (for sorting), e.g. class name
      * @param name Name of the statistic operation
      * @param refUnit1 Pointer to a unit to use for the ratio (numerator)
      * @param refUnit2 Pointer to a unit to use for the ratio (denominator)
      */
-    Ratio(const std::string& name, Unit* refUnit1, Unit* refUnit2) :
-        Operation(name),
+    Ratio(const std::string& category, const std::string& name, Unit* refUnit1, Unit* refUnit2) :
+        Operation(category, name),
         m_refs(true),
         m_unit1(refUnit1),
         m_unit2(refUnit2)
@@ -115,11 +117,11 @@ public:
     /**
      * Overriding virtual method
      */
-    void WriteOstream(std::ostream& os) const override
+    void WriteOstream(std::ostream& os, const std::string& indent) const override
     {
         std::ios::fmtflags flags(os.flags());
 
-        os << "counter " << std::fixed << std::setw(10) << std::setprecision(10)
+        os << indent << "counter " << std::fixed << std::setw(10) << std::setprecision(10)
             << std::setfill('0') << GetRatioCounter() << ";" <<
             "total " << std::fixed << std::setw(10) << std::setprecision(10)
             << std::setfill('0') << GetRatioTotalValue() << ";" <<

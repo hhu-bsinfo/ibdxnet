@@ -99,14 +99,34 @@ public:
             totalTime += it.GetTotalTime(Time::Metric::e_MetricNano);
         }
 
+        os << indent << "Total time: ";
+
+        if (totalTime > 1000.0 * 1000.0 * 1000.0) {
+            os << totalTime / (1000.0 * 1000.0 * 1000.0) << " sec";
+        } else if (totalTime > 1000.0 * 1000.0) {
+            os << totalTime / (1000.0 * 1000.0) << " ms";
+        } else if (totalTime > 1000.0) {
+            os << totalTime / 1000.0 << " us";
+        } else {
+            os << totalTime << " ns";
+        }
+
+        os << std::endl;
+
         for (size_t i = 0; i < m_times.size(); i++) {
             os << indent << '(' << i << ") " << m_times[i].GetName();
-            os << ": dist " << std::setprecision(2);
+
+            std::ios::fmtflags f(std::cout.flags());
+
+            os << ": dist " << std::setprecision(2) << std::fixed;
             os << (m_times[i].GetTotalTime(Time::Metric::e_MetricNano) / totalTime * 100) << " %;";
+
+            std::cout.flags(f);
+
             m_times[i].WriteOstream(os, "");
 
             if (i + 1 < m_times.size()) {
-                os << '\n';
+                os << std::endl;
             }
         }
     }

@@ -148,16 +148,16 @@ private:
     {
     public:
         Stats(SendDispatcher* refParent) :
-            Operation("SendDispatcherState"),
+            Operation("SendDispatcher", "State"),
             m_refParent(refParent)
         {
         }
 
         ~Stats() override = default;
 
-        void WriteOstream(std::ostream& os) const override
+        void WriteOstream(std::ostream& os, const std::string& indent) const override
         {
-            os << "m_prevWorkPackageResults " <<
+            os << indent << "m_prevWorkPackageResults " <<
                 *m_refParent->m_prevWorkPackageResults << ", m_completionList "
                 << *m_refParent->m_completionList << ", m_completionsPending "
                 << m_refParent->m_completionsPending << ", m_sendQueuePending ";

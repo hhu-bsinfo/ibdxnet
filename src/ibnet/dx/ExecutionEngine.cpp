@@ -89,16 +89,11 @@ ExecutionEngine::Worker::Worker(uint16_t id,
     m_refStatisticsManager(refStatisticsManager),
     m_executionUnits(),
     m_idleTimer(),
-    m_idleCounter(
-        new stats::Unit("EE-Worker-" + std::to_string(id) + "-Idle")),
-    m_activeCounter(
-        new stats::Unit("EE-Worker-" + std::to_string(id) + "-Active")),
-    m_yieldCounter(
-        new stats::Unit("EE-Worker-" + std::to_string(id) + "-Yield")),
-    m_sleepCounter(
-        new stats::Unit("EE-Worker-" + std::to_string(id) + "-Sleep")),
-    m_activityRatio(new stats::Ratio(
-        "EE-Worker-" + std::to_string(id) + "-ActivityRatio", m_activeCounter,
+    m_idleCounter(new stats::Unit("EE-Worker-" + std::to_string(id), "Idle")),
+    m_activeCounter(new stats::Unit("EE-Worker-" + std::to_string(id), "Active")),
+    m_yieldCounter(new stats::Unit("EE-Worker-" + std::to_string(id), "Yield")),
+    m_sleepCounter(new stats::Unit("EE-Worker-" + std::to_string(id), "Sleep")),
+    m_activityRatio(new stats::Ratio("EE-Worker-" + std::to_string(id), "ActivityRatio", m_activeCounter,
         m_idleCounter))
 {
     m_refStatisticsManager->Register(m_idleCounter);

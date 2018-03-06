@@ -102,6 +102,7 @@ RecvDispatcher::~RecvDispatcher()
     free(m_recvWrList);
 
     delete m_totalTime;
+    delete m_recvTimeline;
     delete m_receivedData;
     delete m_receivedFC;
     delete m_throughputReceivedData;
@@ -110,6 +111,13 @@ RecvDispatcher::~RecvDispatcher()
 
 bool RecvDispatcher::Dispatch()
 {
+    if (m_totalTime->GetCounter() == 0) {
+        IBNET_STATS(m_totalTime->Start());
+    } else {
+        IBNET_STATS(m_totalTime->Stop());
+        IBNET_STATS(m_totalTime->Start());
+    }
+
     IBNET_STATS(m_recvTimeline->Stop());
     IBNET_STATS(m_recvTimeline->Start());
 

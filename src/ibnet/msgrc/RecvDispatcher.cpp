@@ -57,13 +57,13 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
     m_recvWrList(static_cast<ibv_recv_wr*>(
         aligned_alloc(static_cast<size_t>(getpagesize()),
             sizeof(ibv_recv_wr) * refConnectionManager->GetIbSRQSize()))),
-    m_totalTime(new stats::Time("RecvDispatcher", "TotalRecv")),
+    m_totalTime(new stats::Time("RecvDispatcher", "Total")),
     m_recvTimeline(new stats::Timeline("RecvDispatcher", "Recv", {"Poll", "ProcessRecv", "Refill", "EE-Sched"})),
-    m_receivedData(new stats::Unit("RecvDispatcher", "RecvData", stats::Unit::e_Base2)),
-    m_receivedFC(new stats::Unit("RecvDispatcher", "RecvFC", stats::Unit::e_Base10)),
-    m_throughputReceivedData(new stats::Throughput("RecvDispatcher", "RecvThroughputData",
+    m_receivedData(new stats::Unit("RecvDispatcher", "Data", stats::Unit::e_Base2)),
+    m_receivedFC(new stats::Unit("RecvDispatcher", "FC", stats::Unit::e_Base10)),
+    m_throughputReceivedData(new stats::Throughput("RecvDispatcher", "ThroughputData",
         m_receivedData, m_totalTime)),
-    m_throughputReceivedFC(new stats::Throughput("RecvDispatcher", "RecvThroughputFC",
+    m_throughputReceivedFC(new stats::Throughput("RecvDispatcher", "ThroughputFC",
         m_receivedFC, m_totalTime))
 {
     memset(m_recvPackage, 0, RecvHandler::ReceivedPackage::Sizeof(

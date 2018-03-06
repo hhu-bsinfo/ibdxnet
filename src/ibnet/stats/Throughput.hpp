@@ -122,14 +122,19 @@ public:
      */
     void WriteOstream(std::ostream& os, const std::string& indent) const override
     {
+        uint64_t totalValue = m_unit->GetTotalValue();
+        double totalTime = m_time->GetTotalTime();
+
+        double throughput = totalValue / totalTime;
+
         for (uint8_t i = Unit::e_MetricKilo; i < Unit::e_MetricCount; i++) {
 
-            if (m_unit->GetTotalValue() < m_unit->GetMetricFactor(static_cast<Unit::Metric>(i))) {
+            if (throughput < m_unit->GetMetricFactor(static_cast<Unit::Metric>(i))) {
                 std::ios::fmtflags f(os.flags());
 
-                os << indent << "throughput " << std::setprecision(3) << std::fixed <<
-                    m_unit->GetTotalValue(static_cast<Unit::Metric>(i - 1)) / m_time->GetTotalTime() <<
-                    " " << ms_metricTableNames[i - 1];
+                os << indent << "throughput " << std::setprecision(3) << std::fixed << (double) totalValue /
+                    m_unit->GetMetricFactor(static_cast<Unit::Metric>(i - 1)) / totalTime << " " <<
+                    ms_metricTableNames[i - 1];
 
                 os.flags(f);
 

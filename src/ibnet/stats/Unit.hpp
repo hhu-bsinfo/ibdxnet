@@ -78,10 +78,9 @@ public:
         m_min(0xFFFFFFFFFFFFFFFF),
         m_max(0)
     {
-        m_metricTable[0] = 1;
-
-        for (uint8_t i = e_MetricKilo; i < e_MetricMax; i++) {
+        for (uint8_t i = e_MetricDefault; i < e_MetricMax; i++) {
             m_metricTable[i] = 1;
+
             for (uint8_t j = 0; j < i; j++) {
                 m_metricTable[i] *= static_cast<uint64_t>(base);
             }

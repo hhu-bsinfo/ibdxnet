@@ -32,7 +32,7 @@ int main(int argc, char** argv)
         timer.Stop();
 
         printf("%f sec, %f ms, %f us, %lu ns\n", timer.GetTimeSec(), timer.GetTimeMs(), timer.GetTimeUs(),
-            timer.GetTimeNs());
+                timer.GetTimeNs());
     }
 
     ibnet::sys::Logger::Shutdown();

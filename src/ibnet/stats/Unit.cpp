@@ -22,14 +22,14 @@ namespace ibnet {
 namespace stats {
 
 const char* Unit::ms_metricTableNames[] {
-    "units",
-    "ku",
-    "mu",
-    "gu",
-    "tu",
-    "pu",
-    "eu",
-    "eu",
+        "units",
+        "ku",
+        "mu",
+        "gu",
+        "tu",
+        "pu",
+        "eu",
+        "eu",
 };
 
 }

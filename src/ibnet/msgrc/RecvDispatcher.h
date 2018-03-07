@@ -49,9 +49,9 @@ public:
      * @param refRecvHandler Pointer to the receive handler to dispatch the received data to (managed by caller)
      */
     RecvDispatcher(ConnectionManager* refConnectionManager,
-        dx::RecvBufferPool* refRecvBufferPool,
-        stats::StatisticsManager* refStatisticsManager,
-        RecvHandler* refRecvHandler);
+            dx::RecvBufferPool* refRecvBufferPool,
+            stats::StatisticsManager* refStatisticsManager,
+            RecvHandler* refRecvHandler);
 
     /**
      * Destructor
@@ -91,27 +91,27 @@ private:
     void __ThrowDetailedException(const std::string& reason, Args... args)
     {
         throw ExceptionType(reason + "\n"
-                "SendDispatcher state:\n"
-                "m_recvQueuePending: %d\n"
-                "m_totalTime: %s\n"
-                "m_receivedData: %s\n"
-                "m_receivedFC: %s\n"
-                "m_throughputReceivedData: %s\n"
-                "m_throughputReceivedFC: %s", args...,
-            m_recvQueuePending,
-            *m_totalTime,
-            *m_receivedData,
-            *m_receivedFC,
-            *m_throughputReceivedData,
-            *m_throughputReceivedFC);
+                        "SendDispatcher state:\n"
+                        "m_recvQueuePending: %d\n"
+                        "m_totalTime: %s\n"
+                        "m_receivedData: %s\n"
+                        "m_receivedFC: %s\n"
+                        "m_throughputReceivedData: %s\n"
+                        "m_throughputReceivedFC: %s", args...,
+                m_recvQueuePending,
+                *m_totalTime,
+                *m_receivedData,
+                *m_receivedFC,
+                *m_throughputReceivedData,
+                *m_throughputReceivedFC);
     };
 
     template <typename ExceptionType, typename... Args>
     void __ThrowDetailedException(int ret, const std::string& reason,
-        Args... args)
+            Args... args)
     {
         __ThrowDetailedException<ExceptionType>(reason + "\nError (%d): %s",
-            args..., ret, strerror(ret));
+                args..., ret, strerror(ret));
     };
 
 private:

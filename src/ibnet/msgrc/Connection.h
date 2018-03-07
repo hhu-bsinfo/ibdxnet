@@ -52,10 +52,10 @@ public:
      * @param refProtDom Pointer to the IbProtDom (memory managed by caller)
      */
     Connection(con::NodeId ownNodeId, con::ConnectionId connectionId,
-        uint32_t sendBufferSize, uint16_t ibSQSize, ibv_srq* refIbSRQ,
-        uint16_t ibSRQSize, ibv_cq* refIbSharedSCQ, uint16_t ibSharedSCQSize,
-        ibv_cq* refIbSharedRCQ, uint16_t ibSharedRCQSize,
-        core::IbProtDom* refProtDom);
+            uint32_t sendBufferSize, uint16_t ibSQSize, ibv_srq* refIbSRQ,
+            uint16_t ibSRQSize, ibv_cq* refIbSharedSCQ, uint16_t ibSharedSCQSize,
+            ibv_cq* refIbSharedRCQ, uint16_t ibSharedRCQSize,
+            core::IbProtDom* refProtDom);
 
     /**
      * Destructor
@@ -66,14 +66,14 @@ public:
      * Overriding virtual function
      */
     void CreateConnectionExchangeData(void* connectionDataBuffer,
-        size_t connectionDataMaxSize, size_t* connectionDataActualSize)
+            size_t connectionDataMaxSize, size_t* connectionDataActualSize)
     override;
 
     /**
      * Overriding virtual function
      */
     void Connect(const con::RemoteConnectionHeader& remoteConnectionHeader,
-        const void* remoteConnectionData, size_t remoteConnectionDataSize)
+            const void* remoteConnectionData, size_t remoteConnectionDataSize)
     override;
 
     /**

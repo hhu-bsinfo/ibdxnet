@@ -48,7 +48,7 @@ public:
      * @param refJobManager Pointer to a job manager to use (memory managed by caller)
      */
     DiscoveryManager(NodeId ownNodeId, const NodeConf& nodeConf,
-        ExchangeManager* refExchangeManager, JobManager* refJobManager);
+            ExchangeManager* refExchangeManager, JobManager* refJobManager);
 
     /**
      * Destructor
@@ -94,8 +94,8 @@ public:
 
 protected:
     void _DispatchExchangeData(uint32_t sourceIPV4,
-        const ExchangeManager::PaketHeader* paketHeader,
-        const void* data) override;
+            const ExchangeManager::PaketHeader* paketHeader,
+            const void* data) override;
 
     void _DispatchJob(const JobQueue::Job* job) override;
 
@@ -106,10 +106,10 @@ private:
         const NodeId m_nodeIdDiscovered;
 
         JobDiscovered(JobQueue::JobType type, uint32_t targetIPV4,
-            NodeId nodeIdDiscovered) :
-            JobQueue::Job(type),
-            m_targetIPV4(targetIPV4),
-            m_nodeIdDiscovered(nodeIdDiscovered)
+                NodeId nodeIdDiscovered) :
+                JobQueue::Job(type),
+                m_targetIPV4(targetIPV4),
+                m_nodeIdDiscovered(nodeIdDiscovered)
         {
         }
     };

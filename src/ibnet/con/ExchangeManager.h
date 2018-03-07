@@ -101,7 +101,7 @@ public:
         std::lock_guard<std::mutex> l(m_dispatcherLock);
 
         for (auto it = m_dispatcher[type].begin();
-            it != m_dispatcher[type].end(); it++) {
+                it != m_dispatcher[type].end(); it++) {
             if (*it == dispatcher) {
                 m_dispatcher[type].erase(it);
                 break;
@@ -121,7 +121,7 @@ public:
      * @param length Length of the data to send
      */
     void SendData(PaketType type, uint32_t targetIPV4,
-        const void* data = nullptr, uint32_t length = 0);
+            const void* data = nullptr, uint32_t length = 0);
 
 protected:
     void _RunLoop() override;

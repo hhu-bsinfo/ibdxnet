@@ -27,29 +27,29 @@ namespace ibnet {
 namespace sys {
 
 AddressIPV4::AddressIPV4() :
-    m_address(INVALID_ADDRESS),
-    m_port(INVALID_PORT)
+        m_address(INVALID_ADDRESS),
+        m_port(INVALID_PORT)
 {
     __ToString(m_address);
 }
 
 AddressIPV4::AddressIPV4(uint32_t address) :
-    m_address(address),
-    m_port(INVALID_PORT)
+        m_address(address),
+        m_port(INVALID_PORT)
 {
     __ToString(m_address);
 }
 
 AddressIPV4::AddressIPV4(uint32_t address, uint16_t port) :
-    m_address(address),
-    m_port(port)
+        m_address(address),
+        m_port(port)
 {
     __ToString(m_address);
 }
 
 AddressIPV4::AddressIPV4(const std::string& address) :
-    m_address(),
-    m_port()
+        m_address(),
+        m_port()
 {
     __ToAddressAndPort(address);
 }

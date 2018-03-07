@@ -54,9 +54,9 @@ public:
      * @param refSendHandler Pointer to a send handler which provides data to be sent (memory managed by caller)
      */
     SendDispatcher(uint32_t recvBufferSize,
-        ConnectionManager* refConnectionManager,
-        stats::StatisticsManager* refStatisticsManager,
-        SendHandler* refSendHandler);
+            ConnectionManager* refConnectionManager,
+            stats::StatisticsManager* refStatisticsManager,
+            SendHandler* refSendHandler);
 
     /**
      * Destructor
@@ -100,7 +100,7 @@ private:
     bool __PollCompletions();
 
     bool __SendData(Connection* connection,
-        const SendHandler::NextWorkPackage* workPackage);
+            const SendHandler::NextWorkPackage* workPackage);
 
     template <typename ExceptionType, typename... Args>
     void __ThrowDetailedException(const std::string& reason, Args... args)
@@ -110,38 +110,38 @@ private:
         for (uint16_t i = 0; i < con::NODE_ID_MAX_NUM_NODES; i++) {
             if (m_sendQueuePending[i] > 0) {
                 sendQueuePending << std::hex << i << "|" << std::dec <<
-                    m_sendQueuePending[i] << " ";
+                        m_sendQueuePending[i] << " ";
             }
         }
 
         throw ExceptionType(reason + "\n"
-                "SendDispatcher state:\n"
-                "m_prevWorkPackageResults: %s\n"
-                "m_completionList: %s\n"
-                "m_completionsPending: %s\n"
-                "m_sendQueuePending: %s\n"
-                "m_totalTime: %s\n"
-                "m_sentData: %s\n"
-                "m_sentFC: %s\n"
-                "m_throughputSentData: %s\n"
-                "m_throughputSentFC: %s", args...,
-            *m_prevWorkPackageResults,
-            *m_completionList,
-            m_completionsPending,
-            sendQueuePending.str(),
-            *m_totalTime,
-            *m_sentData,
-            *m_sentFC,
-            *m_throughputSentData,
-            *m_throughputSentFC);
+                        "SendDispatcher state:\n"
+                        "m_prevWorkPackageResults: %s\n"
+                        "m_completionList: %s\n"
+                        "m_completionsPending: %s\n"
+                        "m_sendQueuePending: %s\n"
+                        "m_totalTime: %s\n"
+                        "m_sentData: %s\n"
+                        "m_sentFC: %s\n"
+                        "m_throughputSentData: %s\n"
+                        "m_throughputSentFC: %s", args...,
+                *m_prevWorkPackageResults,
+                *m_completionList,
+                m_completionsPending,
+                sendQueuePending.str(),
+                *m_totalTime,
+                *m_sentData,
+                *m_sentFC,
+                *m_throughputSentData,
+                *m_throughputSentFC);
     };
 
     template <typename ExceptionType, typename... Args>
     void __ThrowDetailedException(int ret, const std::string& reason,
-        Args... args)
+            Args... args)
     {
         __ThrowDetailedException<ExceptionType>(reason + "\nError (%d): %s\n%s",
-            args..., ret, strerror(ret));
+                args..., ret, strerror(ret));
     };
 
 private:
@@ -149,8 +149,8 @@ private:
     {
     public:
         Stats(SendDispatcher* refParent) :
-            Operation("SendDispatcher", "State"),
-            m_refParent(refParent)
+                Operation("SendDispatcher", "State"),
+                m_refParent(refParent)
         {
         }
 
@@ -159,14 +159,14 @@ private:
         void WriteOstream(std::ostream& os, const std::string& indent) const override
         {
             os << indent << "m_prevWorkPackageResults " <<
-                *m_refParent->m_prevWorkPackageResults << ", m_completionList "
-                << *m_refParent->m_completionList << ", m_completionsPending "
-                << m_refParent->m_completionsPending << ", m_sendQueuePending ";
+                    *m_refParent->m_prevWorkPackageResults << ", m_completionList "
+                    << *m_refParent->m_completionList << ", m_completionsPending "
+                    << m_refParent->m_completionsPending << ", m_sendQueuePending ";
 
             for (uint16_t i = 0; i < con::NODE_ID_MAX_NUM_NODES; i++) {
                 if (m_refParent->m_sendQueuePending[i] > 0) {
                     os << std::hex << i << "|" << std::dec <<
-                        m_refParent->m_sendQueuePending[i] << " ";
+                            m_refParent->m_sendQueuePending[i] << " ";
                 }
             }
         }

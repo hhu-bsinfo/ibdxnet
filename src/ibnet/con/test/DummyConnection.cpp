@@ -22,23 +22,23 @@ namespace ibnet {
 namespace con {
 
 DummyConnection::DummyConnection(NodeId ownNodeId, ConnectionId connectionId) :
-    Connection(ownNodeId, connectionId)
+        Connection(ownNodeId, connectionId)
 {
 
 }
 
 void DummyConnection::CreateConnectionExchangeData(void* connectionDataBuffer,
-    size_t connectionDataMaxSize, size_t* connectionDataActualSize)
+        size_t connectionDataMaxSize, size_t* connectionDataActualSize)
 {
     *connectionDataActualSize = 0;
 }
 
 void DummyConnection::Connect(
-    const con::RemoteConnectionHeader& remoteConnectionHeader,
-    const void* remoteConnectionData, size_t remoteConnectionDataSize)
+        const con::RemoteConnectionHeader& remoteConnectionHeader,
+        const void* remoteConnectionData, size_t remoteConnectionDataSize)
 {
     Connection::Connect(remoteConnectionHeader, remoteConnectionData,
-        remoteConnectionDataSize);
+            remoteConnectionDataSize);
 }
 
 void DummyConnection::Close(bool force)

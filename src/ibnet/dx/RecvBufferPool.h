@@ -44,7 +44,7 @@ public:
      * @param protDom Protection domain to register all buffers at (Pointer managed by caller)
      */
     RecvBufferPool(uint64_t totalPoolSize, uint32_t recvBufferSize,
-        core::IbProtDom* refProtDom);
+            core::IbProtDom* refProtDom);
 
     /**
      * Destructor

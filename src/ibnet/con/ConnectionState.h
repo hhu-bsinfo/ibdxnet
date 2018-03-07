@@ -74,10 +74,10 @@ struct ConnectionState
      * Constructor
      */
     ConnectionState() :
-        m_state(e_StateNotAvailable),
-        m_exchgFlags(0),
-        m_remoteExchgFlags(0),
-        m_available(CONNECTION_NOT_AVAILABLE)
+            m_state(e_StateNotAvailable),
+            m_exchgFlags(0),
+            m_remoteExchgFlags(0),
+            m_available(CONNECTION_NOT_AVAILABLE)
     {
     }
 
@@ -106,8 +106,8 @@ struct ConnectionState
     bool ConnectionExchgComplete() const
     {
         return m_exchgFlags.load(std::memory_order_relaxed) ==
-            e_ExchgFlagCompleted && m_remoteExchgFlags.load(
-            std::memory_order_relaxed) == e_ExchgFlagCompleted;
+                e_ExchgFlagCompleted && m_remoteExchgFlags.load(
+                std::memory_order_relaxed) == e_ExchgFlagCompleted;
     }
 
     /**
@@ -152,12 +152,12 @@ struct ConnectionState
     friend std::ostream& operator<<(std::ostream& os, const ConnectionState& o)
     {
         return os << static_cast<uint16_t>(
-            o.m_state.load(std::memory_order_relaxed))
-            << "|" <<
-            std::bitset<2>(o.m_exchgFlags.load(std::memory_order_relaxed))
-            << "|" << std::bitset<2>(
-            o.m_remoteExchgFlags.load(std::memory_order_relaxed))
-            << "|" << std::dec << o.m_available.load(std::memory_order_relaxed);
+                o.m_state.load(std::memory_order_relaxed))
+                << "|" <<
+                std::bitset<2>(o.m_exchgFlags.load(std::memory_order_relaxed))
+                << "|" << std::bitset<2>(
+                o.m_remoteExchgFlags.load(std::memory_order_relaxed))
+                << "|" << std::dec << o.m_available.load(std::memory_order_relaxed);
     }
 
 private:
@@ -169,7 +169,7 @@ private:
         do {
             newVal = prev | flag;
         } while (!m_exchgFlags.compare_exchange_strong(prev, newVal,
-            std::memory_order_relaxed));
+                std::memory_order_relaxed));
     }
 
     bool __IsFlagSet(uint8_t flag) const

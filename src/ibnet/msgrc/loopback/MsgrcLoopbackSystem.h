@@ -76,8 +76,8 @@ public:
      * Overriding virtual function
      */
     const SendHandler::NextWorkPackage* GetNextDataToSend(
-        const PrevWorkPackageResults* prevResults,
-        const SendHandler::CompletedWorkList* completionList) override;
+            const PrevWorkPackageResults* prevResults,
+            const SendHandler::CompletedWorkList* completionList) override;
 
 protected:
     void _PostInit() override;

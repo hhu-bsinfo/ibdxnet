@@ -46,10 +46,10 @@ public:
      * @param refTimes Time refs to use for the timeline
      */
     TimelineFragmented(const std::string& category, const std::string& name, const Time* refTotalTime,
-        const std::vector<const Time*> refTimes) :
-        Operation(category, name),
-        m_refTotalTime(refTotalTime),
-        m_refTimes(refTimes)
+            const std::vector<const Time*> refTimes) :
+            Operation(category, name),
+            m_refTotalTime(refTotalTime),
+            m_refTimes(refTimes)
     {
 
     }

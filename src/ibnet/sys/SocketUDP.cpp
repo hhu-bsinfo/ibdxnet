@@ -31,8 +31,8 @@ namespace ibnet {
 namespace sys {
 
 SocketUDP::SocketUDP(uint16_t port) :
-    m_port(port),
-    m_socket(-1)
+        m_port(port),
+        m_socket(-1)
 {
     sockaddr_in addr = {};
 
@@ -54,7 +54,7 @@ SocketUDP::SocketUDP(uint16_t port) :
     if (bind(m_socket, (const sockaddr*) &addr, sizeof(addr)) == -1) {
         close(m_socket);
         throw SystemException("Binding UDP socket to port %d failed: %s",
-            port, strerror(errno));
+                port, strerror(errno));
     }
 
     IBNET_LOG_DEBUG("Opened UDP socket on port %d", port);
@@ -76,7 +76,7 @@ ssize_t SocketUDP::Receive(void* buffer, size_t size, uint32_t* recvIpv4)
     *recvIpv4 = (uint32_t) -1;
 
     length = recvfrom(m_socket, buffer, size, 0, (struct sockaddr*) &recv_addr,
-        &recv_addr_len);
+            &recv_addr_len);
 
     if (length < 0) {
         if (errno == EAGAIN) {
@@ -85,7 +85,7 @@ ssize_t SocketUDP::Receive(void* buffer, size_t size, uint32_t* recvIpv4)
         }
 
         IBNET_LOG_ERROR("Receiving data failed (%d): %s", length,
-            strerror(errno));
+                strerror(errno));
         return -1;
     }
 
@@ -107,11 +107,11 @@ ssize_t SocketUDP::Send(void* buffer, size_t size, uint32_t addrIpv4, uint16_t p
     recv_addr.sin_addr.s_addr = htonl(addrIpv4);
 
     length = sendto(m_socket, buffer, size, 0, (struct sockaddr*) &recv_addr,
-        recv_addr_len);
+            recv_addr_len);
 
     if (length != static_cast<ssize_t>(size)) {
         IBNET_LOG_ERROR("Sending data failed (%d): %s", length,
-            strerror((int) length));
+                strerror((int) length));
     }
 
     return length;

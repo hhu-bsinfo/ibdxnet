@@ -24,22 +24,22 @@ namespace ibnet {
 namespace con {
 
 NodeConf::Entry::Entry() :
-    m_hostname("***INVALID***"),
-    m_address()
+        m_hostname("***INVALID***"),
+        m_address()
 {
 
 }
 
 NodeConf::Entry::Entry(const sys::AddressIPV4& ipv4) :
-    m_hostname(),
-    m_address(ipv4)
+        m_hostname(),
+        m_address(ipv4)
 {
 
 }
 
 NodeConf::Entry::Entry(const std::string& hostname) :
-    m_hostname(hostname),
-    m_address(sys::Network::ResolveHostname(m_hostname))
+        m_hostname(hostname),
+        m_address(sys::Network::ResolveHostname(m_hostname))
 {
 
 }

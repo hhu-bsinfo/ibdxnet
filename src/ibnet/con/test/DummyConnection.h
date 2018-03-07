@@ -44,14 +44,14 @@ public:
      * Overriding virtual function
      */
     void CreateConnectionExchangeData(void* connectionDataBuffer,
-        size_t connectionDataMaxSize, size_t* connectionDataActualSize)
+            size_t connectionDataMaxSize, size_t* connectionDataActualSize)
     override;
 
     /**
      * Overriding virtual function
      */
     void Connect(const con::RemoteConnectionHeader& remoteConnectionHeader,
-        const void* remoteConnectionData, size_t remoteConnectionDataSize)
+            const void* remoteConnectionData, size_t remoteConnectionDataSize)
     override;
 
     /**

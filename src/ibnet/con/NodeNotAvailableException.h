@@ -38,7 +38,7 @@ public:
      * @param nodeId Target node id that is not available
      */
     explicit NodeNotAvailableException(con::NodeId nodeId) :
-        Exception("Node 0x%X not available", nodeId)
+            Exception("Node 0x%X not available", nodeId)
     {
     }
 

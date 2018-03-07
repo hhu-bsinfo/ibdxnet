@@ -58,8 +58,8 @@ protected:
      * @param data Pointer to a buffer with the received data (caller is managing memory)
      */
     virtual void _DispatchExchangeData(uint32_t sourceIPV4,
-        const ExchangeManager::PaketHeader* paketHeader,
-        const void* data) = 0;
+            const ExchangeManager::PaketHeader* paketHeader,
+            const void* data) = 0;
 };
 
 }

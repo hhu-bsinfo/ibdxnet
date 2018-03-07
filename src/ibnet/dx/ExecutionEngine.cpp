@@ -24,8 +24,8 @@ namespace ibnet {
 namespace dx {
 
 ExecutionEngine::ExecutionEngine(uint16_t threadCount,
-    stats::StatisticsManager* refStatisticsManager) :
-    m_refStatisticsManager(refStatisticsManager)
+        stats::StatisticsManager* refStatisticsManager) :
+        m_refStatisticsManager(refStatisticsManager)
 {
     for (uint16_t i = 0; i < threadCount; i++) {
         m_workers.push_back(new Worker(i, refStatisticsManager));
@@ -62,7 +62,7 @@ void ExecutionEngine::AddExecutionUnit(uint16_t workerId, ExecutionUnit* refExec
 void ExecutionEngine::Start()
 {
     IBNET_LOG_INFO("Starting execution engine with %d workers",
-        m_workers.size());
+            m_workers.size());
 
     for (auto& it : m_workers) {
         it->Start();
@@ -83,18 +83,18 @@ void ExecutionEngine::Stop()
 }
 
 ExecutionEngine::Worker::Worker(uint16_t id,
-    stats::StatisticsManager* refStatisticsManager) :
-    ThreadLoop("ExecutionEngineWorker-" + std::to_string(id)),
-    m_id(id),
-    m_refStatisticsManager(refStatisticsManager),
-    m_executionUnits(),
-    m_idleTimer(),
-    m_idleCounter(new stats::Unit("EE-Worker-" + std::to_string(id), "Idle")),
-    m_activeCounter(new stats::Unit("EE-Worker-" + std::to_string(id), "Active")),
-    m_yieldCounter(new stats::Unit("EE-Worker-" + std::to_string(id), "Yield")),
-    m_sleepCounter(new stats::Unit("EE-Worker-" + std::to_string(id), "Sleep")),
-    m_activityRatio(new stats::Ratio("EE-Worker-" + std::to_string(id), "ActivityRatio", m_activeCounter,
-        m_idleCounter))
+        stats::StatisticsManager* refStatisticsManager) :
+        ThreadLoop("ExecutionEngineWorker-" + std::to_string(id)),
+        m_id(id),
+        m_refStatisticsManager(refStatisticsManager),
+        m_executionUnits(),
+        m_idleTimer(),
+        m_idleCounter(new stats::Unit("EE-Worker-" + std::to_string(id), "Idle")),
+        m_activeCounter(new stats::Unit("EE-Worker-" + std::to_string(id), "Active")),
+        m_yieldCounter(new stats::Unit("EE-Worker-" + std::to_string(id), "Yield")),
+        m_sleepCounter(new stats::Unit("EE-Worker-" + std::to_string(id), "Sleep")),
+        m_activityRatio(new stats::Ratio("EE-Worker-" + std::to_string(id), "ActivityRatio", m_activeCounter,
+                m_idleCounter))
 {
     m_refStatisticsManager->Register(m_idleCounter);
     m_refStatisticsManager->Register(m_activeCounter);

@@ -57,7 +57,7 @@ protected:
      * @param name Name of the unit
      */
     explicit ExecutionUnit(const std::string& name) :
-        m_name(name)
+            m_name(name)
     {
     }
 

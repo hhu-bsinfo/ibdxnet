@@ -61,7 +61,7 @@ public:
             // already attached to environment
         } else if (envStat == JNI_EVERSION) {
             throw std::runtime_error(
-                "Failed to attach to java vm, jni version not supported");
+                    "Failed to attach to java vm, jni version not supported");
         }
 
         return env;
@@ -99,18 +99,18 @@ public:
      * @return The method id of the specified java method
      */
     static inline jmethodID GetAndVerifyMethod(JNIEnv* env, jobject object,
-        const std::string& name, const std::string& signature)
+            const std::string& name, const std::string& signature)
     {
         jmethodID mid;
 
         mid = env->GetMethodID(env->GetObjectClass(object), name.c_str(),
-            signature.c_str());
+                signature.c_str());
 
         if (mid == nullptr) {
             IBNET_LOG_ERROR("Could not find method id of %s, %s",
-                name, signature);
+                    name, signature);
             throw std::runtime_error("Could not find method id of " + name +
-                ", " + signature);
+                    ", " + signature);
         }
 
         return mid;

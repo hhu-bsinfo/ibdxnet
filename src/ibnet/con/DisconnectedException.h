@@ -38,7 +38,7 @@ public:
      * @param nodeId Node id of the remote
      */
     DisconnectedException() :
-        Exception("Remote queue pair not available anymore")
+            Exception("Remote queue pair not available anymore")
     {
     }
 
@@ -48,8 +48,8 @@ public:
      * @param nodeId Node id of the remote
      */
     explicit DisconnectedException(con::NodeId nodeId) :
-        Exception("Remote queue pair of node 0x%X not available anymore",
-            nodeId)
+            Exception("Remote queue pair of node 0x%X not available anymore",
+                    nodeId)
     {
     }
 

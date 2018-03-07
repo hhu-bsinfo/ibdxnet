@@ -57,12 +57,12 @@ public:
      * @param name Name of the statistic operation
      */
     explicit Time(const std::string& category, const std::string& name) :
-        Operation(category, name),
-        m_counter(0),
-        m_timer(),
-        m_total(0),
-        m_best(0xFFFFFFFFFFFFFFFF),
-        m_worst(0)
+            Operation(category, name),
+            m_counter(0),
+            m_timer(),
+            m_total(0),
+            m_best(0xFFFFFFFFFFFFFFFF),
+            m_worst(0)
     {
     };
 
@@ -187,7 +187,7 @@ private:
 
 private:
     static inline void __FormatTime(std::ostream& os, const std::string& name,
-        double timeNs)
+            double timeNs)
     {
         std::ios::fmtflags f(os.flags());
 
@@ -195,7 +195,7 @@ private:
 
         if (timeNs > 1000.0 * 1000.0 * 1000.0) {
             os << ";" << name << " " << timeNs / (1000.0 * 1000.0 * 1000.0) <<
-                " sec";
+                    " sec";
         } else if (timeNs > 1000.0 * 1000.0) {
             os << ";" << name << " " << timeNs / (1000.0 * 1000.0) << " ms";
         } else if (timeNs > 1000.0) {

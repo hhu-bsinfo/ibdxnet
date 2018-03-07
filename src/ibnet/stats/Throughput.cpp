@@ -23,14 +23,14 @@ namespace ibnet {
 namespace stats {
 
 const char* Throughput::ms_metricTableNames[] {
-    "b/s",
-    "kb/s",
-    "mb/s",
-    "gb/s",
-    "tb/s",
-    "pb/s",
-    "eb/s",
-    "eb/s"
+        "b/s",
+        "kb/s",
+        "mb/s",
+        "gb/s",
+        "tb/s",
+        "pb/s",
+        "eb/s",
+        "eb/s"
 };
 
 }

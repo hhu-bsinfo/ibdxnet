@@ -26,22 +26,22 @@ namespace ibnet {
 namespace con {
 
 DiscoveryManager::DiscoveryManager(NodeId ownNodeId, const NodeConf& nodeConf,
-    ExchangeManager* refExchangeManager, JobManager* refJobManager) :
-    m_ownNodeId(ownNodeId),
-    m_refExchangeManager(refExchangeManager),
-    m_refJobManager(refJobManager),
-    m_listener(nullptr),
-    m_lock(),
-    m_infoToGet(),
-    m_nodeInfo(),
-    m_discoverReqExchgPaketType(m_refExchangeManager->GeneratePaketTypeId()),
-    m_discoverRespExchgPaketType(m_refExchangeManager->GeneratePaketTypeId()),
-    m_discoverJobType(m_refJobManager->GenerateJobTypeId()),
-    m_discoverOnIdleJobType(m_refJobManager->GenerateJobTypeId()),
-    m_discoveredJobType(m_refJobManager->GenerateJobTypeId())
+        ExchangeManager* refExchangeManager, JobManager* refJobManager) :
+        m_ownNodeId(ownNodeId),
+        m_refExchangeManager(refExchangeManager),
+        m_refJobManager(refJobManager),
+        m_listener(nullptr),
+        m_lock(),
+        m_infoToGet(),
+        m_nodeInfo(),
+        m_discoverReqExchgPaketType(m_refExchangeManager->GeneratePaketTypeId()),
+        m_discoverRespExchgPaketType(m_refExchangeManager->GeneratePaketTypeId()),
+        m_discoverJobType(m_refJobManager->GenerateJobTypeId()),
+        m_discoverOnIdleJobType(m_refJobManager->GenerateJobTypeId()),
+        m_discoveredJobType(m_refJobManager->GenerateJobTypeId())
 {
     IBNET_LOG_INFO("Initializing node discovery list, own node id 0x%X...",
-        ownNodeId);
+            ownNodeId);
 
     std::string ownHostname = sys::Network::GetHostname();
 
@@ -136,8 +136,8 @@ void DiscoveryManager::Invalidate(NodeId nodeId, bool shutdown)
 }
 
 void DiscoveryManager::_DispatchExchangeData(uint32_t sourceIPV4,
-    const ExchangeManager::PaketHeader* paketHeader,
-    const void* data)
+        const ExchangeManager::PaketHeader* paketHeader,
+        const void* data)
 {
     if (paketHeader->m_type == m_discoverReqExchgPaketType) {
         __ExchgSendDiscoveryResp(sourceIPV4);
@@ -162,10 +162,10 @@ void DiscoveryManager::_DispatchJob(const JobQueue::Job* job)
         // remove from processing list
         for (auto it = m_infoToGet.begin(); it != m_infoToGet.end(); it++) {
             if ((*it)->GetAddress().GetAddress() ==
-                jobDiscovered->m_targetIPV4) {
+                    jobDiscovered->m_targetIPV4) {
                 IBNET_LOG_INFO("Discovered node %s as node id 0x%X",
-                    (*it)->GetAddress().GetAddressStr(),
-                    jobDiscovered->m_nodeIdDiscovered);
+                        (*it)->GetAddress().GetAddressStr(),
+                        jobDiscovered->m_nodeIdDiscovered);
 
                 // store remote node information
                 m_nodeInfo[jobDiscovered->m_nodeIdDiscovered] = *it;
@@ -179,7 +179,7 @@ void DiscoveryManager::_DispatchJob(const JobQueue::Job* job)
                 // don't lock call to listener
                 if (m_listener) {
                     m_listener->NodeDiscovered(
-                        jobDiscovered->m_nodeIdDiscovered);
+                            jobDiscovered->m_nodeIdDiscovered);
                 }
 
                 break;
@@ -208,10 +208,10 @@ void DiscoveryManager::__JobAddDiscover()
 }
 
 void DiscoveryManager::__JobAddDiscovered(uint32_t sourceIPV4,
-    NodeId sourceNodeIdDiscovered)
+        NodeId sourceNodeIdDiscovered)
 {
     m_refJobManager->AddJob(new JobDiscovered(m_discoveredJobType, sourceIPV4,
-        sourceNodeIdDiscovered));
+            sourceNodeIdDiscovered));
 }
 
 void DiscoveryManager::__ExecuteDiscovery()
@@ -223,7 +223,7 @@ void DiscoveryManager::__ExecuteDiscovery()
     // request remote node's information if not received, yet
     for (auto& it : m_infoToGet) {
         IBNET_LOG_TRACE("Requesting node info from %s",
-            it->GetAddress().GetAddressStr());
+                it->GetAddress().GetAddressStr());
 
         __ExchgSendDiscoveryReq(it->GetAddress().GetAddress());
     }

@@ -31,65 +31,66 @@ namespace ibnet {
 namespace msgrc {
 
 RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
-    dx::RecvBufferPool* refRecvBufferPool,
-    stats::StatisticsManager* refStatisticsManager,
-    RecvHandler* refRecvHandler) :
-    ExecutionUnit("MsgRCRecv"),
-    m_refConnectionManager(refConnectionManager),
-    m_refRecvBufferPool(refRecvBufferPool),
-    m_refStatisticsManager(refStatisticsManager),
-    m_refRecvHandler(refRecvHandler),
-    m_recvPackage(static_cast<RecvHandler::ReceivedPackage*>(
-        aligned_alloc(static_cast<size_t>(getpagesize()),
-            RecvHandler::ReceivedPackage::Sizeof(
-                refConnectionManager->GetIbSRQSize())))),
-    m_recvQueuePending(0),
-    m_workComps(static_cast<ibv_wc*>(
-        aligned_alloc(static_cast<size_t>(getpagesize()),
-            sizeof(ibv_wc) * refConnectionManager->GetIbSRQSize()))),
-    m_firstWc(true),
-    m_memRegRefillBuffer(static_cast<core::IbMemReg**>(
-        aligned_alloc(static_cast<size_t>(getpagesize()),
-            sizeof(core::IbMemReg*) * refConnectionManager->GetIbSRQSize()))),
-    m_sgeList(static_cast<ibv_sge*>(
-        aligned_alloc(static_cast<size_t>(getpagesize()),
-            sizeof(ibv_sge) * refConnectionManager->GetIbSRQSize()))),
-    m_recvWrList(static_cast<ibv_recv_wr*>(
-        aligned_alloc(static_cast<size_t>(getpagesize()),
-            sizeof(ibv_recv_wr) * refConnectionManager->GetIbSRQSize()))),
-    m_totalTime(new stats::Time("RecvDispatcher", "Total")),
-    m_pollTime(new stats::Time("RecvDispatcher", "Poll")),
-    m_processRecvTotalTime(new stats::Time("RecvDispatcher", "ProcessRecvTotal")),
-    m_processRecvAvailTime(new stats::Time("RecvDispatcher", "ProcessRecvAvail")),
-    m_processRecvHandleTime(new stats::Time("RecvDispatcher", "ProcessRecvHandle")),
-    m_refillTotalTime(new stats::Time("RecvDispatcher", "RefillTotal")),
-    m_refillAvailTime(new stats::Time("RecvDispatcher", "RefillAvail")),
-    m_refillGetBuffersTime(new stats::Time("RecvDispatcher", "RefillGetBuffers")),
-    m_refillPostTime(new stats::Time("RecvDispatcher", "RefillPost")),
-    m_eeSchedTime(new stats::Time("RecvDispatcher", "EESched")),
-    m_recvTimeline(new stats::TimelineFragmented("RecvDispatcher", "Recv", m_totalTime, {m_pollTime,
-        m_processRecvTotalTime, m_refillTotalTime, m_eeSchedTime})),
-    m_processRecvTimeline(new stats::TimelineFragmented("RecvDispatcher", "ProcessRecv", m_processRecvTotalTime,
-        {m_processRecvAvailTime, m_processRecvHandleTime})),
-    m_refillTimeline(new stats::TimelineFragmented("RecvDispatcher", "Refill", m_refillTotalTime, {m_refillAvailTime,
-        m_refillGetBuffersTime, m_refillPostTime})),
-    m_receivedData(new stats::Unit("RecvDispatcher", "Data", stats::Unit::e_Base2)),
-    m_receivedFC(new stats::Unit("RecvDispatcher", "FC", stats::Unit::e_Base10)),
-    m_throughputReceivedData(new stats::Throughput("RecvDispatcher", "ThroughputData",
-        m_receivedData, m_totalTime)),
-    m_throughputReceivedFC(new stats::Throughput("RecvDispatcher", "ThroughputFC",
-        m_receivedFC, m_totalTime))
+        dx::RecvBufferPool* refRecvBufferPool,
+        stats::StatisticsManager* refStatisticsManager,
+        RecvHandler* refRecvHandler) :
+        ExecutionUnit("MsgRCRecv"),
+        m_refConnectionManager(refConnectionManager),
+        m_refRecvBufferPool(refRecvBufferPool),
+        m_refStatisticsManager(refStatisticsManager),
+        m_refRecvHandler(refRecvHandler),
+        m_recvPackage(static_cast<RecvHandler::ReceivedPackage*>(
+                aligned_alloc(static_cast<size_t>(getpagesize()),
+                        RecvHandler::ReceivedPackage::Sizeof(
+                                refConnectionManager->GetIbSRQSize())))),
+        m_recvQueuePending(0),
+        m_workComps(static_cast<ibv_wc*>(
+                aligned_alloc(static_cast<size_t>(getpagesize()),
+                        sizeof(ibv_wc) * refConnectionManager->GetIbSRQSize()))),
+        m_firstWc(true),
+        m_memRegRefillBuffer(static_cast<core::IbMemReg**>(
+                aligned_alloc(static_cast<size_t>(getpagesize()),
+                        sizeof(core::IbMemReg*) * refConnectionManager->GetIbSRQSize()))),
+        m_sgeList(static_cast<ibv_sge*>(
+                aligned_alloc(static_cast<size_t>(getpagesize()),
+                        sizeof(ibv_sge) * refConnectionManager->GetIbSRQSize()))),
+        m_recvWrList(static_cast<ibv_recv_wr*>(
+                aligned_alloc(static_cast<size_t>(getpagesize()),
+                        sizeof(ibv_recv_wr) * refConnectionManager->GetIbSRQSize()))),
+        m_totalTime(new stats::Time("RecvDispatcher", "Total")),
+        m_pollTime(new stats::Time("RecvDispatcher", "Poll")),
+        m_processRecvTotalTime(new stats::Time("RecvDispatcher", "ProcessRecvTotal")),
+        m_processRecvAvailTime(new stats::Time("RecvDispatcher", "ProcessRecvAvail")),
+        m_processRecvHandleTime(new stats::Time("RecvDispatcher", "ProcessRecvHandle")),
+        m_refillTotalTime(new stats::Time("RecvDispatcher", "RefillTotal")),
+        m_refillAvailTime(new stats::Time("RecvDispatcher", "RefillAvail")),
+        m_refillGetBuffersTime(new stats::Time("RecvDispatcher", "RefillGetBuffers")),
+        m_refillPostTime(new stats::Time("RecvDispatcher", "RefillPost")),
+        m_eeSchedTime(new stats::Time("RecvDispatcher", "EESched")),
+        m_recvTimeline(new stats::TimelineFragmented("RecvDispatcher", "Recv", m_totalTime, {m_pollTime,
+                m_processRecvTotalTime, m_refillTotalTime, m_eeSchedTime})),
+        m_processRecvTimeline(new stats::TimelineFragmented("RecvDispatcher", "ProcessRecv", m_processRecvTotalTime,
+                {m_processRecvAvailTime, m_processRecvHandleTime})),
+        m_refillTimeline(
+                new stats::TimelineFragmented("RecvDispatcher", "Refill", m_refillTotalTime, {m_refillAvailTime,
+                        m_refillGetBuffersTime, m_refillPostTime})),
+        m_receivedData(new stats::Unit("RecvDispatcher", "Data", stats::Unit::e_Base2)),
+        m_receivedFC(new stats::Unit("RecvDispatcher", "FC", stats::Unit::e_Base10)),
+        m_throughputReceivedData(new stats::Throughput("RecvDispatcher", "ThroughputData",
+                m_receivedData, m_totalTime)),
+        m_throughputReceivedFC(new stats::Throughput("RecvDispatcher", "ThroughputFC",
+                m_receivedFC, m_totalTime))
 {
     memset(m_recvPackage, 0, RecvHandler::ReceivedPackage::Sizeof(
-        refConnectionManager->GetIbSRQSize()));
+            refConnectionManager->GetIbSRQSize()));
     memset(m_workComps, 0,
-        sizeof(ibv_wc) * refConnectionManager->GetIbSRQSize());
+            sizeof(ibv_wc) * refConnectionManager->GetIbSRQSize());
     memset(m_memRegRefillBuffer, 0,
-        sizeof(core::IbMemReg*) * refConnectionManager->GetIbSRQSize());
+            sizeof(core::IbMemReg*) * refConnectionManager->GetIbSRQSize());
     memset(m_sgeList, 0,
-        sizeof(core::IbMemReg*) * refConnectionManager->GetIbSRQSize());
+            sizeof(core::IbMemReg*) * refConnectionManager->GetIbSRQSize());
     memset(m_recvWrList, 0,
-        sizeof(ibv_sge) * refConnectionManager->GetIbSRQSize());
+            sizeof(ibv_sge) * refConnectionManager->GetIbSRQSize());
 
     m_refStatisticsManager->Register(m_totalTime);
     m_refStatisticsManager->Register(m_recvTimeline);
@@ -176,11 +177,11 @@ uint32_t RecvDispatcher::__Poll()
 {
     // poll in batches to reduce overhead and increase utilization
     int ret = ibv_poll_cq(m_refConnectionManager->GetIbSharedRCQ(),
-        m_refConnectionManager->GetIbSRQSize(), m_workComps);
+            m_refConnectionManager->GetIbSRQSize(), m_workComps);
 
     if (ret < 0) {
         __ThrowDetailedException<core::IbException>(
-            ret, "Polling completion queue failed");
+                ret, "Polling completion queue failed");
     }
 
     auto receivedCount = static_cast<uint32_t>(ret);
@@ -199,19 +200,19 @@ uint32_t RecvDispatcher::__Poll()
                     case IBV_WC_RETRY_EXC_ERR:
                         if (m_firstWc) {
                             __ThrowDetailedException<core::IbException>(
-                                "First work completion of queue failed, it's "
-                                    "very likely your connection attributes are "
-                                    "wrong or the remote site isn't in a state to "
-                                    "respond");
+                                    "First work completion of queue failed, it's "
+                                            "very likely your connection attributes are "
+                                            "wrong or the remote site isn't in a state to "
+                                            "respond");
                         } else {
                             throw con::DisconnectedException();
                         }
 
                     default:
                         __ThrowDetailedException<core::IbException>(
-                            "Found failed work completion (%d), status %s",
-                            i, core::WORK_COMPLETION_STATUS_CODE[
-                                m_workComps[i].status]);
+                                "Found failed work completion (%d), status %s",
+                                i, core::WORK_COMPLETION_STATUS_CODE[
+                                        m_workComps[i].status]);
 
                 }
             }
@@ -251,7 +252,7 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
 
                 if (!immedData->m_flowControlData) {
                     __ThrowDetailedException<sys::IllegalStateException>(
-                        "Zero length data received but no flow control data");
+                            "Zero length data received but no flow control data");
                 }
             }
 
@@ -260,11 +261,11 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
             }
 
             m_recvPackage->m_entries[i].m_sourceNodeId =
-                immedData->m_sourceNodeId;
+                    immedData->m_sourceNodeId;
             m_recvPackage->m_entries[i].m_fcData = immedData->m_flowControlData;
             m_recvPackage->m_entries[i].m_data = dataMem;
             m_recvPackage->m_entries[i].m_dataRaw =
-                dataMem ? dataMem->GetAddress() : nullptr;
+                    dataMem ? dataMem->GetAddress() : nullptr;
             m_recvPackage->m_entries[i].m_dataLength = dataRecvLen;
 
             IBNET_STATS(m_receivedData->Add(dataRecvLen));
@@ -291,12 +292,12 @@ void RecvDispatcher::__Refill()
         IBNET_STATS(m_refillAvailTime->Start());
 
         uint32_t count =
-            m_refConnectionManager->GetIbSRQSize() - m_recvQueuePending;
+                m_refConnectionManager->GetIbSRQSize() - m_recvQueuePending;
 
         IBNET_STATS(m_refillGetBuffersTime->Start());
 
         uint32_t numBufs = m_refRecvBufferPool->GetBuffers(m_memRegRefillBuffer,
-            count);
+                count);
 
         IBNET_STATS(m_refillGetBuffersTime->Stop());
 
@@ -308,7 +309,7 @@ void RecvDispatcher::__Refill()
         for (uint32_t i = 0; i < numBufs; i++) {
             // hook memory to write the received data to
             m_sgeList[i].addr =
-                (uintptr_t) m_memRegRefillBuffer[i]->GetAddress();
+                    (uintptr_t) m_memRegRefillBuffer[i]->GetAddress();
             m_sgeList[i].length = m_memRegRefillBuffer[i]->GetSizeBuffer();
             m_sgeList[i].lkey = m_memRegRefillBuffer[i]->GetLKey();
 
@@ -327,7 +328,7 @@ void RecvDispatcher::__Refill()
         IBNET_STATS(m_refillPostTime->Start());
 
         int ret = ibv_post_srq_recv(m_refConnectionManager->GetIbSRQ(),
-            &m_recvWrList[0], &bad_wr);
+                &m_recvWrList[0], &bad_wr);
 
         IBNET_STATS(m_refillPostTime->Stop());
 
@@ -335,12 +336,12 @@ void RecvDispatcher::__Refill()
             switch (ret) {
                 case ENOMEM:
                     __ThrowDetailedException<core::IbQueueFullException>(
-                        "Receive queue full");
+                            "Receive queue full");
 
                 default:
                     __ThrowDetailedException<core::IbException>(ret,
-                        "Posting work request to receive queue failed, numBufs "
-                            "%d", numBufs);
+                            "Posting work request to receive queue failed, numBufs "
+                                    "%d", numBufs);
             }
         }
 

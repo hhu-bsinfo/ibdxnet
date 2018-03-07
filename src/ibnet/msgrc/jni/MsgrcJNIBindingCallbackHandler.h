@@ -86,15 +86,15 @@ public:
     }
 
     inline const SendHandler::NextWorkPackage* GetNextDataToSend(
-        const SendHandler::PrevWorkPackageResults* prevResults,
-        const SendHandler::CompletedWorkList* completionList)
+            const SendHandler::PrevWorkPackageResults* prevResults,
+            const SendHandler::CompletedWorkList* completionList)
     {
         IBNET_LOG_TRACE_FUNC;
 
         JNIEnv* env = sys::JNIHelper::GetEnv(m_vm);
         env->CallLongMethod(m_object, m_midGetNextDataToSend,
-            (jlong) &m_nextWorkPackage, (jlong) prevResults,
-            (jlong) completionList);
+                (jlong) &m_nextWorkPackage, (jlong) prevResults,
+                (jlong) completionList);
         sys::JNIHelper::ReturnEnv(m_vm, env);
 
         IBNET_LOG_TRACE_FUNC_EXIT;

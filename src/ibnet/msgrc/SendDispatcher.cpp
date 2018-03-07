@@ -32,89 +32,89 @@ namespace ibnet {
 namespace msgrc {
 
 SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
-    ConnectionManager* refConectionManager,
-    stats::StatisticsManager* refStatisticsManager,
-    SendHandler* refSendHandler) :
-    ExecutionUnit("MsgRCSend"),
-    m_recvBufferSize(recvBufferSize),
-    m_refConnectionManager(refConectionManager),
-    m_refStatisticsManager(refStatisticsManager),
-    m_refSendHandler(refSendHandler),
-    m_prevWorkPackageResults(static_cast<SendHandler::PrevWorkPackageResults*>(
-        aligned_alloc(static_cast<size_t>(getpagesize()),
-            sizeof(SendHandler::PrevWorkPackageResults)))),
-    m_completionList(static_cast<SendHandler::CompletedWorkList*>(
-        aligned_alloc(static_cast<size_t>(getpagesize()),
-            SendHandler::CompletedWorkList::Sizeof(
-                refConectionManager->GetMaxNumConnections())))),
-    m_completionsPending(0),
-    m_sendQueuePending(),
-    m_firstWc(true),
-    m_ignoreFlushErrOnPendingCompletions(0),
-    m_sgeLists(static_cast<ibv_sge*>(
-        aligned_alloc(static_cast<size_t>(getpagesize()),
-            sizeof(ibv_sge) * m_refConnectionManager->GetIbSQSize()))),
-    m_sendWrs(static_cast<ibv_send_wr*>(
-        aligned_alloc(static_cast<size_t>(getpagesize()),
-            sizeof(ibv_send_wr) * m_refConnectionManager->GetIbSQSize()))),
-    m_workComp(static_cast<ibv_wc*>(
-        aligned_alloc(static_cast<size_t>(getpagesize()),
-            sizeof(ibv_wc) * m_refConnectionManager->GetIbSharedSCQSize()))),
-    m_totalTime(new stats::Time("SendDispatcher", "Total")),
-    m_getNextDataToSendTime(new stats::Time("SendDispatcher", "GetNextDataToSend")),
-    m_pollCompletionsTotalTime(new stats::Time("SendDispatcher", "PollCompletionsTotal")),
-    m_pollCompletionsActiveTime(new stats::Time("SendDispatcher", "PollCompletions")),
-    m_getConnectionTime(new stats::Time("SendDispatcher", "GetConnection")),
-    m_sendDataTotalTime(new stats::Time("SendDispatcher", "SendDataTotal")),
-    m_sendDataProcessingTime(new stats::Time("SendDispatcher", "SendDataProcessing")),
-    m_sendDataPostingTime(new stats::Time("SendDispatcher", "SendDataPosting")),
-    m_eeScheduleTime(new stats::Time("SendDispatcher", "EESchedule")),
-    m_totalTimeline(new stats::TimelineFragmented("SendDispatcher", "Total", m_totalTime, {m_getNextDataToSendTime,
-        m_pollCompletionsTotalTime, m_getConnectionTime, m_sendDataTotalTime, m_eeScheduleTime})),
-    m_pollTimeline(new stats::TimelineFragmented("SendDispatcher", "Poll", m_pollCompletionsTotalTime,
-        {m_pollCompletionsActiveTime})),
-    m_sendTimeline(new stats::TimelineFragmented("SendDispatcher", "Send", m_sendDataTotalTime,
-        {m_sendDataProcessingTime, m_sendDataPostingTime})),
-    m_sentData(new stats::Unit("SendDispatcher", "Data", stats::Unit::e_Base2)),
-    m_sentFC(new stats::Unit("SendDispatcher", "FC", stats::Unit::e_Base10)),
-    m_emptyNextWorkPackage(new stats::Unit("SendDispatcher", "EmptyNextWorkPackage")),
-    m_nonEmptyNextWorkPackage(new stats::Unit("SendDispatcher", "NonEmptyNextWorkPackage")),
-    m_sendDataFullBuffers(new stats::Unit("SendDispatcher", "DataFullBuffers")),
-    m_sendDataNonFullBuffers(new stats::Unit("SendDispatcher", "DataNonFullBuffers")),
-    m_sendBatches(new stats::Unit("SendDispatcher", "Batches")),
-    m_emptyCompletionPolls(new stats::Unit("SendDispatcher", "EmptyCompletionPolls")),
-    m_nonEmptyCompletionPolls(new stats::Unit("SendDispatcher", "NonEmptyCompletionPolls")),
-    m_completionBatches(new stats::Unit("SendDispatcher", "CompletionBatches")),
-    m_nextWorkPackageRatio(new stats::Ratio("SendDispatcher", "NextWorkPackageRatio",
-        m_nonEmptyNextWorkPackage, m_emptyNextWorkPackage)),
-    m_sendDataFullBuffersRatio(new stats::Ratio("SendDispatcher", "DataFullBuffersRatio",
-        m_nonEmptyNextWorkPackage, m_emptyNextWorkPackage)),
-    m_emptyCompletionPollsRatio(new stats::Ratio("SendDispatcher", "EmptyCompletionPollsRatio",
-        m_nonEmptyCompletionPolls, m_emptyCompletionPolls)),
-    m_throughputSentData(new stats::Throughput("SendDispatcher", "ThroughputData", m_sentData,
-        m_totalTime)),
-    m_throughputSentFC(new stats::Throughput("SendDispatcher", "ThroughputFC", m_sentFC,
-        m_totalTime)),
-    m_privateStats(new Stats(this))
+        ConnectionManager* refConectionManager,
+        stats::StatisticsManager* refStatisticsManager,
+        SendHandler* refSendHandler) :
+        ExecutionUnit("MsgRCSend"),
+        m_recvBufferSize(recvBufferSize),
+        m_refConnectionManager(refConectionManager),
+        m_refStatisticsManager(refStatisticsManager),
+        m_refSendHandler(refSendHandler),
+        m_prevWorkPackageResults(static_cast<SendHandler::PrevWorkPackageResults*>(
+                aligned_alloc(static_cast<size_t>(getpagesize()),
+                        sizeof(SendHandler::PrevWorkPackageResults)))),
+        m_completionList(static_cast<SendHandler::CompletedWorkList*>(
+                aligned_alloc(static_cast<size_t>(getpagesize()),
+                        SendHandler::CompletedWorkList::Sizeof(
+                                refConectionManager->GetMaxNumConnections())))),
+        m_completionsPending(0),
+        m_sendQueuePending(),
+        m_firstWc(true),
+        m_ignoreFlushErrOnPendingCompletions(0),
+        m_sgeLists(static_cast<ibv_sge*>(
+                aligned_alloc(static_cast<size_t>(getpagesize()),
+                        sizeof(ibv_sge) * m_refConnectionManager->GetIbSQSize()))),
+        m_sendWrs(static_cast<ibv_send_wr*>(
+                aligned_alloc(static_cast<size_t>(getpagesize()),
+                        sizeof(ibv_send_wr) * m_refConnectionManager->GetIbSQSize()))),
+        m_workComp(static_cast<ibv_wc*>(
+                aligned_alloc(static_cast<size_t>(getpagesize()),
+                        sizeof(ibv_wc) * m_refConnectionManager->GetIbSharedSCQSize()))),
+        m_totalTime(new stats::Time("SendDispatcher", "Total")),
+        m_getNextDataToSendTime(new stats::Time("SendDispatcher", "GetNextDataToSend")),
+        m_pollCompletionsTotalTime(new stats::Time("SendDispatcher", "PollCompletionsTotal")),
+        m_pollCompletionsActiveTime(new stats::Time("SendDispatcher", "PollCompletions")),
+        m_getConnectionTime(new stats::Time("SendDispatcher", "GetConnection")),
+        m_sendDataTotalTime(new stats::Time("SendDispatcher", "SendDataTotal")),
+        m_sendDataProcessingTime(new stats::Time("SendDispatcher", "SendDataProcessing")),
+        m_sendDataPostingTime(new stats::Time("SendDispatcher", "SendDataPosting")),
+        m_eeScheduleTime(new stats::Time("SendDispatcher", "EESchedule")),
+        m_totalTimeline(new stats::TimelineFragmented("SendDispatcher", "Total", m_totalTime, {m_getNextDataToSendTime,
+                m_pollCompletionsTotalTime, m_getConnectionTime, m_sendDataTotalTime, m_eeScheduleTime})),
+        m_pollTimeline(new stats::TimelineFragmented("SendDispatcher", "Poll", m_pollCompletionsTotalTime,
+                {m_pollCompletionsActiveTime})),
+        m_sendTimeline(new stats::TimelineFragmented("SendDispatcher", "Send", m_sendDataTotalTime,
+                {m_sendDataProcessingTime, m_sendDataPostingTime})),
+        m_sentData(new stats::Unit("SendDispatcher", "Data", stats::Unit::e_Base2)),
+        m_sentFC(new stats::Unit("SendDispatcher", "FC", stats::Unit::e_Base10)),
+        m_emptyNextWorkPackage(new stats::Unit("SendDispatcher", "EmptyNextWorkPackage")),
+        m_nonEmptyNextWorkPackage(new stats::Unit("SendDispatcher", "NonEmptyNextWorkPackage")),
+        m_sendDataFullBuffers(new stats::Unit("SendDispatcher", "DataFullBuffers")),
+        m_sendDataNonFullBuffers(new stats::Unit("SendDispatcher", "DataNonFullBuffers")),
+        m_sendBatches(new stats::Unit("SendDispatcher", "Batches")),
+        m_emptyCompletionPolls(new stats::Unit("SendDispatcher", "EmptyCompletionPolls")),
+        m_nonEmptyCompletionPolls(new stats::Unit("SendDispatcher", "NonEmptyCompletionPolls")),
+        m_completionBatches(new stats::Unit("SendDispatcher", "CompletionBatches")),
+        m_nextWorkPackageRatio(new stats::Ratio("SendDispatcher", "NextWorkPackageRatio",
+                m_nonEmptyNextWorkPackage, m_emptyNextWorkPackage)),
+        m_sendDataFullBuffersRatio(new stats::Ratio("SendDispatcher", "DataFullBuffersRatio",
+                m_nonEmptyNextWorkPackage, m_emptyNextWorkPackage)),
+        m_emptyCompletionPollsRatio(new stats::Ratio("SendDispatcher", "EmptyCompletionPollsRatio",
+                m_nonEmptyCompletionPolls, m_emptyCompletionPolls)),
+        m_throughputSentData(new stats::Throughput("SendDispatcher", "ThroughputData", m_sentData,
+                m_totalTime)),
+        m_throughputSentFC(new stats::Throughput("SendDispatcher", "ThroughputFC", m_sentFC,
+                m_totalTime)),
+        m_privateStats(new Stats(this))
 {
     memset(m_prevWorkPackageResults, 0,
-        sizeof(SendHandler::PrevWorkPackageResults));
+            sizeof(SendHandler::PrevWorkPackageResults));
     memset(m_completionList, 0, SendHandler::CompletedWorkList::Sizeof(
-        refConectionManager->GetMaxNumConnections()));
+            refConectionManager->GetMaxNumConnections()));
 
     // set correct initial state
     m_prevWorkPackageResults->Reset();
     m_completionList->Reset();
 
     memset(m_sendQueuePending, 0,
-        sizeof(uint16_t) * con::NODE_ID_MAX_NUM_NODES);
+            sizeof(uint16_t) * con::NODE_ID_MAX_NUM_NODES);
 
     memset(m_sgeLists, 0,
-        sizeof(ibv_sge) * m_refConnectionManager->GetIbSQSize());
+            sizeof(ibv_sge) * m_refConnectionManager->GetIbSQSize());
     memset(m_sendWrs, 0,
-        sizeof(ibv_send_wr) * m_refConnectionManager->GetIbSQSize());
+            sizeof(ibv_send_wr) * m_refConnectionManager->GetIbSQSize());
     memset(m_workComp, 0,
-        sizeof(ibv_wc) * m_refConnectionManager->GetIbSharedSCQSize());
+            sizeof(ibv_wc) * m_refConnectionManager->GetIbSharedSCQSize());
 
     m_refStatisticsManager->Register(m_totalTimeline);
     m_refStatisticsManager->Register(m_pollTimeline);
@@ -233,14 +233,14 @@ bool SendDispatcher::Dispatch()
     IBNET_STATS(m_getNextDataToSendTime->Start());
 
     const SendHandler::NextWorkPackage* workPackage =
-        m_refSendHandler->GetNextDataToSend(m_prevWorkPackageResults,
-            m_completionList);
+            m_refSendHandler->GetNextDataToSend(m_prevWorkPackageResults,
+                    m_completionList);
 
     IBNET_STATS(m_getNextDataToSendTime->Stop());
 
     if (workPackage == nullptr) {
         __ThrowDetailedException<sys::IllegalStateException>(
-            "Work package null");
+                "Work package null");
     }
 
     // reset previous states
@@ -266,7 +266,7 @@ bool SendDispatcher::Dispatch()
             IBNET_STATS(m_getConnectionTime->Start());
 
             connection = (Connection*)
-                m_refConnectionManager->GetConnection(workPackage->m_nodeId);
+                    m_refConnectionManager->GetConnection(workPackage->m_nodeId);
 
             IBNET_STATS(m_getConnectionTime->Stop());
             IBNET_STATS(m_sendDataTotalTime->Start());
@@ -275,7 +275,7 @@ bool SendDispatcher::Dispatch()
             ret = __SendData(connection, workPackage);
 
             IBNET_STATS(m_sentData->Add(
-                m_prevWorkPackageResults->m_numBytesPosted));
+                    m_prevWorkPackageResults->m_numBytesPosted));
             IBNET_STATS(m_sentFC->Add(m_prevWorkPackageResults->m_fcDataPosted));
 
             IBNET_STATS(m_sendDataTotalTime->Stop());
@@ -304,7 +304,7 @@ bool SendDispatcher::Dispatch()
 
         m_refConnectionManager->ReturnConnection(connection);
         m_refConnectionManager->CloseConnection(
-            connection->GetRemoteNodeId(), true);
+                connection->GetRemoteNodeId(), true);
 
         // reset due to failure
         m_prevWorkPackageResults->Reset();
@@ -329,11 +329,11 @@ bool SendDispatcher::__PollCompletions()
 
         // poll in batches
         int ret = ibv_poll_cq(m_refConnectionManager->GetIbSharedSCQ(),
-            m_refConnectionManager->GetIbSharedSCQSize(), m_workComp);
+                m_refConnectionManager->GetIbSharedSCQSize(), m_workComp);
 
         if (ret < 0) {
             __ThrowDetailedException<core::IbException>(ret,
-                "Polling completion queue failed");
+                    "Polling completion queue failed");
         }
 
         if (ret > 0) {
@@ -356,20 +356,20 @@ bool SendDispatcher::__PollCompletions()
 
                         default:
                             __ThrowDetailedException<core::IbException>(
-                                "Found failed work completion (%d), target "
-                                    "node 0x%X, send bytes %d, fc data %d, "
-                                    "status %s", i, ctx->m_targetNodeId,
-                                ctx->m_sendSize, ctx->m_fcData,
-                                core::WORK_COMPLETION_STATUS_CODE[
-                                    m_workComp[i].status]);
+                                    "Found failed work completion (%d), target "
+                                            "node 0x%X, send bytes %d, fc data %d, "
+                                            "status %s", i, ctx->m_targetNodeId,
+                                    ctx->m_sendSize, ctx->m_fcData,
+                                    core::WORK_COMPLETION_STATUS_CODE[
+                                            m_workComp[i].status]);
 
                         case IBV_WC_RETRY_EXC_ERR:
                             if (m_firstWc) {
                                 __ThrowDetailedException<core::IbException>(
-                                    "First work completion of queue failed,"
-                                        " it's very likely your connection "
-                                        "attributes are wrong or the remote"
-                                        " isn't in a state to respond");
+                                        "First work completion of queue failed,"
+                                                " it's very likely your connection "
+                                                "attributes are wrong or the remote"
+                                                " isn't in a state to respond");
                             } else {
                                 throw con::DisconnectedException();
                             }
@@ -385,20 +385,20 @@ bool SendDispatcher::__PollCompletions()
                     m_firstWc = false;
 
                     auto* ctx =
-                        (WorkRequestIdCtx*) &m_workComp[i].wr_id;
+                            (WorkRequestIdCtx*) &m_workComp[i].wr_id;
 
                     if (m_completionList->m_numBytesWritten[
-                        ctx->m_targetNodeId] == 0 && m_completionList->
-                        m_fcDataWritten[ctx->m_targetNodeId] == 0) {
+                            ctx->m_targetNodeId] == 0 && m_completionList->
+                            m_fcDataWritten[ctx->m_targetNodeId] == 0) {
                         m_completionList->m_nodeIds[
-                            m_completionList->m_numNodes++] =
-                            ctx->m_targetNodeId;
+                                m_completionList->m_numNodes++] =
+                                ctx->m_targetNodeId;
                     }
 
                     m_completionList->m_numBytesWritten[ctx->m_targetNodeId] +=
-                        ctx->m_sendSize;
+                            ctx->m_sendSize;
                     m_completionList->m_fcDataWritten[ctx->m_targetNodeId] +=
-                        ctx->m_fcData;
+                            ctx->m_fcData;
                     m_sendQueuePending[ctx->m_targetNodeId]--;
                     m_completionsPending--;
                 }
@@ -418,7 +418,7 @@ bool SendDispatcher::__PollCompletions()
 }
 
 bool SendDispatcher::__SendData(Connection* connection,
-    const SendHandler::NextWorkPackage* workPackage)
+        const SendHandler::NextWorkPackage* workPackage)
 {
     IBNET_STATS(m_sendDataProcessingTime->Start());
 
@@ -439,7 +439,7 @@ bool SendDispatcher::__SendData(Connection* connection,
     // wrap around
     if (posBack > posFront) {
         totalBytesToProcess = refSendBuffer->GetSizeBuffer() - posBack +
-            posFront;
+                posFront;
     } else {
         totalBytesToProcess = posFront - posBack;
     }
@@ -450,7 +450,7 @@ bool SendDispatcher::__SendData(Connection* connection,
 
     // slice area of send buffer into chunks fitting receive buffers
     while (m_sendQueuePending[nodeId] + chunks < queueSize &&
-        (posBack != posFront || fcData)) {
+            (posBack != posFront || fcData)) {
         uint32_t posEnd = posFront;
 
         // ring buffer wrap around detected: first, send everything
@@ -478,7 +478,7 @@ bool SendDispatcher::__SendData(Connection* connection,
 
         // set this before moving posBack pointer
         m_sgeLists[chunks].addr =
-            (uintptr_t) refSendBuffer->GetAddress() + posBack;
+                (uintptr_t) refSendBuffer->GetAddress() + posBack;
 
         // calculate length and move ring buffer pointers
         if (posBack + m_recvBufferSize <= posEnd) {
@@ -502,7 +502,7 @@ bool SendDispatcher::__SendData(Connection* connection,
                 // sanity check
                 if (!fcData) {
                     __ThrowDetailedException<sys::IllegalStateException>(
-                        "Sending zero length data but no flow control");
+                            "Sending zero length data but no flow control");
                 }
             } else {
                 zeroLength = false;
@@ -579,11 +579,11 @@ bool SendDispatcher::__SendData(Connection* connection,
             switch (ret) {
                 case ENOMEM:
                     __ThrowDetailedException<core::IbQueueFullException>(
-                        "Send queue full: %d", m_sendQueuePending[nodeId]);
+                            "Send queue full: %d", m_sendQueuePending[nodeId]);
 
                 default:
                     __ThrowDetailedException<core::IbException>(ret,
-                        "Posting work request to send to queue failed");
+                            "Posting work request to send to queue failed");
             }
         }
 
@@ -600,7 +600,7 @@ bool SendDispatcher::__SendData(Connection* connection,
 
     m_prevWorkPackageResults->m_numBytesPosted = totalBytesProcessed;
     m_prevWorkPackageResults->m_numBytesNotPosted =
-        totalBytesToProcess - totalBytesProcessed;
+            totalBytesToProcess - totalBytesProcessed;
 
     IBNET_STATS(m_sendDataPostingTime->Stop());
 

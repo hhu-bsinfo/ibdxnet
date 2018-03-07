@@ -40,10 +40,10 @@ public:
      * @param name Name of the statistic operation
      */
     explicit Throughput(const std::string& category, const std::string& name) :
-        Operation(category, name),
-        m_refs(false),
-        m_unit(new Unit(category, name, Unit::e_Base2)),
-        m_time(new Time(category, name))
+            Operation(category, name),
+            m_refs(false),
+            m_unit(new Unit(category, name, Unit::e_Base2)),
+            m_time(new Time(category, name))
     {
     }
 
@@ -58,10 +58,10 @@ public:
      * @param refTime Pointer to a time for the throughput (denominator)
      */
     Throughput(const std::string& category, const std::string& name, Unit* refUnit, Time* refTime) :
-        Operation(category, name),
-        m_refs(true),
-        m_unit(refUnit),
-        m_time(refTime)
+            Operation(category, name),
+            m_refs(true),
+            m_unit(refUnit),
+            m_time(refTime)
     {
     }
 
@@ -112,7 +112,7 @@ public:
      * @return Current throughput in the specified metric
      */
     inline double GetThroughput(Unit::Metric metric = Unit::e_MetricDefault,
-        Time::Metric metricTime = Time::e_MetricSec) const
+            Time::Metric metricTime = Time::e_MetricSec) const
     {
         return m_unit->GetTotalValue(metric) / m_time->GetTotalTime(metricTime);
     }
@@ -133,8 +133,8 @@ public:
                 std::ios::fmtflags f(os.flags());
 
                 os << indent << "throughput " << std::setprecision(3) << std::fixed << (double) totalValue /
-                    m_unit->GetMetricFactor(static_cast<Unit::Metric>(i - 1)) / totalTime << " " <<
-                    ms_metricTableNames[i - 1];
+                        m_unit->GetMetricFactor(static_cast<Unit::Metric>(i - 1)) / totalTime << " " <<
+                        ms_metricTableNames[i - 1];
 
                 os.flags(f);
 

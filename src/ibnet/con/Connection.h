@@ -48,10 +48,10 @@ public:
      * @param connectionId Unique id assigned to the connection
      */
     Connection(NodeId ownNodeId, ConnectionId connectionId) :
-        m_ownNodeId(ownNodeId),
-        m_connectionId(connectionId),
-        m_refState(nullptr),
-        m_remoteConnectionHeader()
+            m_ownNodeId(ownNodeId),
+            m_connectionId(connectionId),
+            m_refState(nullptr),
+            m_remoteConnectionHeader()
     {
     }
 
@@ -111,7 +111,7 @@ public:
      *        the data written to the buffer
      */
     virtual void CreateConnectionExchangeData(void* connectionDataBuffer,
-        size_t connectionDataMaxSize, size_t* connectionDataActualSize) = 0;
+            size_t connectionDataMaxSize, size_t* connectionDataActualSize) = 0;
 
     /**
      * Connect to a remote node
@@ -127,7 +127,7 @@ public:
      * @param remoteConnectionDataSize Size of the connection exchange data
      */
     virtual void Connect(const con::RemoteConnectionHeader& remoteConnectionHeader,
-        const void* remoteConnectionData, size_t remoteConnectionDataSize)
+            const void* remoteConnectionData, size_t remoteConnectionDataSize)
     {
         m_remoteConnectionHeader = remoteConnectionHeader;
     }
@@ -149,12 +149,12 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const Connection& o)
     {
         return os <<
-            "Connection: " << std::hex << o.m_ownNodeId << " -> " <<
-            std::hex << o.m_remoteConnectionHeader.m_nodeId <<
-            ", connectionId " << std::dec << o.m_connectionId <<
-            ", m_connectionState: " << *o.m_refState <<
-            std::dec << ", m_remoteConnectionHeader: " <<
-            o.m_remoteConnectionHeader;
+                "Connection: " << std::hex << o.m_ownNodeId << " -> " <<
+                std::hex << o.m_remoteConnectionHeader.m_nodeId <<
+                ", connectionId " << std::dec << o.m_connectionId <<
+                ", m_connectionState: " << *o.m_refState <<
+                std::dec << ", m_remoteConnectionHeader: " <<
+                o.m_remoteConnectionHeader;
     }
 
 protected:

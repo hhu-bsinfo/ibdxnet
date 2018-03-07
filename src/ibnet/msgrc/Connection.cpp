@@ -29,25 +29,25 @@ namespace ibnet {
 namespace msgrc {
 
 Connection::Connection(con::NodeId ownNodeId, con::ConnectionId connectionId,
-    uint32_t sendBufferSize, uint16_t ibSQSize, ibv_srq* refIbSRQ,
-    uint16_t ibSRQSize, ibv_cq* refIbSharedSCQ, uint16_t ibSharedSCQSize,
-    ibv_cq* refIbSharedRCQ, uint16_t ibSharedRCQSize,
-    core::IbProtDom* refProtDom) :
-    con::Connection(ownNodeId, connectionId),
-    m_sendBufferSize(sendBufferSize),
-    m_refProtDom(refProtDom),
-    m_sendBuffer(nullptr),
-    m_ibQP(nullptr),
-    m_ibPhysicalQPId(0xFFFFFFFF),
-    m_ibPsn(sys::Random::Generate32()),
-    m_remoteConnectionData(),
-    m_ibSQSize(ibSQSize),
-    m_refIbSRQ(refIbSRQ),
-    m_ibSRQSize(ibSRQSize),
-    m_refIbSharedSCQ(refIbSharedSCQ),
-    m_ibSharedSCQSize(ibSharedSCQSize),
-    m_refIbSharedRCQ(refIbSharedRCQ),
-    m_ibSharedRCQSize(ibSharedRCQSize)
+        uint32_t sendBufferSize, uint16_t ibSQSize, ibv_srq* refIbSRQ,
+        uint16_t ibSRQSize, ibv_cq* refIbSharedSCQ, uint16_t ibSharedSCQSize,
+        ibv_cq* refIbSharedRCQ, uint16_t ibSharedRCQSize,
+        core::IbProtDom* refProtDom) :
+        con::Connection(ownNodeId, connectionId),
+        m_sendBufferSize(sendBufferSize),
+        m_refProtDom(refProtDom),
+        m_sendBuffer(nullptr),
+        m_ibQP(nullptr),
+        m_ibPhysicalQPId(0xFFFFFFFF),
+        m_ibPsn(sys::Random::Generate32()),
+        m_remoteConnectionData(),
+        m_ibSQSize(ibSQSize),
+        m_refIbSRQ(refIbSRQ),
+        m_ibSRQSize(ibSRQSize),
+        m_refIbSharedSCQ(refIbSharedSCQ),
+        m_ibSharedSCQSize(ibSharedSCQSize),
+        m_refIbSharedRCQ(refIbSharedRCQ),
+        m_ibSharedRCQSize(ibSharedRCQSize)
 {
     IBNET_LOG_TRACE_FUNC;
 
@@ -63,11 +63,11 @@ Connection::Connection(con::NodeId ownNodeId, con::ConnectionId connectionId,
     }
 
     IBNET_LOG_DEBUG("Allocate send buffer, size %d for connection id 0x%X",
-        m_sendBufferSize, connectionId);
+            m_sendBufferSize, connectionId);
 
     m_sendBuffer = new core::IbMemReg(
-        aligned_alloc(static_cast<size_t>(getpagesize()), m_sendBufferSize),
-        m_sendBufferSize, true);
+            aligned_alloc(static_cast<size_t>(getpagesize()), m_sendBufferSize),
+            m_sendBufferSize, true);
 
     m_refProtDom->Register(m_sendBuffer);
 
@@ -87,7 +87,7 @@ Connection::~Connection()
 }
 
 void Connection::CreateConnectionExchangeData(void* connectionDataBuffer,
-    size_t connectionDataMaxSize, size_t* connectionDataActualSize)
+        size_t connectionDataMaxSize, size_t* connectionDataActualSize)
 {
     if (connectionDataMaxSize < sizeof(RemoteConnectionData)) {
         throw sys::IllegalStateException("Buffer too small");
@@ -102,8 +102,8 @@ void Connection::CreateConnectionExchangeData(void* connectionDataBuffer,
 }
 
 void Connection::Connect(
-    const con::RemoteConnectionHeader& remoteConnectionHeader,
-    const void* remoteConnectionData, size_t remoteConnectionDataSize)
+        const con::RemoteConnectionHeader& remoteConnectionHeader,
+        const void* remoteConnectionData, size_t remoteConnectionDataSize)
 {
     if (remoteConnectionDataSize < sizeof(RemoteConnectionData)) {
         throw sys::IllegalStateException("Buffer too small");
@@ -152,7 +152,7 @@ void Connection::__CreateQP()
 
     if (m_ibQP == nullptr) {
         throw core::IbException("Creating queue pair failed: %s",
-            strerror(errno));
+                strerror(errno));
     }
 
     m_ibPhysicalQPId = m_ibQP->qp_num;
@@ -176,11 +176,11 @@ void Connection::__SetInitStateQP()
     // modify queue pair attributes
     IBNET_LOG_TRACE("ibv_modify_qp");
     result = ibv_modify_qp(m_ibQP, &qp_attr,
-        IBV_QP_STATE | IBV_QP_PKEY_INDEX | IBV_QP_PORT | IBV_QP_ACCESS_FLAGS);
+            IBV_QP_STATE | IBV_QP_PKEY_INDEX | IBV_QP_PORT | IBV_QP_ACCESS_FLAGS);
 
     if (result != 0) {
         throw core::IbException("Setting queue pair state to init failed: %s",
-            strerror(result));
+                strerror(result));
     }
 }
 
@@ -211,8 +211,8 @@ void Connection::__SetReadyToSend()
 
     IBNET_LOG_TRACE("ibv_modify_qp");
     result = ibv_modify_qp(m_ibQP, &attr,
-        IBV_QP_STATE | IBV_QP_TIMEOUT | IBV_QP_RETRY_CNT | IBV_QP_RNR_RETRY |
-            IBV_QP_SQ_PSN | IBV_QP_MAX_QP_RD_ATOMIC);
+            IBV_QP_STATE | IBV_QP_TIMEOUT | IBV_QP_RETRY_CNT | IBV_QP_RNR_RETRY |
+                    IBV_QP_SQ_PSN | IBV_QP_MAX_QP_RD_ATOMIC);
 
     if (result != 0) {
         throw core::IbException("Setting queue pair to ready to send failed");
@@ -253,12 +253,12 @@ void Connection::__SetReadyToRecv()
     // do the state change on the qp
     IBNET_LOG_TRACE("ibv_modify_qp");
     result = ibv_modify_qp(m_ibQP, &attr,
-        IBV_QP_STATE | IBV_QP_AV | IBV_QP_PATH_MTU | IBV_QP_DEST_QPN |
-            IBV_QP_RQ_PSN | IBV_QP_MAX_DEST_RD_ATOMIC | IBV_QP_MIN_RNR_TIMER);
+            IBV_QP_STATE | IBV_QP_AV | IBV_QP_PATH_MTU | IBV_QP_DEST_QPN |
+                    IBV_QP_RQ_PSN | IBV_QP_MAX_DEST_RD_ATOMIC | IBV_QP_MIN_RNR_TIMER);
 
     if (result != 0) {
         throw core::IbException(
-            "Setting queue pair to ready to receive failed");
+                "Setting queue pair to ready to receive failed");
     }
 }
 

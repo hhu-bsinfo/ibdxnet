@@ -22,10 +22,10 @@ namespace ibnet {
 namespace con {
 
 NodeConfArgListReader::NodeConfArgListReader(uint32_t numItems,
-    char** args) :
-    NodeConfReader(),
-    m_numItems(numItems),
-    m_args(args)
+        char** args) :
+        NodeConfReader(),
+        m_numItems(numItems),
+        m_args(args)
 {
 
 }

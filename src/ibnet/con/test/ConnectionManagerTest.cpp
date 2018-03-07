@@ -34,14 +34,15 @@ class ClientThread : public ibnet::sys::ThreadLoop
 {
 public:
     ClientThread(uint32_t id, ibnet::con::NodeId ownNodeID,
-        const std::vector<std::string>& hostnamesSorted,
-        ibnet::con::ConnectionManager* refConMan) :
-        ThreadLoop("ClientThread-" + std::to_string(id)),
-        m_id(id),
-        m_ownNodeId(ownNodeID),
-        m_hostnamesSorted(hostnamesSorted),
-        m_refConnectionManager(refConMan)
-    {};
+            const std::vector<std::string>& hostnamesSorted,
+            ibnet::con::ConnectionManager* refConMan) :
+            ThreadLoop("ClientThread-" + std::to_string(id)),
+            m_id(id),
+            m_ownNodeId(ownNodeID),
+            m_hostnamesSorted(hostnamesSorted),
+            m_refConnectionManager(refConMan)
+    {
+    };
 
     ~ClientThread() override = default;
 
@@ -50,7 +51,7 @@ protected:
     {
         // -1: don't count own node
         uint16_t notConnected =
-            static_cast<uint16_t>(m_hostnamesSorted.size() - 1);
+                static_cast<uint16_t>(m_hostnamesSorted.size() - 1);
         uint16_t notConnectedPrev = notConnected;
 
         for (uint16_t i = 0; i < m_hostnamesSorted.size(); i++) {
@@ -62,7 +63,7 @@ protected:
 
             try {
                 ibnet::con::Connection* connection =
-                    m_refConnectionManager->GetConnection(remoteNodeId);
+                        m_refConnectionManager->GetConnection(remoteNodeId);
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
@@ -79,7 +80,7 @@ protected:
                 printf("***** ALL CONNECTED *****\n");
             } else {
                 printf("Waiting for %d more node(s) to connect...\n",
-                    notConnected);
+                        notConnected);
             }
         }
 
@@ -96,7 +97,7 @@ private:
 };
 
 class Listener : public ibnet::con::DiscoveryListener,
-    public ibnet::con::ConnectionListener
+        public ibnet::con::ConnectionListener
 {
 public:
     Listener() = default;
@@ -155,7 +156,7 @@ int main(int argc, char** argv)
 
     std::vector<std::string> hostnamesSorted;
     ibnet::con::NodeConfArgListReader nodeConfArgListReader(
-        (uint32_t) (argc - 2), &argv[2]);
+            (uint32_t) (argc - 2), &argv[2]);
     ibnet::con::NodeConf nodeConf = nodeConfArgListReader.Read();
 
     for (int i = 2; i < argc; i++) {
@@ -181,7 +182,7 @@ int main(int argc, char** argv)
 
     if (ownNodeId == ibnet::con::NODE_ID_INVALID) {
         printf("ERROR Could not assign node id to current host %s , not found "
-            "in hostname nodes list\n", ownHostname.c_str());
+                "in hostname nodes list\n", ownHostname.c_str());
         return -1;
     }
 
@@ -197,16 +198,16 @@ int main(int argc, char** argv)
     auto* listener = new Listener();
 
     auto* exchangeManager = new ibnet::con::ExchangeManager(
-        ownNodeId, 5730);
+            ownNodeId, 5730);
     auto* jobManager = new ibnet::con::JobManager();
 
     auto* discoveryManager = new ibnet::con::DiscoveryManager(
-        ownNodeId, nodeConf, exchangeManager, jobManager);
+            ownNodeId, nodeConf, exchangeManager, jobManager);
     discoveryManager->SetListener(listener);
 
     auto* connectionManager = new ibnet::con::DummyConnectionManager(ownNodeId,
-        nodeConf, 5000, 100, device, protDom, exchangeManager, jobManager,
-        discoveryManager);
+            nodeConf, 5000, 100, device, protDom, exchangeManager, jobManager,
+            discoveryManager);
     connectionManager->SetListener(listener);
 
     // run client threads creating connections
@@ -215,7 +216,7 @@ int main(int argc, char** argv)
 
     for (uint32_t i = 0; i < clientThreads; i++) {
         auto thread = new ClientThread(i, ownNodeId,
-            hostnamesSorted, connectionManager);
+                hostnamesSorted, connectionManager);
 
         thread->Start();
         threads.push_back(std::move(thread));

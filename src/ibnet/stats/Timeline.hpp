@@ -43,9 +43,9 @@ public:
      * @param sectionNames Names for the sections (this also determines the total section count)
      */
     Timeline(const std::string& category, const std::string& name, const std::vector<std::string> sectionNames) :
-        Operation(category, name),
-        m_times(),
-        m_pos(0)
+            Operation(category, name),
+            m_times(),
+            m_pos(0)
     {
         for (auto& it : sectionNames) {
             m_times.push_back(Time(category, it));

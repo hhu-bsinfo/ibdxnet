@@ -40,8 +40,8 @@ public:
      * @param name Name of the thread (for debugging)
      */
     explicit ThreadLoop(const std::string& name = "") :
-        Thread(name),
-        m_run(true)
+            Thread(name),
+            m_run(true)
     {
     }
 

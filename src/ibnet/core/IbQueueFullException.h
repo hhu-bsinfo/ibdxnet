@@ -42,7 +42,7 @@ public:
      */
     template <typename... Args>
     explicit IbQueueFullException(const std::string& format, Args... args) :
-        IbException(format, args...)
+            IbException(format, args...)
     {
     }
 

@@ -24,7 +24,7 @@ namespace ibnet {
 namespace con {
 
 NodeConfStringReader::NodeConfStringReader(const std::string& str) :
-    m_str(str)
+        m_str(str)
 {
 
 }

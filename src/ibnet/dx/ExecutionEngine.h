@@ -49,7 +49,7 @@ public:
      * @param refStatisticsManager Pointer to statistics manager (caller has to manage)
      */
     explicit ExecutionEngine(uint16_t threadCount,
-        stats::StatisticsManager* refStatisticsManager);
+            stats::StatisticsManager* refStatisticsManager);
 
     /**
      * Destructor
@@ -91,7 +91,7 @@ private:
     {
     public:
         explicit Worker(uint16_t id,
-            stats::StatisticsManager* refStatisticsManager);
+                stats::StatisticsManager* refStatisticsManager);
 
         ~Worker() override;
 

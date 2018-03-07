@@ -56,13 +56,13 @@ public:
      * @param ibSharedRCQSize Size of the shared receive completion queue
      */
     ConnectionManager(con::NodeId ownNodeId, const con::NodeConf& nodeConf,
-        uint32_t connectionCreationTimeoutMs, uint32_t maxNumConnections,
-        core::IbDevice* refDevice, core::IbProtDom* refProtDom,
-        con::ExchangeManager* refExchangeManager,
-        con::JobManager* refJobManager,
-        con::DiscoveryManager* refDiscoveryManager, uint32_t sendBufferSize,
-        uint16_t ibSQSize, uint16_t ibSRQSize, uint16_t ibSharedSCQSize,
-        uint16_t ibSharedRCQSize);
+            uint32_t connectionCreationTimeoutMs, uint32_t maxNumConnections,
+            core::IbDevice* refDevice, core::IbProtDom* refProtDom,
+            con::ExchangeManager* refExchangeManager,
+            con::JobManager* refJobManager,
+            con::DiscoveryManager* refDiscoveryManager, uint32_t sendBufferSize,
+            uint16_t ibSQSize, uint16_t ibSRQSize, uint16_t ibSharedSCQSize,
+            uint16_t ibSharedRCQSize);
 
     /**
      * Destructor

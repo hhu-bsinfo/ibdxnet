@@ -29,12 +29,12 @@ void Logger::Setup()
     colorSink->set_color(spdlog::level::trace, colorSink->white);
     colorSink->set_color(spdlog::level::debug, colorSink->green);
     colorSink->set_color(spdlog::level::info,
-        colorSink->bold + colorSink->blue);
+            colorSink->bold + colorSink->blue);
     colorSink->set_color(spdlog::level::warn,
-        colorSink->bold + colorSink->yellow);
+            colorSink->bold + colorSink->yellow);
     colorSink->set_color(spdlog::level::err, colorSink->bold + colorSink->red);
     colorSink->set_color(spdlog::level::critical,
-        colorSink->bold + colorSink->on_red);
+            colorSink->bold + colorSink->on_red);
     colorSink->set_color(spdlog::level::off, colorSink->reset);
 
 //    sinks.push_back(std::make_shared<spdlog::sinks::simple_file_sink_mt>(

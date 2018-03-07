@@ -103,8 +103,8 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const IbProtDom& o)
     {
         return os << o.m_name << " (" << std::dec <<
-            o.GetTotalMemoryRegionsRegistered() << " regions with a total of "
-            << o.GetTotalMemoryRegistered() << " bytes)";
+                o.GetTotalMemoryRegionsRegistered() << " regions with a total of "
+                << o.GetTotalMemoryRegistered() << " bytes)";
     }
 
 private:

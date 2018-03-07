@@ -47,7 +47,7 @@ public:
      */
     template <typename... Args>
     explicit Exception(const std::string& format, Args... args) :
-        std::runtime_error(fmt::sprintf(format, args...))
+            std::runtime_error(fmt::sprintf(format, args...))
     {
         m_stackTrace.load_here(32);
     }
@@ -58,7 +58,7 @@ public:
      * @param msg Exception message (c-string)
      */
     explicit Exception(const char* msg) :
-        std::runtime_error(msg)
+            std::runtime_error(msg)
     {
         m_stackTrace.load_here(32);
     }

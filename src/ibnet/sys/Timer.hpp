@@ -67,9 +67,9 @@ public:
      * @param start True to start the timer immediately after construction
      */
     explicit Timer(bool start = false) :
-        m_running(false),
-        m_start(),
-        m_accuNs(0)
+            m_running(false),
+            m_start(),
+            m_accuNs(0)
     {
 #ifdef IBNET_SYS_TIMER_MODE_RDTSC
         m_start = 0;
@@ -94,7 +94,7 @@ public:
         if (ms_overhead == 0 || ms_cyclesPerSec == 0.0) {
             if (!pttscp_support()) {
                 IBNET_LOG_ERROR("RDTSCP instruction not supported. Recompile to "
-                    "use either RTSCP or normal timers instead");
+                        "use either RTSCP or normal timers instead");
                 abort();
             }
 
@@ -102,7 +102,7 @@ public:
             ms_cyclesPerSec = ptutil_cycles_per_sec(pttscp_start, pttscp_end_strong, ms_overhead);
 
             IBNET_LOG_INFO("perf-timer RDTSCP initialized: overhead %d cycles, "
-                "cycles per sec %f", ms_overhead, ms_cyclesPerSec);
+                    "cycles per sec %f", ms_overhead, ms_cyclesPerSec);
         }
 #endif
 
@@ -171,7 +171,7 @@ public:
             uint64_t end = pttscp_end_weak();
             uint64_t delta = end - m_start;
             m_accuNs += ptutil_cycles_to_ns(delta < ms_overhead ? 0 : delta - ms_overhead,
-                ms_cyclesPerSec);
+                    ms_cyclesPerSec);
 #else
             std::chrono::high_resolution_clock::time_point stop =
                 std::chrono::high_resolution_clock::now();

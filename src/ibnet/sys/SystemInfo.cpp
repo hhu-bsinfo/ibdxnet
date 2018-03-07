@@ -30,31 +30,31 @@ namespace sys {
 void SystemInfo::LogHardwareReport()
 {
     IBNET_LOG_INFO("Hardware report of current instance\n"
-        "=============================== CPU ===============================\n"
-        "%s"
-        "============================= Memory =============================\n"
-        "%s"
-        "===================================================================",
-        __ExecuteCmd("cat /proc/cpuinfo"),
-        __ExecuteCmd("cat /proc/meminfo"));
+            "=============================== CPU ===============================\n"
+            "%s"
+            "============================= Memory =============================\n"
+            "%s"
+            "===================================================================",
+            __ExecuteCmd("cat /proc/cpuinfo"),
+            __ExecuteCmd("cat /proc/meminfo"));
 }
 
 void SystemInfo::LogOSReport()
 {
     IBNET_LOG_INFO("OS report of current instance\n"
-        "OS: %s"
-        "Host: %s",
-        __ExecuteCmd("uname -a"),
-        Network::GetHostname());
+            "OS: %s"
+            "Host: %s",
+            __ExecuteCmd("uname -a"),
+            Network::GetHostname());
 }
 
 void SystemInfo::LogApplicationReport()
 {
     IBNET_LOG_INFO("Application report of current process\n"
-        "Version: %s\n"
-        "Build date: %s\n"
-        "Git Rev: %s",
-        ibnet::VERSION, ibnet::BUILD_DATE, ibnet::GIT_REV);
+            "Version: %s\n"
+            "Build date: %s\n"
+            "Git Rev: %s",
+            ibnet::VERSION, ibnet::BUILD_DATE, ibnet::GIT_REV);
 }
 
 std::string SystemInfo::__ExecuteCmd(const std::string& cmd)
@@ -63,7 +63,7 @@ std::string SystemInfo::__ExecuteCmd(const std::string& cmd)
 
     if (pipe == nullptr) {
         throw sys::SystemException("Can't open pipe to %s: %s",
-            cmd.c_str(), strerror(errno));
+                cmd.c_str(), strerror(errno));
     }
 
     char buffer[1024 * 4];

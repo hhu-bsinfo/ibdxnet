@@ -22,11 +22,11 @@ namespace ibnet {
 namespace stats {
 
 const double Time::ms_metricTable[e_MetricSec + 1] = {
-    1.0,
-    1.0,
-    1000.0,
-    1000.0 * 1000.0,
-    1000.0 * 1000.0 * 1000.0
+        1.0,
+        1.0,
+        1000.0,
+        1000.0 * 1000.0,
+        1000.0 * 1000.0 * 1000.0
 };
 
 }

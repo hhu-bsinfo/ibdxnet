@@ -24,12 +24,12 @@ namespace ibnet {
 namespace con {
 
 JobManager::JobManager() :
-    ThreadLoop("JobManager"),
-    m_queue(1024),
-    m_idleJob(nullptr),
-    m_jobIdTypeCounter(0),
-    m_dispatcherLock(),
-    m_dispatcher()
+        ThreadLoop("JobManager"),
+        m_queue(1024),
+        m_idleJob(nullptr),
+        m_jobIdTypeCounter(0),
+        m_dispatcherLock(),
+        m_dispatcher()
 {
     Start();
 }

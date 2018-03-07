@@ -70,13 +70,13 @@ public:
      * @param base Base to use for converting to different metrics
      */
     explicit Unit(const std::string& category, const std::string& name, Base base = e_Base10) :
-        Operation(category, name),
-        m_base(base),
-        m_metricTable(),
-        m_counter(0),
-        m_total(0),
-        m_min(0xFFFFFFFFFFFFFFFF),
-        m_max(0)
+            Operation(category, name),
+            m_base(base),
+            m_metricTable(),
+            m_counter(0),
+            m_total(0),
+            m_min(0xFFFFFFFFFFFFFFFF),
+            m_max(0)
     {
         for (uint8_t i = e_MetricDefault; i < e_MetricMax; i++) {
             m_metricTable[i] = 1;
@@ -245,14 +245,14 @@ private:
 
 private:
     inline void __FormatUnit(std::ostream& os, const std::string& name,
-        uint64_t units) const
+            uint64_t units) const
     {
         for (uint8_t i = 1; i < e_MetricCount; i++) {
             if (units < m_metricTable[i]) {
                 std::ios::fmtflags f(os.flags());
 
                 os << ";" << name << " " << std::setprecision(3) << std::fixed <<
-                    (double) units / m_metricTable[i - 1] << " " << ms_metricTableNames[i - 1];
+                        (double) units / m_metricTable[i - 1] << " " << ms_metricTableNames[i - 1];
 
                 os.flags(f);
 

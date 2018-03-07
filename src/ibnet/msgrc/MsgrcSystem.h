@@ -52,7 +52,7 @@ namespace msgrc {
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 31.01.2018
  */
 class MsgrcSystem : public con::DiscoveryListener,
-    public con::ConnectionListener, public RecvHandler, public SendHandler
+        public con::ConnectionListener, public RecvHandler, public SendHandler
 {
 public:
     /**
@@ -74,33 +74,33 @@ public:
         uint16_t m_sharedRCQSize = m_SRQSize;
         uint32_t m_sendBufferSize = 1024 * 1024 * 4;
         uint64_t m_recvBufferPoolSizeBytes =
-            static_cast<uint64_t>(1024 * 1024 * 1024 * 2ll);
+                static_cast<uint64_t>(1024 * 1024 * 1024 * 2ll);
         uint32_t m_recvBufferSize = 1024 * 16;
 
         friend std::ostream& operator<<(std::ostream& os,
-            const Configuration& o)
+                const Configuration& o)
         {
             return os << "MsgrcSystem Configuration:" << std::endl <<
-                "m_pinSendRecvThreads: " << o.m_pinSendRecvThreads <<
-                std::endl <<
-                "m_enableSignalHandler: " << o.m_enableSignalHandler <<
-                std::endl <<
-                "m_statisticsThreadPrintIntervalMs: " <<
-                o.m_statisticsThreadPrintIntervalMs << std::endl <<
-                "m_ownNodeId: " << std::hex << o.m_ownNodeId << std::endl <<
-                "m_portDiscMan: " << std::dec << o.m_portDiscMan << std::endl <<
-                "m_nodeConfig: " << o.m_nodeConfig << std::endl <<
-                "m_connectionCreationTimeoutMs: " <<
-                o.m_connectionCreationTimeoutMs << std::endl <<
-                "m_maxNumConnections: " << o.m_maxNumConnections << std::endl <<
-                "m_SQSize: " << o.m_SQSize << std::endl <<
-                "m_SRQSize: " << o.m_SRQSize << std::endl <<
-                "m_sharedSCQSize: " << o.m_sharedSCQSize << std::endl <<
-                "m_sharedRCQSize: " << o.m_sharedRCQSize << std::endl <<
-                "m_sendBufferSize: " << o.m_sendBufferSize << std::endl <<
-                "m_recvBufferPoolSizeBytes: " << o.m_recvBufferPoolSizeBytes <<
-                std::endl <<
-                "m_recvBufferSize: " << o.m_recvBufferSize << std::endl;
+                    "m_pinSendRecvThreads: " << o.m_pinSendRecvThreads <<
+                    std::endl <<
+                    "m_enableSignalHandler: " << o.m_enableSignalHandler <<
+                    std::endl <<
+                    "m_statisticsThreadPrintIntervalMs: " <<
+                    o.m_statisticsThreadPrintIntervalMs << std::endl <<
+                    "m_ownNodeId: " << std::hex << o.m_ownNodeId << std::endl <<
+                    "m_portDiscMan: " << std::dec << o.m_portDiscMan << std::endl <<
+                    "m_nodeConfig: " << o.m_nodeConfig << std::endl <<
+                    "m_connectionCreationTimeoutMs: " <<
+                    o.m_connectionCreationTimeoutMs << std::endl <<
+                    "m_maxNumConnections: " << o.m_maxNumConnections << std::endl <<
+                    "m_SQSize: " << o.m_SQSize << std::endl <<
+                    "m_SRQSize: " << o.m_SRQSize << std::endl <<
+                    "m_sharedSCQSize: " << o.m_sharedSCQSize << std::endl <<
+                    "m_sharedRCQSize: " << o.m_sharedRCQSize << std::endl <<
+                    "m_sendBufferSize: " << o.m_sendBufferSize << std::endl <<
+                    "m_recvBufferPoolSizeBytes: " << o.m_recvBufferPoolSizeBytes <<
+                    std::endl <<
+                    "m_recvBufferSize: " << o.m_recvBufferSize << std::endl;
         }
     };
 

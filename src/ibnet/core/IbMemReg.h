@@ -56,10 +56,10 @@ public:
      *          caller.
      */
     IbMemReg(void* addr, uint64_t size, bool freeOnCleanup = true) :
-        m_addr(addr),
-        m_size(size),
-        m_freeOnCleanup(freeOnCleanup),
-        m_ibMemReg(nullptr)
+            m_addr(addr),
+            m_size(size),
+            m_freeOnCleanup(freeOnCleanup),
+            m_ibMemReg(nullptr)
     {
         IBNET_ASSERT_PTR(addr);
     }
@@ -73,17 +73,17 @@ public:
      *        specified by addr and size (e.g. slice one huge block into multiple chunks)
      */
     IbMemReg(void* addr, uint64_t size, IbMemReg* refParentMemory) :
-        m_addr(addr),
-        m_size(size),
-        m_freeOnCleanup(false),
-        m_ibMemReg(refParentMemory->m_ibMemReg)
+            m_addr(addr),
+            m_size(size),
+            m_freeOnCleanup(false),
+            m_ibMemReg(refParentMemory->m_ibMemReg)
     {
         IBNET_ASSERT_PTR(addr);
 
         if (size >= 0x7FFFFFFF) {
             throw IbException("Invalid size (%d) for memory region with parent "
-                    "region: %p (%d)", size, refParentMemory->GetAddress(),
-                refParentMemory->GetSize());
+                            "region: %p (%d)", size, refParentMemory->GetAddress(),
+                    refParentMemory->GetSize());
         }
     }
 
@@ -178,10 +178,10 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const IbMemReg& o)
     {
         return os << "0x" << std::hex << o.m_ibMemReg->lkey
-            << ", 0x" << std::hex << o.m_ibMemReg->rkey
-            << ", 0x" << std::hex << (uintptr_t) o.m_addr
-            << ", " << std::dec << o.m_size
-            << ", " << o.m_freeOnCleanup;
+                << ", 0x" << std::hex << o.m_ibMemReg->rkey
+                << ", 0x" << std::hex << (uintptr_t) o.m_addr
+                << ", " << std::dec << o.m_size
+                << ", " << o.m_freeOnCleanup;
     }
 
 private:

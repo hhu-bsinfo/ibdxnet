@@ -45,7 +45,7 @@ public:
         const JobType m_type;
 
         explicit Job(JobType type) :
-            m_type(type)
+                m_type(type)
         {
         }
 

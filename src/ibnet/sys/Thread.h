@@ -43,9 +43,9 @@ public:
      * @param name Name of the thread (for debugging)
      */
     explicit Thread(const std::string& name = "") :
-        m_name(name),
-        m_thread(nullptr),
-        m_pinCpuid(0xFFFF)
+            m_name(name),
+            m_thread(nullptr),
+            m_pinCpuid(0xFFFF)
     {
     }
 
@@ -136,9 +136,9 @@ private:
 
             pthread_t current_thread = pthread_self();
             if (pthread_setaffinity_np(current_thread, sizeof(cpu_set_t),
-                &cpuset)) {
+                    &cpuset)) {
                 sys::SystemException("Setting cpu affinity for %s to %d failed",
-                    m_name, m_pinCpuid);
+                        m_name, m_pinCpuid);
             }
         }
 

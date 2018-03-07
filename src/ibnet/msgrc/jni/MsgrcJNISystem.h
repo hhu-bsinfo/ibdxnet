@@ -44,7 +44,7 @@ public:
      * @param callbackHandler Pointer to the jobject callback handler
      */
     MsgrcJNISystem(MsgrcSystem::Configuration* configuration, JNIEnv* env,
-        jobject callbackHandler);
+            jobject callbackHandler);
 
     /**
      * Destructor
@@ -111,8 +111,8 @@ public:
      * Overriding virtual function
      */
     const SendHandler::NextWorkPackage* GetNextDataToSend(
-        const SendHandler::PrevWorkPackageResults* prevResults,
-        const SendHandler::CompletedWorkList* completionList) override;
+            const SendHandler::PrevWorkPackageResults* prevResults,
+            const SendHandler::CompletedWorkList* completionList) override;
 
 private:
     MsgrcJNIBindingCallbackHandler m_callbackHandler;

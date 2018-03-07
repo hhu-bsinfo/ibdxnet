@@ -26,19 +26,19 @@ namespace ibnet {
 namespace msgrc {
 
 MsgrcSystem::MsgrcSystem() :
-    m_configuration(nullptr),
-    m_signalHandler(nullptr),
-    m_device(nullptr),
-    m_protDom(nullptr),
-    m_discoveryManager(nullptr),
-    m_exchangeManager(nullptr),
-    m_jobManager(nullptr),
-    m_recvBufferPool(nullptr),
-    m_statisticsManager(nullptr),
-    m_connectionManager(nullptr),
-    m_recvDispatcher(nullptr),
-    m_sendDispatcher(nullptr),
-    m_executionEngine(nullptr)
+        m_configuration(nullptr),
+        m_signalHandler(nullptr),
+        m_device(nullptr),
+        m_protDom(nullptr),
+        m_discoveryManager(nullptr),
+        m_exchangeManager(nullptr),
+        m_jobManager(nullptr),
+        m_recvBufferPool(nullptr),
+        m_statisticsManager(nullptr),
+        m_connectionManager(nullptr),
+        m_recvDispatcher(nullptr),
+        m_sendDispatcher(nullptr),
+        m_executionEngine(nullptr)
 {
 
 }
@@ -76,38 +76,38 @@ void MsgrcSystem::Init()
     IBNET_LOG_DEBUG("Protection domain:\n%s", *m_protDom);
 
     m_exchangeManager = new con::ExchangeManager(
-        m_configuration->m_ownNodeId, m_configuration->m_portDiscMan);
+            m_configuration->m_ownNodeId, m_configuration->m_portDiscMan);
     m_jobManager = new con::JobManager();
 
     m_discoveryManager = new con::DiscoveryManager(
-        m_configuration->m_ownNodeId, m_configuration->m_nodeConfig,
-        m_exchangeManager, m_jobManager);
+            m_configuration->m_ownNodeId, m_configuration->m_nodeConfig,
+            m_exchangeManager, m_jobManager);
     m_discoveryManager->SetListener(this);
 
     m_recvBufferPool = new dx::RecvBufferPool(
-        m_configuration->m_recvBufferPoolSizeBytes,
-        m_configuration->m_recvBufferSize, m_protDom);
+            m_configuration->m_recvBufferPoolSizeBytes,
+            m_configuration->m_recvBufferSize, m_protDom);
 
     m_statisticsManager = new stats::StatisticsManager(
-        m_configuration->m_statisticsThreadPrintIntervalMs);
+            m_configuration->m_statisticsThreadPrintIntervalMs);
 
     m_connectionManager = new ConnectionManager(
-        m_configuration->m_ownNodeId, m_configuration->m_nodeConfig,
-        m_configuration->m_connectionCreationTimeoutMs,
-        m_configuration->m_maxNumConnections, m_device, m_protDom,
-        m_exchangeManager, m_jobManager, m_discoveryManager,
-        m_configuration->m_sendBufferSize, m_configuration->m_SQSize,
-        m_configuration->m_SRQSize, m_configuration->m_sharedSCQSize,
-        m_configuration->m_sharedRCQSize);
+            m_configuration->m_ownNodeId, m_configuration->m_nodeConfig,
+            m_configuration->m_connectionCreationTimeoutMs,
+            m_configuration->m_maxNumConnections, m_device, m_protDom,
+            m_exchangeManager, m_jobManager, m_discoveryManager,
+            m_configuration->m_sendBufferSize, m_configuration->m_SQSize,
+            m_configuration->m_SRQSize, m_configuration->m_sharedSCQSize,
+            m_configuration->m_sharedRCQSize);
 
     m_connectionManager->SetListener(this);
 
     m_recvDispatcher = new RecvDispatcher(m_connectionManager,
-        m_recvBufferPool, m_statisticsManager, this);
+            m_recvBufferPool, m_statisticsManager, this);
 
     m_sendDispatcher = new SendDispatcher(
-        m_configuration->m_recvBufferSize, m_connectionManager,
-        m_statisticsManager, this);
+            m_configuration->m_recvBufferSize, m_connectionManager,
+            m_statisticsManager, this);
 
     m_executionEngine = new dx::ExecutionEngine(2, m_statisticsManager);
 

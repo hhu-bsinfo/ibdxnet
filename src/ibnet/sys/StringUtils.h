@@ -42,7 +42,7 @@ public:
      * @return Vector with tokens
      */
     static std::vector<std::string> Split(const std::string& text,
-        const std::string& delimiter, bool ignoreEmptyTokens = true);
+            const std::string& delimiter, bool ignoreEmptyTokens = true);
 
     /**
      * Convert a string to a hex string representation, e.g.
@@ -54,7 +54,7 @@ public:
      * @return Hex string representation of value
      */
     static std::string ToHexString(uint64_t value, bool fillZeros = true,
-        bool hexNumberIdent = true);
+            bool hexNumberIdent = true);
 
     /**
      * Convert a string to a hex string representation, e.g.
@@ -66,7 +66,7 @@ public:
      * @return Hex string representation of value
      */
     static std::string ToHexString(uint32_t value, bool fillZeros = true,
-        bool hexNumberIdent = true);
+            bool hexNumberIdent = true);
 
     /**
      * Convert a string to a hex string representation, e.g.
@@ -78,7 +78,7 @@ public:
      * @return Hex string representation of value
      */
     static std::string ToHexString(uint16_t value, bool fillZeros = true,
-        bool hexNumberIdent = true);
+            bool hexNumberIdent = true);
 
     /**
      * Convert a string to a hex string representation, e.g.
@@ -90,7 +90,7 @@ public:
      * @return Hex string representation of value
      */
     static std::string ToHexString(uint8_t value, bool fillZeros = true,
-        bool hexNumberIdent = true);
+            bool hexNumberIdent = true);
 
 private:
     StringUtils() = default;
@@ -98,7 +98,7 @@ private:
     ~StringUtils() = default;
 
     static std::string __ToHexString(uint64_t value, uint32_t fillZerosCount,
-        bool hexNumberIdent);
+            bool hexNumberIdent);
 };
 
 }

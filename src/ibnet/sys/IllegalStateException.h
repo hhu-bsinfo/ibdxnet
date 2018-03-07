@@ -36,7 +36,7 @@ public:
      * Constructor
      */
     IllegalStateException() :
-        Exception("")
+            Exception("")
     {
     }
 
@@ -48,7 +48,7 @@ public:
      */
     template <typename... Args>
     explicit IllegalStateException(const std::string& format, Args... args) :
-        Exception(format, args...)
+            Exception(format, args...)
     {
     }
 

@@ -24,10 +24,10 @@ namespace ibnet {
 namespace core {
 
 IbProtDom::IbProtDom(IbDevice& device, const std::string& name) :
-    m_name(name),
-    m_ibProtDom(nullptr),
-    m_memoryRegionsRegistered(0),
-    m_totalMemRegistered(0)
+        m_name(name),
+        m_ibProtDom(nullptr),
+        m_memoryRegionsRegistered(0),
+        m_totalMemRegistered(0)
 {
     IBNET_LOG_INFO("[%s] Allocating protection domain", m_name);
 
@@ -47,7 +47,7 @@ IbProtDom::~IbProtDom()
 
     if (m_totalMemRegistered > 0) {
         IBNET_LOG_WARN("[%s] Memory is still registered with the protection "
-            "domain, total: %d", m_name, m_totalMemRegistered);
+                "domain, total: %d", m_name, m_totalMemRegistered);
     }
 
     ibv_dealloc_pd(m_ibProtDom);
@@ -62,18 +62,18 @@ void IbProtDom::Register(IbMemReg* refMemReg)
 
     if (refMemReg->m_addr == nullptr) {
         throw IbException("[%s] Registering memory region failed, null",
-            m_name);
+                m_name);
     }
 
     IBNET_LOG_TRACE("[%s] Registering memory region %p, size %d",
-        m_name, refMemReg->m_addr, refMemReg->m_size);
+            m_name, refMemReg->m_addr, refMemReg->m_size);
 
     refMemReg->m_ibMemReg = ibv_reg_mr(m_ibProtDom, refMemReg->m_addr,
-        refMemReg->m_size, IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
+            refMemReg->m_size, IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
 
     if (refMemReg->m_ibMemReg == nullptr) {
         throw IbException("[%s] Registering memory region failed: %s",
-            m_name, strerror(errno));
+                m_name, strerror(errno));
     }
 
     m_memoryRegionsRegistered++;
@@ -86,13 +86,13 @@ void IbProtDom::Deregister(IbMemReg* refMemReg)
     IBNET_ASSERT(refMemReg->m_size != 0);
 
     IBNET_LOG_TRACE("[%s] Deregistering memory region %p, size %d",
-        m_name, memReg.GetAddress(), memReg.GetSize());
+            m_name, memReg.GetAddress(), memReg.GetSize());
 
     int ret = ibv_dereg_mr(refMemReg->m_ibMemReg);
 
     if (ret != 0) {
         throw IbException("[%s] Deregistering memory region failed: %s",
-            m_name, strerror(errno));
+                m_name, strerror(errno));
     }
 
     refMemReg->m_ibMemReg = nullptr;

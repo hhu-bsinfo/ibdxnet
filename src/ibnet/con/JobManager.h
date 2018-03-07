@@ -77,7 +77,7 @@ public:
         std::lock_guard<std::mutex> l(m_dispatcherLock);
 
         for (auto it = m_dispatcher[type].begin();
-            it != m_dispatcher[type].end(); it++) {
+                it != m_dispatcher[type].end(); it++) {
             if (*it == dispatcher) {
                 m_dispatcher[type].erase(it);
                 break;

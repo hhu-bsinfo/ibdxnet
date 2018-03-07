@@ -45,8 +45,8 @@ public:
      * @param name Name of the operation
      */
     explicit Operation(const std::string& categoryName, const std::string& name) :
-        m_categoryName(categoryName),
-        m_name(name)
+            m_categoryName(categoryName),
+            m_name(name)
     {
     }
 

@@ -40,7 +40,7 @@ public:
      */
     template <typename... Args>
     explicit TimeoutException(const std::string& format, Args... args) :
-        Exception(format, args...)
+            Exception(format, args...)
     {
     }
 

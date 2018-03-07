@@ -42,10 +42,10 @@ public:
      * @param name Name of the statistic operation
      */
     explicit Ratio(const std::string& category, const std::string& name) :
-        Operation(category, name),
-        m_refs(false),
-        m_unit1(new Unit(category, name + "-Unit1")),
-        m_unit2(new Unit(category, name + "-Unit2"))
+            Operation(category, name),
+            m_refs(false),
+            m_unit1(new Unit(category, name + "-Unit1")),
+            m_unit2(new Unit(category, name + "-Unit2"))
     {
     }
 
@@ -60,10 +60,10 @@ public:
      * @param refUnit2 Pointer to a unit to use for the ratio (denominator)
      */
     Ratio(const std::string& category, const std::string& name, Unit* refUnit1, Unit* refUnit2) :
-        Operation(category, name),
-        m_refs(true),
-        m_unit1(refUnit1),
-        m_unit2(refUnit2)
+            Operation(category, name),
+            m_refs(true),
+            m_unit1(refUnit1),
+            m_unit2(refUnit2)
     {
     }
 
@@ -124,7 +124,7 @@ public:
         os << std::fixed << std::setw(5) << std::setprecision(5);
 
         os << indent << "counter " << GetRatioCounter() << ";" << "total " << GetRatioTotalValue() << ";" <<
-            "min " << GetRatioMinValue() << ";" << "max " << GetRatioMaxValue();
+                "min " << GetRatioMinValue() << ";" << "max " << GetRatioMaxValue();
 
         os.flags(flags);
     }

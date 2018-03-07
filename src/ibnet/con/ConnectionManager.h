@@ -54,10 +54,10 @@ public:
      *        (managed by caller)
      */
     ConnectionManager(const std::string& name, NodeId ownNodeId,
-        const NodeConf& nodeConf, uint32_t connectionCreationTimeoutMs,
-        uint32_t maxNumConnections, core::IbDevice* refDevice,
-        core::IbProtDom* refProtDom, ExchangeManager* refExchangeManager,
-        JobManager* refJobManager, DiscoveryManager* refDiscoveryManager);
+            const NodeConf& nodeConf, uint32_t connectionCreationTimeoutMs,
+            uint32_t maxNumConnections, core::IbDevice* refDevice,
+            core::IbProtDom* refProtDom, ExchangeManager* refExchangeManager,
+            JobManager* refJobManager, DiscoveryManager* refDiscoveryManager);
 
     /**
      * Destructor
@@ -92,7 +92,7 @@ public:
     bool IsConnectionAvailable(NodeId nodeId)
     {
         return m_connectionStates[nodeId].m_available.load(
-            std::memory_order_relaxed) >= ConnectionState::CONNECTION_AVAILABLE;
+                std::memory_order_relaxed) >= ConnectionState::CONNECTION_AVAILABLE;
     }
 
     /**
@@ -147,8 +147,8 @@ protected:
 
 protected:
     void _DispatchExchangeData(uint32_t sourceIPV4,
-        const ExchangeManager::PaketHeader* paketHeader,
-        const void* data) override;
+            const ExchangeManager::PaketHeader* paketHeader,
+            const void* data) override;
 
     void _DispatchJob(const JobQueue::Job* job) override;
 
@@ -169,8 +169,8 @@ private:
         const NodeId m_targetNodeId;
 
         JobCreateConnection(JobQueue::JobType type, NodeId targetNodeId) :
-            JobQueue::Job(type),
-            m_targetNodeId(targetNodeId)
+                JobQueue::Job(type),
+                m_targetNodeId(targetNodeId)
         {
         }
     };
@@ -182,13 +182,13 @@ private:
         const size_t m_remoteConnectionDataSize;
 
         JobConnectConnection(JobQueue::JobType type,
-            const RemoteConnectionHeader& remoteConnectionHeader,
-            const uint8_t* remoteConnectionData,
-            size_t remoteConnectionDataSize) :
-            JobQueue::Job(type),
-            m_remoteConnectionHeader(remoteConnectionHeader),
-            m_remoteConnectionData(remoteConnectionData),
-            m_remoteConnectionDataSize(remoteConnectionDataSize)
+                const RemoteConnectionHeader& remoteConnectionHeader,
+                const uint8_t* remoteConnectionData,
+                size_t remoteConnectionDataSize) :
+                JobQueue::Job(type),
+                m_remoteConnectionHeader(remoteConnectionHeader),
+                m_remoteConnectionData(remoteConnectionData),
+                m_remoteConnectionDataSize(remoteConnectionDataSize)
         {
         }
 
@@ -205,11 +205,11 @@ private:
         const bool m_shutdown;
 
         JobCloseConnection(JobQueue::JobType type, NodeId nodeId,
-            bool force, bool shutdown) :
-            JobQueue::Job(type),
-            m_nodeId(nodeId),
-            m_force(force),
-            m_shutdown(shutdown)
+                bool force, bool shutdown) :
+                JobQueue::Job(type),
+                m_nodeId(nodeId),
+                m_force(force),
+                m_shutdown(shutdown)
         {
         }
     };
@@ -250,8 +250,8 @@ private:
     void __AddJobCreateConnection(NodeId destNodeId);
 
     void __AddJobConnectConnection(
-        const RemoteConnectionHeader& remoteConnectionHeader,
-        const uint8_t remoteConnectionData[], size_t remoteConnectionDatSize);
+            const RemoteConnectionHeader& remoteConnectionHeader,
+            const uint8_t remoteConnectionData[], size_t remoteConnectionDatSize);
 
     void __AddJobCloseConnection(NodeId nodeId, bool force, bool shutdown);
 
@@ -264,7 +264,7 @@ private:
     bool __AllocateConnection(NodeId remoteNodeId);
 
     void __SendConnectionExchgData(NodeId remoteNodeId,
-        uint8_t exchgFalgs, uint8_t exchgFlagsRemote, uint32_t remoteNodeIPV4);
+            uint8_t exchgFalgs, uint8_t exchgFlagsRemote, uint32_t remoteNodeIPV4);
 };
 
 }

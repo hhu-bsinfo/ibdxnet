@@ -50,10 +50,10 @@ public:
      *        (managed by caller)
      */
     DummyConnectionManager(NodeId ownNodeId, const NodeConf& nodeConf,
-        uint32_t connectionCreationTimeoutMs, uint32_t maxNumConnections,
-        core::IbDevice* refDevice, core::IbProtDom* refProtDom,
-        ExchangeManager* refExchangeManager, JobManager* refJobManager,
-        DiscoveryManager* refDiscoveryManager);
+            uint32_t connectionCreationTimeoutMs, uint32_t maxNumConnections,
+            core::IbDevice* refDevice, core::IbProtDom* refProtDom,
+            ExchangeManager* refExchangeManager, JobManager* refJobManager,
+            DiscoveryManager* refDiscoveryManager);
 
     /**
      * Destructor

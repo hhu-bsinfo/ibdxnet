@@ -40,7 +40,7 @@ public:
      */
     template <typename... Args>
     explicit SystemException(const std::string& format, Args... args) :
-        Exception(format, args...)
+            Exception(format, args...)
     {
     }
 

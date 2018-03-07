@@ -22,9 +22,9 @@ namespace ibnet {
 namespace stats {
 
 StatisticsManager::StatisticsManager(uint32_t printIntervalMs) :
-    m_printIntervalMs(printIntervalMs),
-    m_mutex(),
-    m_operations()
+        m_printIntervalMs(printIntervalMs),
+        m_mutex(),
+        m_operations()
 {
 #ifdef IBNET_DISABLE_STATISTICS
     IBNET_LOG_INFO("Preprocessor flag to disable some statistics active");
@@ -39,7 +39,7 @@ void StatisticsManager::Register(const Operation* refOperation)
 
     if (it == m_operations.end()) {
         m_operations.insert(std::make_pair(refOperation->GetCategoryName(),
-            std::vector<const Operation*>({refOperation})));
+                std::vector<const Operation*>({refOperation})));
     } else {
         it->second.push_back(refOperation);
     }

@@ -24,10 +24,10 @@ namespace ibnet {
 namespace msgrc {
 
 MsgrcJNISystem::MsgrcJNISystem(MsgrcSystem::Configuration* configuration,
-    JNIEnv* env, jobject callbackHandler) :
-    MsgrcSystem(),
-    m_callbackHandler(env, callbackHandler),
-    m_workPackage()
+        JNIEnv* env, jobject callbackHandler) :
+        MsgrcSystem(),
+        m_callbackHandler(env, callbackHandler),
+        m_workPackage()
 {
     _SetConfiguration(configuration);
 }
@@ -45,7 +45,7 @@ uint32_t MsgrcJNISystem::CreateConnection(con::NodeId nodeId)
     // force connection creation
     try {
         Connection* con = dynamic_cast<Connection*>(
-            m_connectionManager->GetConnection(nodeId));
+                m_connectionManager->GetConnection(nodeId));
         m_connectionManager->ReturnConnection(con);
     } catch (sys::TimeoutException& e) {
         IBNET_LOG_WARN("CreateConnection (0x%X): %s", nodeId, e.what());
@@ -66,7 +66,7 @@ core::IbMemReg* MsgrcJNISystem::GetSendBuffer(con::NodeId targetNodeId)
 
     try {
         connection = (Connection*)
-            m_connectionManager->GetConnection(targetNodeId);
+                m_connectionManager->GetConnection(targetNodeId);
     } catch (sys::Exception& e) {
         IBNET_LOG_ERROR("%s", e.what());
         return nullptr;
@@ -74,7 +74,7 @@ core::IbMemReg* MsgrcJNISystem::GetSendBuffer(con::NodeId targetNodeId)
 
     if (!connection) {
         IBNET_LOG_ERROR("Getting send buffer address for 0x%X failed, "
-            "connection not created, yet", targetNodeId);
+                "connection not created, yet", targetNodeId);
         return nullptr;
     }
 
@@ -88,8 +88,8 @@ core::IbMemReg* MsgrcJNISystem::GetSendBuffer(con::NodeId targetNodeId)
 void MsgrcJNISystem::ReturnRecvBuffer(core::IbMemReg* buffer)
 {
     IBNET_LOG_TRACE("Return recv buffer handle %p, buffer addr %p, size %d",
-        (uintptr_t) buffer, (uintptr_t) buffer->GetAddress(),
-        buffer->GetSize());
+            (uintptr_t) buffer, (uintptr_t) buffer->GetAddress(),
+            buffer->GetSize());
 
     m_recvBufferPool->ReturnBuffer(buffer);
 }
@@ -120,8 +120,8 @@ void MsgrcJNISystem::Received(ReceivedPackage* recvPackage)
 }
 
 const SendHandler::NextWorkPackage* MsgrcJNISystem::GetNextDataToSend(
-    const SendHandler::PrevWorkPackageResults* prevResults,
-    const SendHandler::CompletedWorkList* completionList)
+        const SendHandler::PrevWorkPackageResults* prevResults,
+        const SendHandler::CompletedWorkList* completionList)
 {
     return m_callbackHandler.GetNextDataToSend(prevResults, completionList);
 }

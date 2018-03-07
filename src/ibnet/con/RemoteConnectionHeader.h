@@ -47,11 +47,11 @@ struct RemoteConnectionHeader
      * Sets invalid node info
      */
     RemoteConnectionHeader() :
-        m_nodeId(NODE_ID_INVALID),
-        m_exchgFlags(0),
-        m_exchgFlagsRemote(0),
-        m_lid(0xFFFF),
-        m_conManIdent(0xFFFFFFFF)
+            m_nodeId(NODE_ID_INVALID),
+            m_exchgFlags(0),
+            m_exchgFlagsRemote(0),
+            m_lid(0xFFFF),
+            m_conManIdent(0xFFFFFFFF)
     {
     }
 
@@ -67,12 +67,12 @@ struct RemoteConnectionHeader
      *      rebooted nodes
      */
     RemoteConnectionHeader(con::NodeId nodeId, uint8_t exchgFlags,
-        uint8_t remoteExchgFlags, uint16_t lid, uint32_t conManIdent) :
-        m_nodeId(nodeId),
-        m_exchgFlags(exchgFlags),
-        m_exchgFlagsRemote(remoteExchgFlags),
-        m_lid(lid),
-        m_conManIdent(conManIdent)
+            uint8_t remoteExchgFlags, uint16_t lid, uint32_t conManIdent) :
+            m_nodeId(nodeId),
+            m_exchgFlags(exchgFlags),
+            m_exchgFlagsRemote(remoteExchgFlags),
+            m_lid(lid),
+            m_conManIdent(conManIdent)
     {
     }
 
@@ -80,13 +80,13 @@ struct RemoteConnectionHeader
      * Enable usage with out streams
      */
     friend std::ostream& operator<<(std::ostream& os,
-        const RemoteConnectionHeader& o)
+            const RemoteConnectionHeader& o)
     {
         os << "NodeId: 0x" << std::hex << o.m_nodeId <<
-            ", ExchgFlags: " << std::bitset<2>(o.m_exchgFlags) <<
-            ", ExchgFlagsRemote: " << std::bitset<2>(o.m_exchgFlagsRemote) <<
-            ", Lid: 0x" << std::hex << o.m_lid <<
-            ", ConManIdent: " << std::hex << o.m_conManIdent;
+                ", ExchgFlags: " << std::bitset<2>(o.m_exchgFlags) <<
+                ", ExchgFlagsRemote: " << std::bitset<2>(o.m_exchgFlagsRemote) <<
+                ", Lid: 0x" << std::hex << o.m_lid <<
+                ", ConManIdent: " << std::hex << o.m_conManIdent;
 
         return os;
     }

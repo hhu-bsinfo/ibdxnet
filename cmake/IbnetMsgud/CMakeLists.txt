@@ -21,7 +21,8 @@ include_directories(${IBNET_LIBS_DIR})
 include_directories(${IBNET_SRC_DIR})
 
 set(SOURCE_FILES
-        ${IBNET_SRC_DIR}/ibnet/msgud/Connection.cpp)
+        ${IBNET_SRC_DIR}/ibnet/msgud/Connection.cpp
+	${IBNET_SRC_DIR}/ibnet/msgud/ConnectionManager.cpp)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 

@@ -286,6 +286,8 @@ bool SendDispatcher::Dispatch()
             ret = ret || __PollCompletions();
 
             IBNET_STATS(m_pollCompletionsTotalTime->Stop());
+
+            m_refConnectionManager->ReturnConnection(connection);
         }
     } catch (sys::TimeoutException& e) {
         IBNET_LOG_WARN("TimeoutException: %s", e.what());

@@ -24,7 +24,8 @@ set(SOURCE_FILES
         ${IBNET_SRC_DIR}/ibnet/msgud/Connection.cpp
         ${IBNET_SRC_DIR}/ibnet/msgud/ConnectionManager.cpp
         ${IBNET_SRC_DIR}/ibnet/msgud/RecvDispatcher.cpp
-        ${IBNET_SRC_DIR}/ibnet/msgud/SendDispatcher.cpp)
+        ${IBNET_SRC_DIR}/ibnet/msgud/SendDispatcher.cpp
+        ${IBNET_SRC_DIR}/ibnet/msgud/MsgudSystem.cpp)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 

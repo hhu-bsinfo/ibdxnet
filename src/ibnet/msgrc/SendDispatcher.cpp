@@ -272,7 +272,7 @@ bool SendDispatcher::Dispatch()
             IBNET_STATS(m_sendDataTotalTime->Start());
 
             // send data
-            __SendData(connection, workPackage);
+            ret = __SendData(connection, workPackage);
 
             IBNET_STATS(m_sentData->Add(
                 m_prevWorkPackageResults->m_numBytesPosted));
@@ -280,12 +280,10 @@ bool SendDispatcher::Dispatch()
 
             IBNET_STATS(m_sendDataTotalTime->Stop());
 
-            // TODO trigger park start not correct, yet
-
             IBNET_STATS(m_pollCompletionsTotalTime->Start());
 
             // after sending data, try polling for more completions
-            ret = __PollCompletions();
+            ret = ret || __PollCompletions();
 
             IBNET_STATS(m_pollCompletionsTotalTime->Stop());
         }
@@ -417,7 +415,7 @@ bool SendDispatcher::__PollCompletions()
     return m_completionsPending > 0;
 }
 
-void SendDispatcher::__SendData(Connection* connection,
+bool SendDispatcher::__SendData(Connection* connection,
     const SendHandler::NextWorkPackage* workPackage)
 {
     IBNET_STATS(m_sendDataProcessingTime->Start());
@@ -550,7 +548,11 @@ void SendDispatcher::__SendData(Connection* connection,
     IBNET_STATS(m_sendDataProcessingTime->Stop());
     IBNET_STATS(m_sendDataPostingTime->Start());
 
+    bool activity = false;
+
     if (chunks > 0) {
+        activity = true;
+
         // connect all work requests
         for (uint16_t i = 0; i < chunks - 1; i++) {
             m_sendWrs[i].next = &m_sendWrs[i + 1];
@@ -599,6 +601,8 @@ void SendDispatcher::__SendData(Connection* connection,
         totalBytesToProcess - totalBytesProcessed;
 
     IBNET_STATS(m_sendDataPostingTime->Stop());
+
+    return activity;
 }
 
 }

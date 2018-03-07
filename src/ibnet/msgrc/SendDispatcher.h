@@ -99,7 +99,7 @@ private:
 private:
     bool __PollCompletions();
 
-    void __SendData(Connection* connection,
+    bool __SendData(Connection* connection,
         const SendHandler::NextWorkPackage* workPackage);
 
     template <typename ExceptionType, typename... Args>

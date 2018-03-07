@@ -234,7 +234,7 @@ private:
 
     ConnectionState m_connectionStates[NODE_ID_MAX_NUM_NODES];
     Connection* m_connections[NODE_ID_MAX_NUM_NODES];
-    uint32_t m_openConnections;
+    uint16_t m_openConnections;
 
     std::vector<ConnectionId> m_availableConnectionIds;
 

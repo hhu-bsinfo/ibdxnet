@@ -25,12 +25,12 @@
  */
 
 /**
- * Removes all trace logger calls entirely before compiling. This greatly
- * enhances performance as well as avoids flooding the log with useless trace
- * messages on normal operation. This option might be useful if you are
- * tracing bugs, only.
+ * Includes all trace logger calls before compiling. This greatly reduces
+ * performance as well as floods the log with trace messages which are useless
+ * during normal operation. This option might be useful if you are tracing
+ * bugs, only.
  */
-#define IBNET_LOG_TRACE_STRIP
+// #define IBNET_LOG_TRACE_INCLUDE
 
 /**
  * Compiler flag to disable statistics

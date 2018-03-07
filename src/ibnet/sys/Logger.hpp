@@ -69,8 +69,7 @@
 #define IBNET_LOG_DEBUG(fmt, ...) ibnet::sys::Logger::GetLogger().debug(("[%s] " + std::string(fmt)).c_str(), LOG_MODULE, ##__VA_ARGS__)
 
 
-#ifndef IBNET_LOG_TRACE_STRIP
-
+#ifdef IBNET_LOG_TRACE_INCLUDE
 /**
  * Macro to log a message, level trace. Use this macro instead of directly
  * calling the logger class.

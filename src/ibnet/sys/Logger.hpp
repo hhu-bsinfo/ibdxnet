@@ -23,6 +23,8 @@
 #include <cstdint>
 #include <cstring>
 
+#include "ibnet/Config.h"
+
 #include "Logger.h"
 
 /**
@@ -67,7 +69,6 @@
 #define IBNET_LOG_DEBUG(fmt, ...) ibnet::sys::Logger::GetLogger().debug(("[%s] " + std::string(fmt)).c_str(), LOG_MODULE, ##__VA_ARGS__)
 
 
-#define IBNET_LOG_TRACE_STRIP
 #ifndef IBNET_LOG_TRACE_STRIP
 
 /**

@@ -23,23 +23,10 @@
 #include <unordered_map>
 #include <vector>
 
+#include "ibnet/Config.h"
 #include "ibnet/sys/ThreadLoop.h"
 
 #include "Operation.hpp"
-
-/**
- * Compiler flag to disable statistics
- *
- * When executing benchmarks, you should disable any statistics because
- * there are a lot of them used for debugging and to analyze the control flow
- * to detect possible bottlenecks or unoptimized paths.
- */
-//#define IBNET_DISABLE_STATISTICS
-#ifdef IBNET_DISABLE_STATISTICS
-#define IBNET_STATS(...)
-#else
-#define IBNET_STATS(x) x
-#endif
 
 namespace ibnet {
 namespace stats {

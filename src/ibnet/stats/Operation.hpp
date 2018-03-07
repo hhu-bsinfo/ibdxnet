@@ -22,6 +22,12 @@
 #include <ostream>
 #include <string>
 
+#ifdef IBNET_DISABLE_STATISTICS
+#define IBNET_STATS(...)
+#else
+#define IBNET_STATS(x) x
+#endif
+
 namespace ibnet {
 namespace stats {
 

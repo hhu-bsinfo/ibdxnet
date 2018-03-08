@@ -245,7 +245,7 @@ private:
 
 private:
     inline void __FormatUnit(std::ostream& os, const std::string& name,
-            uint64_t units) const
+            double units) const
     {
         for (uint8_t i = 1; i < e_MetricCount; i++) {
             if (units < m_metricTable[i]) {

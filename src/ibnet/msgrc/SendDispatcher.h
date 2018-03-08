@@ -200,6 +200,7 @@ private:
     stats::Unit* m_sendDataFullBuffers;
     stats::Unit* m_sendDataNonFullBuffers;
     stats::Unit* m_sendBatches;
+    stats::Unit* m_sendQueueFull;
 
     stats::Unit* m_emptyCompletionPolls;
     stats::Unit* m_nonEmptyCompletionPolls;
@@ -208,6 +209,7 @@ private:
     stats::Ratio* m_nextWorkPackageRatio;
     stats::Ratio* m_sendDataFullBuffersRatio;
     stats::Ratio* m_emptyCompletionPollsRatio;
+    stats::Ratio* m_sendQueueFullRatio;
 
     stats::Throughput* m_throughputSentData;
     stats::Throughput* m_throughputSentFC;

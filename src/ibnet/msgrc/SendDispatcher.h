@@ -23,6 +23,7 @@
 
 #include "ibnet/dx/ExecutionUnit.h"
 
+#include "ibnet/stats/Distribution.hpp"
 #include "ibnet/stats/StatisticsManager.h"
 #include "ibnet/stats/Ratio.hpp"
 #include "ibnet/stats/Throughput.hpp"
@@ -199,7 +200,7 @@ private:
 
     stats::Unit* m_sendDataFullBuffers;
     stats::Unit* m_sendDataNonFullBuffers;
-    stats::Unit* m_sendBatches;
+    stats::Distribution* m_sendBatches;
     stats::Unit* m_sendQueueFull;
 
     stats::Unit* m_emptyCompletionPolls;
@@ -209,7 +210,6 @@ private:
     stats::Ratio* m_nextWorkPackageRatio;
     stats::Ratio* m_sendDataFullBuffersRatio;
     stats::Ratio* m_emptyCompletionPollsRatio;
-    stats::Ratio* m_sendQueueFullRatio;
 
     stats::Throughput* m_throughputSentData;
     stats::Throughput* m_throughputSentFC;

@@ -81,7 +81,7 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
         m_nonEmptyNextWorkPackage(new stats::Unit("SendDispatcher", "NonEmptyNextWorkPackage")),
         m_sendDataFullBuffers(new stats::Unit("SendDispatcher", "DataFullBuffers")),
         m_sendDataNonFullBuffers(new stats::Unit("SendDispatcher", "DataNonFullBuffers")),
-        m_sendBatches(new stats::Unit("SendDispatcher", "Batches")),
+        m_sendBatches(new stats::Distribution("SendDispatcher", "Batches", 10)),
         m_sendQueueFull(new stats::Unit("SendDispatcher", "QueueFull")),
         m_emptyCompletionPolls(new stats::Unit("SendDispatcher", "EmptyCompletionPolls")),
         m_nonEmptyCompletionPolls(new stats::Unit("SendDispatcher", "NonEmptyCompletionPolls")),
@@ -92,8 +92,6 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
                 m_nonEmptyNextWorkPackage, m_emptyNextWorkPackage)),
         m_emptyCompletionPollsRatio(new stats::Ratio("SendDispatcher", "EmptyCompletionPollsRatio",
                 m_nonEmptyCompletionPolls, m_emptyCompletionPolls)),
-        m_sendQueueFullRatio(new stats::Ratio("SendDispatcher", "SendQueueFullRatio",
-            m_sendBatches, m_sendQueueFull)),
         m_throughputSentData(new stats::Throughput("SendDispatcher", "ThroughputData", m_sentData,
                 m_totalTime)),
         m_throughputSentFC(new stats::Throughput("SendDispatcher", "ThroughputFC", m_sentFC,
@@ -141,7 +139,6 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     m_refStatisticsManager->Register(m_nextWorkPackageRatio);
     m_refStatisticsManager->Register(m_sendDataFullBuffersRatio);
     m_refStatisticsManager->Register(m_emptyCompletionPollsRatio);
-    m_refStatisticsManager->Register(m_sendQueueFullRatio);
 
     m_refStatisticsManager->Register(m_throughputSentData);
     m_refStatisticsManager->Register(m_throughputSentFC);
@@ -173,7 +170,6 @@ SendDispatcher::~SendDispatcher()
     m_refStatisticsManager->Deregister(m_nextWorkPackageRatio);
     m_refStatisticsManager->Deregister(m_sendDataFullBuffersRatio);
     m_refStatisticsManager->Deregister(m_emptyCompletionPollsRatio);
-    m_refStatisticsManager->Deregister(m_sendQueueFullRatio);
 
     m_refStatisticsManager->Deregister(m_throughputSentData);
     m_refStatisticsManager->Deregister(m_throughputSentFC);
@@ -595,14 +591,14 @@ bool SendDispatcher::__SendData(Connection* connection,
             }
         }
 
-        IBNET_STATS(m_sendBatches->Add(chunks));
-
         m_sendQueuePending[nodeId] += chunks;
         // completion queue shared among all connections
         m_completionsPending += chunks;
     } else {
         IBNET_STATS(m_sendQueueFull->Inc());
     }
+
+    IBNET_STATS(m_sendBatches->GetUnit((float) chunks / queueSize).Inc());
 
     if (fcData > 0) {
         m_prevWorkPackageResults->m_fcDataNotPosted = fcData;

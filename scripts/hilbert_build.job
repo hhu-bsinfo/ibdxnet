@@ -11,25 +11,18 @@
 #PBS -N ibdxnet_cc
 #PBS -A dxram
 
+readonly SCRIPT_DIR="$( cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )"
+
 module load gcc/6.1.0
 module load cmake/3.5.1
 module load Java/1.8.0
 
-cd ~/ibdxnet
+cd $SCRIPT_DIR/..
 
 # Add further include paths if not already inserted
 # Required on hilbert environment with module system
-if [ ! "$(grep "/software/java" cmake/JNIIbdxnet/CMakeLists.txt)" ]; then
-        sed -i -e 
-'s/include_directories(${IBNET_SRC_DIR})/include_directories(${IBNET_SRC_DIR\})\ninclude_directories(\/software\/java\/1\.8\.0_25\/include)\ninclude_directories(\/software\/java\/1.8.0_25\/include\/linux)/g' 
-cmake/JNIIbdxnet/CMakeLists.txt
+if [ ! "$(grep "/software/java" cmake/MsgrcJNIBinding/CMakeLists.txt)" ]; then
+        sed -i -e 's/include_directories(${IBNET_SRC_DIR})/include_directories(${IBNET_SRC_DIR\})\ninclude_directories(\/software\/java\/1\.8\.0_25\/include)\ninclude_directories(\/software\/java\/1.8.0_25\/include\/linux)/g' cmake/MsgrcJNIBinding/CMakeLists.txt
 fi
 
-rm -r build
-mkdir build
-cd build/
-echo "Cmake..."
-cmake ..
-echo "Make..."
-make -j 4
-echo "Done"
+./build.sh

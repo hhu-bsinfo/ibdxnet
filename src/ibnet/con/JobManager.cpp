@@ -108,7 +108,7 @@ void JobManager::_RunLoop()
             m_jobCondition.wait_for(l, std::chrono::milliseconds(1000));
         }
     } else {
-        IBNET_LOG_DEBUG("Dispatching job type %d", job->m_type);
+        IBNET_LOG_TRACE("Dispatching job type %d", job->m_type);
 
         m_dispatcherLock.lock();
 

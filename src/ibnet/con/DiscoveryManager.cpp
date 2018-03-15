@@ -102,7 +102,7 @@ void DiscoveryManager::AddNode(const NodeConf::Entry& entry)
     }
 
     // trigger initial discovery
-    __JobAddDiscover();
+    //__JobAddDiscover();
 }
 
 const NodeConf::Entry& DiscoveryManager::GetNodeInfo(NodeId nodeId)
@@ -222,7 +222,7 @@ void DiscoveryManager::__ExecuteDiscovery()
 
     // request remote node's information if not received, yet
     for (auto& it : m_infoToGet) {
-        IBNET_LOG_TRACE("Requesting node info from %s",
+        IBNET_LOG_DEBUG("Requesting node info from %s",
                 it->GetAddress().GetAddressStr());
 
         __ExchgSendDiscoveryReq(it->GetAddress().GetAddress());

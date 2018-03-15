@@ -154,14 +154,21 @@ Connection* ConnectionManager::GetConnection(NodeId nodeId)
     // data. Only the first thread triggering the creation job has to do
     // this for the current connection getting created
     bool triggerPeriodicRecreation = false;
-    uint8_t state = ConnectionState::e_StateNotAvailable;
 
     // avoid flooding the job queue with creation jobs, only the first thread
     // has to add the job
-    if (m_connectionStates[nodeId].m_state.compare_exchange_strong(state,
-            ConnectionState::e_StateInCreation, std::memory_order_relaxed)) {
-        triggerPeriodicRecreation = true;
-        __AddJobCreateConnection(nodeId);
+    if (m_connectionStates[nodeId].m_state.load(std::memory_order_relaxed) != ConnectionState::e_StateConnected) {
+        uint8_t state = ConnectionState::e_StateNotAvailable;
+        m_connectionStates[nodeId].m_state.compare_exchange_strong(state, ConnectionState::e_StateInCreation,
+            std::memory_order_relaxed);
+
+        bool expected = false;
+
+        if (m_connectionStates[nodeId].m_triggerReExchange.compare_exchange_strong(expected, true,
+                std::memory_order_relaxed)) {
+            triggerPeriodicRecreation = true;
+            __AddJobCreateConnection(nodeId);
+        }
     }
 
     std::chrono::high_resolution_clock::time_point start;
@@ -215,16 +222,19 @@ Connection* ConnectionManager::GetConnection(NodeId nodeId)
 
     if (triggerPeriodicRecreation) {
         // reset state if not created, yet
-        state = ConnectionState::e_StateInCreation;
+        uint8_t state = ConnectionState::e_StateInCreation;
         m_connectionStates[nodeId].m_state.compare_exchange_strong(state,
                 ConnectionState::e_StateNotAvailable, std::memory_order_relaxed);
+
+        bool expected = true;
+        m_connectionStates[nodeId].m_triggerReExchange.compare_exchange_strong(expected, false,
+                std::memory_order_relaxed);
     }
 
     std::chrono::duration<uint64_t, std::nano> delta(end - start);
 
-    throw sys::TimeoutException(
-            "[%s] Creating connection connection to %X, timeout: %d ms", m_name,
-            nodeId, delta.count() / 1000 / 1000);
+    throw sys::TimeoutException("[%s] Creating connection connection to %X, timeout: %d ms, state %d", m_name,
+            nodeId, delta.count() / 1000 / 1000, m_connectionStates[nodeId].m_state.load(std::memory_order_relaxed));
 }
 
 void ConnectionManager::ReturnConnection(Connection* connection)

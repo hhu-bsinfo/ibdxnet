@@ -63,6 +63,7 @@ struct ConnectionState
     };
 
     std::atomic<uint8_t> m_state;
+    std::atomic<bool> m_triggerReExchange;
     std::atomic<uint8_t> m_exchgFlags;
     // we have to to store the previously received remote exchg state as well
     // in order to determine when to terminate the connection data exchange
@@ -75,6 +76,7 @@ struct ConnectionState
      */
     ConnectionState() :
             m_state(e_StateNotAvailable),
+            m_triggerReExchange(false),
             m_exchgFlags(0),
             m_remoteExchgFlags(0),
             m_available(CONNECTION_NOT_AVAILABLE)

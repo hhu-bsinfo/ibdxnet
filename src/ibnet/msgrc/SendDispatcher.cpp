@@ -345,9 +345,9 @@ bool SendDispatcher::__PollCompletions()
             IBNET_STATS(m_completionBatches->Add(static_cast<uint64_t>(ret)));
 
             for (uint32_t i = 0; i < static_cast<uint32_t>(ret); i++) {
-                if (m_workComp[i].status != IBV_WC_SUCCESS) {
-                    auto* ctx = (WorkRequestIdCtx*) &m_workComp[i].wr_id;
+                auto* ctx = (WorkRequestIdCtx*) &m_workComp[i].wr_id;
 
+                if (m_workComp[i].status != IBV_WC_SUCCESS) {
                     switch (m_workComp[i].status) {
                         case IBV_WC_WR_FLUSH_ERR:
                             if (m_ignoreFlushErrOnPendingCompletions != 0) {
@@ -375,7 +375,7 @@ bool SendDispatcher::__PollCompletions()
                                                 "attributes are wrong or the remote"
                                                 " isn't in a state to respond");
                             } else {
-                                throw con::DisconnectedException();
+                                throw con::DisconnectedException(ctx->m_targetNodeId);
                             }
                     }
 
@@ -387,9 +387,6 @@ bool SendDispatcher::__PollCompletions()
                     m_completionsPending--;
                 } else {
                     m_firstWc = false;
-
-                    auto* ctx =
-                            (WorkRequestIdCtx*) &m_workComp[i].wr_id;
 
                     if (m_completionList->m_numBytesWritten[
                             ctx->m_targetNodeId] == 0 && m_completionList->

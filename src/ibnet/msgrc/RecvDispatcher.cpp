@@ -88,9 +88,9 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
     memset(m_memRegRefillBuffer, 0,
             sizeof(core::IbMemReg*) * refConnectionManager->GetIbSRQSize());
     memset(m_sgeList, 0,
-            sizeof(core::IbMemReg*) * refConnectionManager->GetIbSRQSize());
-    memset(m_recvWrList, 0,
             sizeof(ibv_sge) * refConnectionManager->GetIbSRQSize());
+    memset(m_recvWrList, 0,
+            sizeof(ibv_recv_wr) * refConnectionManager->GetIbSRQSize());
 
     m_refStatisticsManager->Register(m_totalTime);
     m_refStatisticsManager->Register(m_recvTimeline);

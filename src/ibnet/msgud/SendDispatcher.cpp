@@ -513,6 +513,9 @@ bool SendDispatcher::__SendData(Connection* connection,
         immedData->m_sourceNodeId = connection->GetSourceNodeId();
         immedData->m_flowControlData = fcData;
         immedData->m_zeroLengthData = static_cast<uint8_t>(zeroLength ? 1 : 0);
+        immedData->m_sequenceNumber = static_cast<uint8_t>(connection->GetSendSequenceNumber()->GetValue() % 256);
+
+        connection->GetSendSequenceNumber()->Inc();
 
         // fill in ud-data
         m_sendWrs[chunks].wr.ud.ah = connection->GetRefAddressHandle()->GetIbAh();

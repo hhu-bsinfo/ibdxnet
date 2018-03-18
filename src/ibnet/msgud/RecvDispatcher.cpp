@@ -10,6 +10,7 @@
 #include "ibnet/con/DisconnectedException.h"
 
 #include "Common.h"
+#include "Connection.h"
 
 namespace ibnet {
 namespace msgud {
@@ -214,6 +215,15 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
             auto* immedData = (ImmediateData*) &m_workComps[i].imm_data;
             auto* dataMem = (core::IbMemReg*) m_workComps[i].wr_id;
             uint32_t dataRecvLen = m_workComps[i].byte_len;
+
+            Connection* connection = dynamic_cast<Connection*>(m_refConnectionManager->
+                    GetConnection(immedData->m_sourceNodeId));
+
+            if(immedData->m_sequenceNumber != (connection->GetRecvSequenceNumber()->GetValue() % 256)) {
+                connection->GetRecvSequenceNumber()->SetValue(immedData->m_sequenceNumber);
+            }
+
+            connection->GetRecvSequenceNumber()->Inc();
 
             // evaluate data
             // check for zero length package which can't be indicated by setting

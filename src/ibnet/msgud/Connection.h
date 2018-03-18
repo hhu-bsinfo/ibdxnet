@@ -25,6 +25,7 @@
 #include "ibnet/core/IbAddressHandle.h"
 
 #include "ibnet/con/Connection.h"
+#include "Common.h"
 
 namespace ibnet {
 namespace msgud {
@@ -92,6 +93,13 @@ public:
         return m_remotePhysicalQPId;
     }
 
+    Counter* GetSendSequenceNumber() {
+        return m_sendSequenceNumber;
+    }
+    Counter* GetRecvSequenceNumber() {
+        return m_recvSequenceNumber;
+    }
+
 private:
     struct RemoteConnectionData
     {
@@ -106,6 +114,9 @@ private:
     ibnet::core::IbAddressHandle* m_ibAddressHandle;
     uint32_t m_ownPhysicalQPId;
     uint32_t m_remotePhysicalQPId;
+
+    Counter* m_sendSequenceNumber;
+    Counter* m_recvSequenceNumber;
 
     RemoteConnectionData m_remoteConnectionData;
 };

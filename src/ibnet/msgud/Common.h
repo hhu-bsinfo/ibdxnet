@@ -17,8 +17,35 @@ struct ImmediateData
     con::NodeId m_sourceNodeId;
     uint8_t m_zeroLengthData : 1;
     uint8_t m_flowControlData : 7;
-    uint8_t m_dummy;
+    uint8_t m_sequenceNumber;
 } __attribute__((__packed__));
+
+struct Counter
+{
+public:
+    inline uint16_t GetValue() {
+        return m_value;
+    }
+
+    inline void SetValue(uint16_t value) {
+        m_value = value;
+    }
+
+    inline void Inc() {
+        m_value++;
+    }
+
+    inline void Dec() {
+        m_value--;
+    }
+
+    inline void Reset() {
+        m_value = 0;
+    }
+
+private:
+    uint16_t m_value = 0;
+};
 
 }
 }

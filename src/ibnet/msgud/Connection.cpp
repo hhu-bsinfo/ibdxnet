@@ -21,7 +21,9 @@ Connection::Connection(uint16_t ownNodeId, uint16_t connectionId,
     m_refProtDom(refProtDom),
     m_sendBuffer(nullptr),
     m_ibAddressHandle(nullptr),
-    m_ownPhysicalQPId(physicalQPId)
+    m_ownPhysicalQPId(physicalQPId),
+    m_sendSequenceNumber(new Counter()),
+    m_recvSequenceNumber(new Counter())
 {
     IBNET_LOG_TRACE_FUNC;
 

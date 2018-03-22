@@ -27,11 +27,11 @@ extern "C" {
 /*
  * Class:     de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding
  * Method:    init
- * Signature: (Lde/hhu/bsinfo/net/ib/MsgrcJNIBinding/CallbackHandler;ZZISIIIIIIIJI)Z
+ * Signature: (Lde/hhu/bsinfo/net/ib/MsgrcJNIBinding/CallbackHandler;ZZISIIIIIIIIJI)Z
  */
 JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_init
         (JNIEnv*, jclass, jobject, jboolean, jboolean, jint, jshort, jint,
-                jint, jint, jint, jint, jint, jint, jlong, jint);
+                jint, jint, jint, jint, jint, jint, jlong, jint, jint);
 
 /*
  * Class:     de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding

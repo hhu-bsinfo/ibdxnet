@@ -29,7 +29,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_init(
         jint p_connectionCreationTimeoutMs, jint p_maxNumConnections,
         jint p_sqSize, jint p_srqSize, jint p_sharedSCQSize,
         jint p_sharedRCQSize, jint p_sendBufferSize,
-        jlong p_recvBufferPoolSize, jint p_recvBufferSize)
+        jlong p_recvBufferPoolSize, jint p_recvBufferSize, jint p_maxSGEs)
 {
     auto* configuration = new ibnet::msgrc::MsgrcSystem::Configuration();
     configuration->m_pinSendRecvThreads = p_pinSendRecvThreads;
@@ -52,6 +52,7 @@ JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_dxnet_ib_MsgrcJNIBinding_init(
     configuration->m_recvBufferPoolSizeBytes =
             static_cast<uint64_t>(p_recvBufferPoolSize);
     configuration->m_recvBufferSize = static_cast<uint32_t>(p_recvBufferSize);
+    configuration->m_maxSGEs = static_cast<uint16_t>(p_maxSGEs);
 
     try {
         g_system = new ibnet::msgrc::MsgrcJNISystem(configuration, p_env,

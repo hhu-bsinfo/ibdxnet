@@ -87,6 +87,28 @@ public:
      */
     void ReturnBuffers(core::IbMemReg** buffers, uint32_t count);
 
+    friend std::ostream& operator<<(std::ostream& os, const RecvBufferPool& o)
+    {
+        int64_t nonReturnedBuffers = o.m_nonReturnedBuffers.load(std::memory_order_relaxed);
+
+        uint32_t front = o.m_dataBuffersFront.load(std::memory_order_relaxed);
+        uint32_t back = o.m_dataBuffersBack.load(std::memory_order_relaxed);
+        uint32_t backRes = o.m_dataBuffersBackRes.load(std::memory_order_relaxed);
+
+        uint32_t avail = 0;
+
+        if (front <= back) {
+            avail = back - front;
+        } else {
+            avail = o.m_bufferPoolSize - front + back;
+        }
+
+        os << "nonReturnedBuffers " << nonReturnedBuffers << ", front " << front << ", back " << back <<
+                ", backRes " << backRes << ", avail " << avail;
+
+        return os;
+    }
+
 private:
     const uint32_t m_bufferPoolSize;
     const uint32_t m_bufferPoolSizeGapped;

@@ -192,6 +192,8 @@ private:
     stats::TimelineFragmented* m_pollTimeline;
     stats::TimelineFragmented* m_sendTimeline;
 
+    stats::Unit* m_postedWRQs;
+
     stats::Unit* m_sentData;
     stats::Unit* m_sentFC;
 

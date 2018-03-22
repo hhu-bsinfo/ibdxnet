@@ -75,6 +75,7 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
                 {m_pollCompletionsActiveTime})),
         m_sendTimeline(new stats::TimelineFragmented("SendDispatcher", "Send", m_sendDataTotalTime,
                 {m_sendDataProcessingTime, m_sendDataPostingTime})),
+        m_postedWRQs(new stats::Unit("SendDispatcher", "WRQsPosted", stats::Unit::e_Base10)),
         m_sentData(new stats::Unit("SendDispatcher", "Data", stats::Unit::e_Base2)),
         m_sentFC(new stats::Unit("SendDispatcher", "FC", stats::Unit::e_Base10)),
         m_emptyNextWorkPackage(new stats::Unit("SendDispatcher", "EmptyNextWorkPackage")),
@@ -121,6 +122,8 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     m_refStatisticsManager->Register(m_pollTimeline);
     m_refStatisticsManager->Register(m_sendTimeline);
 
+    m_refStatisticsManager->Register(m_postedWRQs);
+
     m_refStatisticsManager->Register(m_sentData);
     m_refStatisticsManager->Register(m_sentFC);
 
@@ -151,6 +154,8 @@ SendDispatcher::~SendDispatcher()
     m_refStatisticsManager->Deregister(m_totalTimeline);
     m_refStatisticsManager->Deregister(m_pollTimeline);
     m_refStatisticsManager->Deregister(m_sendTimeline);
+
+    m_refStatisticsManager->Deregister(m_postedWRQs);
 
     m_refStatisticsManager->Deregister(m_sentData);
     m_refStatisticsManager->Deregister(m_sentFC);
@@ -197,6 +202,8 @@ SendDispatcher::~SendDispatcher()
     delete m_eeScheduleTime;
 
     delete m_totalTimeline;
+
+    delete m_postedWRQs;
 
     delete m_sentData;
     delete m_sentFC;
@@ -585,6 +592,8 @@ bool SendDispatcher::__SendData(Connection* connection,
                             "Posting work request to send to queue failed");
             }
         }
+
+        IBNET_STATS(m_postedWRQs->Add(chunks));
 
         m_sendQueuePending[nodeId] += chunks;
         // completion queue shared among all connections

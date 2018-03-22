@@ -152,6 +152,8 @@ private:
     stats::TimelineFragmented* m_processRecvTimeline;
     stats::TimelineFragmented* m_refillTimeline;
 
+    stats::Unit* m_postedWRQs;
+    stats::Unit* m_polledWRQs;
     stats::Unit* m_receivedData;
     stats::Unit* m_receivedFC;
 

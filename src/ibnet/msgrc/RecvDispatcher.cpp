@@ -66,6 +66,8 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
         m_refillTimeline(
                 new stats::TimelineFragmented("RecvDispatcher", "Refill", m_refillTotalTime, {m_refillAvailTime,
                         m_refillGetBuffersTime, m_refillPostTime})),
+        m_postedWRQs(new stats::Unit("RecvDispatcher", "WRQsPosted", stats::Unit::e_Base10)),
+        m_polledWRQs(new stats::Unit("RecvDispatcher", "WRQsPolled", stats::Unit::e_Base10)),
         m_receivedData(new stats::Unit("RecvDispatcher", "Data", stats::Unit::e_Base2)),
         m_receivedFC(new stats::Unit("RecvDispatcher", "FC", stats::Unit::e_Base10)),
         m_throughputReceivedData(new stats::Throughput("RecvDispatcher", "ThroughputData",
@@ -81,6 +83,8 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
     m_refStatisticsManager->Register(m_recvTimeline);
     m_refStatisticsManager->Register(m_processRecvTimeline);
     m_refStatisticsManager->Register(m_refillTimeline);
+    m_refStatisticsManager->Register(m_postedWRQs);
+    m_refStatisticsManager->Register(m_polledWRQs);
     m_refStatisticsManager->Register(m_receivedData);
     m_refStatisticsManager->Register(m_receivedFC);
     m_refStatisticsManager->Register(m_throughputReceivedData);
@@ -97,6 +101,8 @@ RecvDispatcher::~RecvDispatcher()
     m_refStatisticsManager->Deregister(m_recvTimeline);
     m_refStatisticsManager->Deregister(m_processRecvTimeline);
     m_refStatisticsManager->Deregister(m_refillTimeline);
+    m_refStatisticsManager->Deregister(m_postedWRQs);
+    m_refStatisticsManager->Deregister(m_polledWRQs);
     m_refStatisticsManager->Deregister(m_receivedData);
     m_refStatisticsManager->Deregister(m_receivedFC);
     m_refStatisticsManager->Deregister(m_throughputReceivedData);
@@ -122,6 +128,8 @@ RecvDispatcher::~RecvDispatcher()
     delete m_processRecvTimeline;
     delete m_refillTimeline;
 
+    delete m_postedWRQs;
+    delete m_polledWRQs;
     delete m_receivedData;
     delete m_receivedFC;
     delete m_throughputReceivedData;
@@ -172,6 +180,8 @@ uint32_t RecvDispatcher::__Poll()
     }
 
     auto receivedCount = static_cast<uint32_t>(ret);
+
+    IBNET_STATS(m_polledWRQs->Add(receivedCount));
 
     // polling successful, iterate work completions and check for errors
     for (uint32_t i = 0; i < receivedCount; i++) {
@@ -406,6 +416,8 @@ void RecvDispatcher::__Refill()
                     }
                 }
             }
+
+            IBNET_STATS(m_postedWRQs->Add(queuedElems));
 
             m_recvQueuePending += queuedElems;
         }

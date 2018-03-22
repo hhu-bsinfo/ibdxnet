@@ -252,6 +252,20 @@ public:
     }
 
     /**
+     * Get the max number of SGEs per WRQ for a SRQ
+     */
+    uint32_t GetMaxSGEsSRQ() const {
+        return static_cast<uint32_t>(m_deviceAttr.max_srq_sge);
+    }
+
+    /**
+     * Get the max number of SGEs per WRQ for a normal send or recv queue
+     */
+    uint32_t GetMaxSGEs() const {
+        return static_cast<uint32_t>(m_deviceAttr.max_sge);
+    }
+
+    /**
      * Get the InfiniBand context provided by the opened device
      */
     ibv_context* GetIBCtx() const
@@ -285,6 +299,8 @@ private:
     uint64_t m_ibDevGuid;
     std::string m_ibDevName;
     uint16_t m_lid;
+
+    ibv_device_attr m_deviceAttr;
 
     PortState m_portState;
     MtuSize m_maxMtuSize;

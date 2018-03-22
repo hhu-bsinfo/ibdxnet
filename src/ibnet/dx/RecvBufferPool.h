@@ -94,6 +94,8 @@ private:
 
     core::IbProtDom* m_refProtDom;
 
+    std::atomic<int64_t> m_nonReturnedBuffers;
+
     std::atomic<uint32_t> m_dataBuffersFront;
     std::atomic<uint32_t> m_dataBuffersBack;
     std::atomic<uint32_t> m_dataBuffersBackRes;

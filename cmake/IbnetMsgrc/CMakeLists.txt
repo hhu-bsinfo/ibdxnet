@@ -24,8 +24,9 @@ set(SOURCE_FILES
         ${IBNET_SRC_DIR}/ibnet/msgrc/Connection.cpp
         ${IBNET_SRC_DIR}/ibnet/msgrc/ConnectionManager.cpp
         ${IBNET_SRC_DIR}/ibnet/msgrc/MsgrcSystem.cpp
-        ${IBNET_SRC_DIR}/ibnet/msgrc/SendDispatcher.cpp
-        ${IBNET_SRC_DIR}/ibnet/msgrc/RecvDispatcher.cpp)
+        ${IBNET_SRC_DIR}/ibnet/msgrc/RecvDispatcher.cpp
+        ${IBNET_SRC_DIR}/ibnet/msgrc/RecvWorkRequestPool.cpp
+        ${IBNET_SRC_DIR}/ibnet/msgrc/SendDispatcher.cpp)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 

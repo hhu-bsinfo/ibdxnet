@@ -87,6 +87,13 @@ public:
      */
     void ReturnBuffers(core::IbMemReg** buffers, uint32_t count);
 
+    /**
+     * Overloading << operator for printing to ostreams
+     *
+     * @param os Ostream to output to
+     * @param o Operation to generate output for
+     * @return Ostream object
+     */
     friend std::ostream& operator<<(std::ostream& os, const RecvBufferPool& o)
     {
         int64_t nonReturnedBuffers = o.m_nonReturnedBuffers.load(std::memory_order_relaxed);

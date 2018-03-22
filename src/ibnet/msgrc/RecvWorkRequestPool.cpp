@@ -26,6 +26,7 @@ namespace msgrc {
 RecvWorkRequestPool::RecvWorkRequestPool(uint32_t numWorkRequests, uint32_t numSges) :
     m_poolSize(numWorkRequests),
     m_poolSizeGapped(m_poolSize + 1),
+    m_nonReturnedBuffers(0),
     m_front(0),
     m_back(m_poolSize),
     m_pool(new RecvWorkRequest*[m_poolSize]),
@@ -71,6 +72,8 @@ RecvWorkRequest* RecvWorkRequestPool::Pop()
     m_queue[m_front] = nullptr;
     m_front = (m_front + 1) % m_poolSizeGapped;
 
+    m_nonReturnedBuffers++;
+
     return tmp;
 }
 
@@ -91,6 +94,8 @@ void RecvWorkRequestPool::Push(RecvWorkRequest* refWorkRequest)
 
     m_queue[m_back] = refWorkRequest;
     m_back = (m_back + 1) % m_poolSizeGapped;
+
+    m_nonReturnedBuffers--;
 }
 
 }

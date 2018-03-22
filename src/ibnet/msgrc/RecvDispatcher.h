@@ -128,7 +128,7 @@ private:
         void WriteOstream(std::ostream& os, const std::string& indent) const override
         {
             os << indent << "m_recvQueuePending " << m_refParent->m_recvQueuePending << ", m_refRecvBufferPool " <<
-                    *m_refParent->m_refRecvBufferPool;
+                    *m_refParent->m_refRecvBufferPool << ", m_recvWRPool " << *m_refParent->m_recvWRPool;
         }
 
     private:

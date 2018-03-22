@@ -28,6 +28,7 @@
 
 #include "ConnectionManager.h"
 #include "RecvHandler.h"
+#include "RecvWorkRequestPool.h"
 
 namespace ibnet {
 namespace msgrc {
@@ -76,9 +77,7 @@ private:
     ibv_wc* m_workComps;
     bool m_firstWc;
 
-    core::IbMemReg** m_memRegRefillBuffer;
-    ibv_sge* m_sgeList;
-    ibv_recv_wr* m_recvWrList;
+    RecvWorkRequestPool* m_recvWRPool;
 
 private:
     uint32_t __Poll();
@@ -115,6 +114,28 @@ private:
     };
 
 private:
+    class Stats : public stats::Operation
+    {
+    public:
+        Stats(RecvDispatcher* refParent) :
+            Operation("RecvDispatcher", "State"),
+            m_refParent(refParent)
+        {
+        }
+
+        ~Stats() override = default;
+
+        void WriteOstream(std::ostream& os, const std::string& indent) const override
+        {
+            os << indent << "m_recvQueuePending " << m_refParent->m_recvQueuePending << ", m_refRecvBufferPool " <<
+                    *m_refParent->m_refRecvBufferPool;
+        }
+
+    private:
+        RecvDispatcher* m_refParent;
+    };
+
+private:
     stats::Time* m_totalTime;
 
     stats::Time* m_pollTime;
@@ -136,6 +157,8 @@ private:
 
     stats::Throughput* m_throughputReceivedData;
     stats::Throughput* m_throughputReceivedFC;
+
+    Stats* m_privateStats;
 };
 
 }

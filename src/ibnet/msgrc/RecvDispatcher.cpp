@@ -48,15 +48,7 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
                 aligned_alloc(static_cast<size_t>(getpagesize()),
                         sizeof(ibv_wc) * refConnectionManager->GetIbSRQSize()))),
         m_firstWc(true),
-        m_memRegRefillBuffer(static_cast<core::IbMemReg**>(
-                aligned_alloc(static_cast<size_t>(getpagesize()),
-                        sizeof(core::IbMemReg*) * refConnectionManager->GetIbSRQSize()))),
-        m_sgeList(static_cast<ibv_sge*>(
-                aligned_alloc(static_cast<size_t>(getpagesize()),
-                        sizeof(ibv_sge) * refConnectionManager->GetIbSRQSize()))),
-        m_recvWrList(static_cast<ibv_recv_wr*>(
-                aligned_alloc(static_cast<size_t>(getpagesize()),
-                        sizeof(ibv_recv_wr) * refConnectionManager->GetIbSRQSize()))),
+        m_recvWRPool(new RecvWorkRequestPool(refConnectionManager->GetIbSRQSize(), refConnectionManager->GetMaxSGEs())),
         m_totalTime(new stats::Time("RecvDispatcher", "Total")),
         m_pollTime(new stats::Time("RecvDispatcher", "Poll")),
         m_processRecvTotalTime(new stats::Time("RecvDispatcher", "ProcessRecvTotal")),
@@ -79,18 +71,11 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
         m_throughputReceivedData(new stats::Throughput("RecvDispatcher", "ThroughputData",
                 m_receivedData, m_totalTime)),
         m_throughputReceivedFC(new stats::Throughput("RecvDispatcher", "ThroughputFC",
-                m_receivedFC, m_totalTime))
+                m_receivedFC, m_totalTime)),
+        m_privateStats(new Stats(this))
 {
-    memset(m_recvPackage, 0, RecvHandler::ReceivedPackage::Sizeof(
-            refConnectionManager->GetIbSRQSize()));
-    memset(m_workComps, 0,
-            sizeof(ibv_wc) * refConnectionManager->GetIbSRQSize());
-    memset(m_memRegRefillBuffer, 0,
-            sizeof(core::IbMemReg*) * refConnectionManager->GetIbSRQSize());
-    memset(m_sgeList, 0,
-            sizeof(ibv_sge) * refConnectionManager->GetIbSRQSize());
-    memset(m_recvWrList, 0,
-            sizeof(ibv_recv_wr) * refConnectionManager->GetIbSRQSize());
+    memset(m_recvPackage, 0, RecvHandler::ReceivedPackage::Sizeof(refConnectionManager->GetIbSRQSize()));
+    memset(m_workComps, 0, sizeof(ibv_wc) * refConnectionManager->GetIbSRQSize());
 
     m_refStatisticsManager->Register(m_totalTime);
     m_refStatisticsManager->Register(m_recvTimeline);
@@ -100,6 +85,8 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
     m_refStatisticsManager->Register(m_receivedFC);
     m_refStatisticsManager->Register(m_throughputReceivedData);
     m_refStatisticsManager->Register(m_throughputReceivedFC);
+
+    m_refStatisticsManager->Register(m_privateStats);
 }
 
 RecvDispatcher::~RecvDispatcher()
@@ -115,10 +102,9 @@ RecvDispatcher::~RecvDispatcher()
     m_refStatisticsManager->Deregister(m_throughputReceivedData);
     m_refStatisticsManager->Deregister(m_throughputReceivedFC);
 
+    m_refStatisticsManager->Deregister(m_privateStats);
+
     free(m_workComps);
-    free(m_memRegRefillBuffer);
-    free(m_sgeList);
-    free(m_recvWrList);
 
     delete m_totalTime;
 
@@ -140,6 +126,8 @@ RecvDispatcher::~RecvDispatcher()
     delete m_receivedFC;
     delete m_throughputReceivedData;
     delete m_throughputReceivedFC;
+
+    delete m_privateStats;
 }
 
 bool RecvDispatcher::Dispatch()
@@ -180,8 +168,7 @@ uint32_t RecvDispatcher::__Poll()
             m_refConnectionManager->GetIbSRQSize(), m_workComps);
 
     if (ret < 0) {
-        __ThrowDetailedException<core::IbException>(
-                ret, "Polling completion queue failed");
+        __ThrowDetailedException<core::IbException>(ret, "Polling completion queue failed");
     }
 
     auto receivedCount = static_cast<uint32_t>(ret);
@@ -226,52 +213,98 @@ uint32_t RecvDispatcher::__Poll()
     return receivedCount;
 }
 
-void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
+void RecvDispatcher::__ProcessReceived(uint32_t receivedCompsCount)
 {
-    if (receivedCount > 0) {
+    if (receivedCompsCount > 0) {
         IBNET_STATS(m_processRecvAvailTime->Start());
 
-        // create batch for handler
+        uint32_t posRecvEntry = 0;
 
-        // batch process all completions
-        for (uint32_t i = 0; i < receivedCount; i++) {
+        // batch process all completions. one completion might contain multiple SGEs
+        for (uint32_t i = 0; i < receivedCompsCount; i++) {
             auto* immedData = (ImmediateData*) &m_workComps[i].imm_data;
-            auto* dataMem = (core::IbMemReg*) m_workComps[i].wr_id;
+            auto* recvWorkReq = (RecvWorkRequest*) m_workComps[i].wr_id;
             uint32_t dataRecvLen = m_workComps[i].byte_len;
 
             // evaluate data
-            // check for zero length package which can't be indicated by setting
-            // the size to 0 on send (which gets translated to 2^31 instead)
-            if (immedData->m_zeroLengthData) {
-                dataRecvLen = 0;
+            // we might receive 0 bytes which indicates that flow control only data was sent
+            // and no SGEs were used on the remote sender
+            if (dataRecvLen == 0) {
+                // SGE buffers are unused, return them to pool
+                m_refRecvBufferPool->ReturnBuffers(recvWorkReq->m_sgls.m_refsMemReg,
+                    recvWorkReq->m_sgls.m_numUsedElems);
 
-                // return buffer to pool, don't care about any dummy data
-                // otherwise, the pool runs dry after a while
-                m_refRecvBufferPool->ReturnBuffer(dataMem);
-                dataMem = nullptr;
+                m_recvWRPool->Push(recvWorkReq);
 
+                // sanity check
                 if (!immedData->m_flowControlData) {
                     __ThrowDetailedException<sys::IllegalStateException>(
                             "Zero length data received but no flow control data");
                 }
-            }
 
-            if (immedData->m_flowControlData) {
+                // process flow control data once and add it to a single recv package
+                m_recvPackage->m_entries[posRecvEntry].m_sourceNodeId = immedData->m_sourceNodeId;
+                m_recvPackage->m_entries[posRecvEntry].m_fcData = immedData->m_flowControlData;
+                m_recvPackage->m_entries[posRecvEntry].m_data = nullptr;
+                m_recvPackage->m_entries[posRecvEntry].m_dataRaw = nullptr;
+                m_recvPackage->m_entries[posRecvEntry].m_dataLength = 0;
+
+                immedData->m_flowControlData = 0;
                 IBNET_STATS(m_receivedFC->Inc());
+
+                posRecvEntry++;
+            } else {
+                uint32_t dataRecvLenTmp = dataRecvLen;
+                uint32_t sgesUsed = 0;
+
+                // if multiple SGEs were provided on recv post, we have to figure out which buffer contains
+                // received data using the total size
+                for (uint32_t j = 0; j < recvWorkReq->m_sgls.m_numUsedElems; j++) {
+                    m_recvPackage->m_entries[posRecvEntry].m_sourceNodeId = immedData->m_sourceNodeId;
+
+                    // fc data with immediate data available
+                    if (immedData->m_flowControlData) {
+                        m_recvPackage->m_entries[posRecvEntry].m_fcData = immedData->m_flowControlData;
+                        immedData->m_flowControlData = 0;
+                        IBNET_STATS(m_receivedFC->Inc());
+                    } else {
+                        m_recvPackage->m_entries[posRecvEntry].m_fcData = 0;
+                    }
+
+                    m_recvPackage->m_entries[posRecvEntry].m_data = recvWorkReq->m_sgls.m_refsMemReg[j];
+                    m_recvPackage->m_entries[posRecvEntry].m_dataRaw =
+                            recvWorkReq->m_sgls.m_refsMemReg[j]->GetAddress();
+
+                    uint32_t maxBufferSize = recvWorkReq->m_sgls.m_refsMemReg[j]->GetSizeBuffer();
+
+                    // figure out how much data is in the scattered buffers
+                    if (dataRecvLenTmp >= maxBufferSize) {
+                        m_recvPackage->m_entries[posRecvEntry].m_dataLength = maxBufferSize;
+                        dataRecvLenTmp -= maxBufferSize;
+                    } else {
+                        m_recvPackage->m_entries[posRecvEntry].m_dataLength = dataRecvLenTmp;
+                        dataRecvLenTmp = 0;
+                    }
+
+                    posRecvEntry++;
+                    sgesUsed++;
+
+                    if (dataRecvLenTmp == 0) {
+                        break;
+                    }
+                }
+
+                // return unused SGEs
+                m_refRecvBufferPool->ReturnBuffers(recvWorkReq->m_sgls.m_refsMemReg + sgesUsed,
+                    recvWorkReq->m_sgls.m_numUsedElems - sgesUsed);
+
+                m_recvWRPool->Push(recvWorkReq);
+
+                IBNET_STATS(m_receivedData->Add(dataRecvLen));
             }
-
-            m_recvPackage->m_entries[i].m_sourceNodeId =
-                    immedData->m_sourceNodeId;
-            m_recvPackage->m_entries[i].m_fcData = immedData->m_flowControlData;
-            m_recvPackage->m_entries[i].m_data = dataMem;
-            m_recvPackage->m_entries[i].m_dataRaw =
-                    dataMem ? dataMem->GetAddress() : nullptr;
-            m_recvPackage->m_entries[i].m_dataLength = dataRecvLen;
-
-            IBNET_STATS(m_receivedData->Add(dataRecvLen));
         }
 
-        m_recvPackage->m_count = receivedCount;
+        m_recvPackage->m_count = posRecvEntry;
 
         IBNET_STATS(m_processRecvHandleTime->Start());
 
@@ -291,61 +324,91 @@ void RecvDispatcher::__Refill()
     if (m_recvQueuePending < m_refConnectionManager->GetIbSRQSize()) {
         IBNET_STATS(m_refillAvailTime->Start());
 
-        uint32_t count =
-                m_refConnectionManager->GetIbSRQSize() - m_recvQueuePending;
+        uint32_t toQueueElems = m_refConnectionManager->GetIbSRQSize() - m_recvQueuePending;
 
         IBNET_STATS(m_refillGetBuffersTime->Start());
 
-        uint32_t numBufs = m_refRecvBufferPool->GetBuffers(m_memRegRefillBuffer,
-                count);
+        RecvWorkRequest* recvWRs[toQueueElems];
+        core::IbMemReg* refsMemReg[toQueueElems * m_refConnectionManager->GetMaxSGEs()];
+
+        for (uint32_t i = 0; i < toQueueElems; i++) {
+            recvWRs[i] = nullptr;
+        }
+
+        uint32_t numBufs = m_refRecvBufferPool->GetBuffers(&refsMemReg[0],
+                toQueueElems * m_refConnectionManager->GetMaxSGEs());
 
         IBNET_STATS(m_refillGetBuffersTime->Stop());
 
-        // TODO track the batch sizes pulled from the completion queue and added back to the recv queue
+        uint32_t queuedElems = 0;
+        uint32_t buffersPos = 0;
 
-        // first failed work request
-        ibv_recv_wr* bad_wr;
+        for (uint32_t i = 0; i < toQueueElems; i++) {
+            // not enough buffers left to prepare work request with a full SGE list
+            if (buffersPos + m_refConnectionManager->GetMaxSGEs() > numBufs) {
+                break;
+            }
 
-        for (uint32_t i = 0; i < numBufs; i++) {
-            // hook memory to write the received data to
-            m_sgeList[i].addr =
-                    (uintptr_t) m_memRegRefillBuffer[i]->GetAddress();
-            m_sgeList[i].length = m_memRegRefillBuffer[i]->GetSizeBuffer();
-            m_sgeList[i].lkey = m_memRegRefillBuffer[i]->GetLKey();
+            recvWRs[i] = m_recvWRPool->Pop();
+            recvWRs[i]->m_sgls.Reset();
 
-            // Use the pointer as the work req id
-            m_recvWrList[i].wr_id = (uint64_t) m_memRegRefillBuffer[i];
-            m_recvWrList[i].sg_list = &m_sgeList[i];
-            m_recvWrList[i].num_sge = 1;
-            m_recvWrList[i].next = nullptr;
+            // create SGE list, always with max length
+            for (uint32_t j = 0; j < m_refConnectionManager->GetMaxSGEs(); j++) {
+                recvWRs[i]->m_sgls.Add(refsMemReg[buffersPos++]);
+            }
+
+            recvWRs[i]->Prepare();
+            queuedElems++;
+        }
+
+        // return unused buffers which could not fill a full SGE list
+        if (buffersPos < numBufs) {
+            m_refRecvBufferPool->ReturnBuffers(refsMemReg + buffersPos, numBufs - buffersPos);
         }
 
         // chain work requests
-        for (uint32_t i = 0; i < numBufs - 1; i++) {
-            m_recvWrList[i].next = &m_recvWrList[i + 1];
-        }
-
-        IBNET_STATS(m_refillPostTime->Start());
-
-        int ret = ibv_post_srq_recv(m_refConnectionManager->GetIbSRQ(),
-                &m_recvWrList[0], &bad_wr);
-
-        IBNET_STATS(m_refillPostTime->Stop());
-
-        if (ret != 0) {
-            switch (ret) {
-                case ENOMEM:
-                    __ThrowDetailedException<core::IbQueueFullException>(
-                            "Receive queue full");
-
-                default:
-                    __ThrowDetailedException<core::IbException>(ret,
-                            "Posting work request to receive queue failed, numBufs "
-                                    "%d", numBufs);
+        if (queuedElems > 0) {
+            for (uint32_t i = 0; i < queuedElems - 1; i++) {
+                recvWRs[i]->Chain(recvWRs[i + 1]);
             }
         }
 
-        m_recvQueuePending += numBufs;
+        // TODO track the batch sizes pulled from the completion queue and added back to the recv queue
+
+        if (recvWRs[0]) {
+            // first failed work request
+            ibv_recv_wr* bad_wr;
+
+            IBNET_STATS(m_refillPostTime->Start());
+
+            int ret = ibv_post_srq_recv(m_refConnectionManager->GetIbSRQ(), &recvWRs[0]->m_recvWr, &bad_wr);
+
+            IBNET_STATS(m_refillPostTime->Stop());
+
+            if (ret != 0) {
+                switch (ret) {
+                    case ENOMEM:
+                        __ThrowDetailedException<core::IbQueueFullException>("Receive queue full");
+
+                    default: {
+                        uint32_t idx = 0xFFFFFFFF;
+
+                        // search for failed WRQ
+                        for (uint32_t i = 0; i < queuedElems; i++) {
+                            if (recvWRs[i]->m_recvWr.wr_id == bad_wr->wr_id) {
+                                idx = i;
+                                break;
+                            }
+                        }
+
+                        __ThrowDetailedException<core::IbException>(ret, "Posting work request to receive queue "
+                                "failed, num WRQs %d, first failed WRQ idx %d", queuedElems, idx);
+                    }
+                }
+            }
+
+            m_recvQueuePending += queuedElems;
+        }
 
         IBNET_STATS(m_refillAvailTime->Stop());
     }

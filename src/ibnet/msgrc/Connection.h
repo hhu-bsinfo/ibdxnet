@@ -49,12 +49,13 @@ public:
      * @param ibSharedSCQSize Size of the shared send completion queue
      * @param refIbSharedRCQ Pointer to the shared receive completion queue (memory managed by caller)
      * @param ibSharedRCQSize Size of the shared receive completion queue
+     * @param maxSGEs Max number of SGEs used for a single work request
      * @param refProtDom Pointer to the IbProtDom (memory managed by caller)
      */
     Connection(con::NodeId ownNodeId, con::ConnectionId connectionId,
             uint32_t sendBufferSize, uint16_t ibSQSize, ibv_srq* refIbSRQ,
             uint16_t ibSRQSize, ibv_cq* refIbSharedSCQ, uint16_t ibSharedSCQSize,
-            ibv_cq* refIbSharedRCQ, uint16_t ibSharedRCQSize,
+            ibv_cq* refIbSharedRCQ, uint16_t ibSharedRCQSize, uint16_t maxSGEs,
             core::IbProtDom* refProtDom);
 
     /**
@@ -126,6 +127,8 @@ private:
 
     ibv_cq* m_refIbSharedRCQ;
     const uint16_t m_ibSharedRCQSize;
+
+    const uint16_t m_maxSGEs;
 
 private:
     void __CreateQP();

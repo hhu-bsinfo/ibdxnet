@@ -32,11 +32,12 @@ ConnectionManager::ConnectionManager(con::NodeId ownNodeId,
         con::JobManager* refJobManager,
         con::DiscoveryManager* refDiscoveryManager, uint32_t sendBufferSize,
         uint16_t ibSQSize, uint16_t ibSRQSize, uint16_t ibSharedSCQSize,
-        uint16_t ibSharedRCQSize) :
+        uint16_t ibSharedRCQSize, uint16_t maxSGEs) :
         con::ConnectionManager("MsgRC", ownNodeId, nodeConf,
                 connectionCreationTimeoutMs, maxNumConnections, refDevice, refProtDom,
                 refExchangeManager, refJobManager, refDiscoveryManager),
         m_sendBufferSize(sendBufferSize),
+        m_maxSGEs(maxSGEs),
         m_ibSQSize(ibSQSize),
         m_ibSRQ(__CreateSRQ(ibSRQSize)),
         m_ibSRQSize(ibSRQSize),
@@ -46,7 +47,12 @@ ConnectionManager::ConnectionManager(con::NodeId ownNodeId,
         m_ibSharedRCQSize(ibSharedRCQSize),
         m_initialSRQFill(true)
 {
-
+    // using a SRQ, we have to check against that max as well because max sge and max srq sge can actually
+    // have different values
+    if (maxSGEs > refDevice->GetMaxSGEsSRQ() || maxSGEs > refDevice->GetMaxSGEs()) {
+        throw core::IbException("Invalid maxSGEs (%d), limits: max sge %d, max srq sge %d", maxSGEs,
+                refDevice->GetMaxSGEs(), refDevice->GetMaxSGEsSRQ());
+    }
 }
 
 ConnectionManager::~ConnectionManager()
@@ -61,7 +67,7 @@ con::Connection* ConnectionManager::_CreateConnection(
 {
     return new msgrc::Connection(_GetOwnNodeId(), connectionId,
             m_sendBufferSize, m_ibSQSize, m_ibSRQ, m_ibSRQSize, m_ibSharedSCQ,
-            m_ibSharedSCQSize, m_ibSharedRCQ, m_ibSharedRCQSize, _GetRefProtDom());
+            m_ibSharedSCQSize, m_ibSharedRCQ, m_ibSharedRCQSize, m_maxSGEs, _GetRefProtDom());
 }
 
 ibv_srq* ConnectionManager::__CreateSRQ(uint16_t size)
@@ -71,7 +77,7 @@ ibv_srq* ConnectionManager::__CreateSRQ(uint16_t size)
 
     memset(&attr, 0, sizeof(attr));
 
-    attr.attr.max_sge = 1;
+    attr.attr.max_sge = m_maxSGEs;
     attr.attr.max_wr = size;
 
     IBNET_LOG_TRACE("ibv_create_srq, size %d", size);

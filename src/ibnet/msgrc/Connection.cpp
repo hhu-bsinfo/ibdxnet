@@ -31,7 +31,7 @@ namespace msgrc {
 Connection::Connection(con::NodeId ownNodeId, con::ConnectionId connectionId,
         uint32_t sendBufferSize, uint16_t ibSQSize, ibv_srq* refIbSRQ,
         uint16_t ibSRQSize, ibv_cq* refIbSharedSCQ, uint16_t ibSharedSCQSize,
-        ibv_cq* refIbSharedRCQ, uint16_t ibSharedRCQSize,
+        ibv_cq* refIbSharedRCQ, uint16_t ibSharedRCQSize, uint16_t maxSGEs,
         core::IbProtDom* refProtDom) :
         con::Connection(ownNodeId, connectionId),
         m_sendBufferSize(sendBufferSize),
@@ -47,7 +47,8 @@ Connection::Connection(con::NodeId ownNodeId, con::ConnectionId connectionId,
         m_refIbSharedSCQ(refIbSharedSCQ),
         m_ibSharedSCQSize(ibSharedSCQSize),
         m_refIbSharedRCQ(refIbSharedRCQ),
-        m_ibSharedRCQSize(ibSharedRCQSize)
+        m_ibSharedRCQSize(ibSharedRCQSize),
+        m_maxSGEs(maxSGEs)
 {
     IBNET_LOG_TRACE_FUNC;
 
@@ -141,8 +142,8 @@ void Connection::__CreateQP()
 
     qp_init_attr.cap.max_send_wr = m_ibSQSize;
     qp_init_attr.cap.max_recv_wr = m_ibSRQSize;
-    qp_init_attr.cap.max_send_sge = 1;
-    qp_init_attr.cap.max_recv_sge = 1;
+    qp_init_attr.cap.max_send_sge = m_maxSGEs;
+    qp_init_attr.cap.max_recv_sge = m_maxSGEs;
     qp_init_attr.cap.max_inline_data = 0;
     // only generate CQ elements on requested WQ elements
     qp_init_attr.sq_sig_all = 0;

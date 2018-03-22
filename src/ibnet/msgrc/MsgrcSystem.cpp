@@ -98,7 +98,7 @@ void MsgrcSystem::Init()
             m_exchangeManager, m_jobManager, m_discoveryManager,
             m_configuration->m_sendBufferSize, m_configuration->m_SQSize,
             m_configuration->m_SRQSize, m_configuration->m_sharedSCQSize,
-            m_configuration->m_sharedRCQSize);
+            m_configuration->m_sharedRCQSize, m_configuration->m_maxSGEs);
 
     m_connectionManager->SetListener(this);
 

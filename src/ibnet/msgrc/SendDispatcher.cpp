@@ -294,7 +294,7 @@ bool SendDispatcher::Dispatch()
             m_refConnectionManager->ReturnConnection(connection);
         }
     } catch (sys::TimeoutException& e) {
-        IBNET_LOG_WARN("TimeoutException: %s", e.what());
+        IBNET_LOG_WARN("Timeout: %s", e.what());
 
         IBNET_STATS(m_pollCompletionsTotalTime->Start());
 
@@ -304,7 +304,7 @@ bool SendDispatcher::Dispatch()
 
         IBNET_STATS(m_pollCompletionsTotalTime->Stop());
     } catch (con::DisconnectedException& e) {
-        IBNET_LOG_WARN("DisconnectedException: %s", e.what());
+        IBNET_LOG_WARN("Disconnected: %s", e.what());
 
         m_refConnectionManager->ReturnConnection(connection);
         m_refConnectionManager->CloseConnection(
@@ -421,6 +421,8 @@ bool SendDispatcher::__PollCompletions()
 bool SendDispatcher::__SendData(Connection* connection,
         const SendHandler::NextWorkPackage* workPackage)
 {
+    const uint32_t maxRecvBufferSize = m_recvBufferSize * m_refConnectionManager->GetMaxSGEs();
+
     IBNET_STATS(m_sendDataProcessingTime->Start());
 
     uint32_t totalBytesProcessed = 0;
@@ -450,8 +452,7 @@ bool SendDispatcher::__SendData(Connection* connection,
     uint16_t chunks = 0;
 
     // slice area of send buffer into chunks fitting receive buffers
-    while (m_sendQueuePending[nodeId] + chunks < queueSize &&
-            (posBack != posFront || fcData)) {
+    while (m_sendQueuePending[nodeId] + chunks < queueSize && (posBack != posFront || fcData)) {
         uint32_t posEnd = posFront;
 
         // ring buffer wrap around detected: first, send everything
@@ -475,17 +476,14 @@ bool SendDispatcher::__SendData(Connection* connection,
         }
 
         uint32_t length;
-        bool zeroLength;
 
         // set this before moving posBack pointer
-        m_sgeLists[chunks].addr =
-                (uintptr_t) refSendBuffer->GetAddress() + posBack;
+        m_sgeLists[chunks].addr = (uintptr_t) refSendBuffer->GetAddress() + posBack;
 
         // calculate length and move ring buffer pointers
-        if (posBack + m_recvBufferSize <= posEnd) {
+        if (posBack + maxRecvBufferSize <= posEnd) {
             // fits a full receive buffer
-            length = m_recvBufferSize;
-            zeroLength = false;
+            length = maxRecvBufferSize;
 
             posBack += length;
             totalBytesProcessed += length;
@@ -497,20 +495,15 @@ bool SendDispatcher::__SendData(Connection* connection,
 
             // zero length buffer, i.e. flow control data only
             if (length == 0) {
-                zeroLength = true;
-                length = 1;
-
                 // sanity check
                 if (!fcData) {
                     __ThrowDetailedException<sys::IllegalStateException>(
                             "Sending zero length data but no flow control");
                 }
-            } else {
-                zeroLength = false;
-
-                posBack += length;
-                totalBytesProcessed += length;
             }
+
+            posBack += length;
+            totalBytesProcessed += length;
 
             IBNET_STATS(m_sendDataNonFullBuffers->Inc());
         }
@@ -524,11 +517,17 @@ bool SendDispatcher::__SendData(Connection* connection,
         // context used on completion to identify completed work request
         auto* ctx = (WorkRequestIdCtx*) &m_sendWrs[chunks].wr_id;
         ctx->m_targetNodeId = nodeId;
-        ctx->m_sendSize = zeroLength ? 0 : length;
+        ctx->m_sendSize = length;
         ctx->m_fcData = fcData;
 
-        m_sendWrs[chunks].sg_list = &m_sgeLists[chunks];
-        m_sendWrs[chunks].num_sge = 1;
+        if (length == 0) {
+            m_sendWrs[chunks].sg_list = nullptr;
+            m_sendWrs[chunks].num_sge = 0;
+        } else {
+            m_sendWrs[chunks].sg_list = &m_sgeLists[chunks];
+            m_sendWrs[chunks].num_sge = 1;
+        }
+
         m_sendWrs[chunks].opcode = IBV_WR_SEND_WITH_IMM;
         m_sendWrs[chunks].send_flags = 0;
         // list is connected further down
@@ -537,7 +536,6 @@ bool SendDispatcher::__SendData(Connection* connection,
         auto* immedData = (ImmediateData*) &m_sendWrs[chunks].imm_data;
         immedData->m_sourceNodeId = connection->GetSourceNodeId();
         immedData->m_flowControlData = fcData;
-        immedData->m_zeroLengthData = static_cast<uint8_t>(zeroLength ? 1 : 0);
 
         if (fcData > 0) {
             m_prevWorkPackageResults->m_fcDataPosted = fcData;

@@ -54,6 +54,7 @@ public:
      * @param ibSRQSize Size of the shared receive queue
      * @param ibSharedSCQSize Size of the shared send completion queue
      * @param ibSharedRCQSize Size of the shared receive completion queue
+     * @param maxSGEs Max number of SGEs used for a single work request
      */
     ConnectionManager(con::NodeId ownNodeId, const con::NodeConf& nodeConf,
             uint32_t connectionCreationTimeoutMs, uint32_t maxNumConnections,
@@ -62,7 +63,7 @@ public:
             con::JobManager* refJobManager,
             con::DiscoveryManager* refDiscoveryManager, uint32_t sendBufferSize,
             uint16_t ibSQSize, uint16_t ibSRQSize, uint16_t ibSharedSCQSize,
-            uint16_t ibSharedRCQSize);
+            uint16_t ibSharedRCQSize, uint16_t maxSGEs);
 
     /**
      * Destructor
@@ -125,11 +126,20 @@ public:
         return m_ibSharedRCQSize;
     }
 
+    /**
+     * Get the max number of SGEs per WRQ
+     */
+    uint16_t GetMaxSGEs() const
+    {
+        return m_maxSGEs;
+    }
+
 protected:
     con::Connection* _CreateConnection(con::ConnectionId connectionId) override;
 
 private:
     const uint32_t m_sendBufferSize;
+    const uint16_t m_maxSGEs;
 
     const uint16_t m_ibSQSize;
 

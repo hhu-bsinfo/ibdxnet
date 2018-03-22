@@ -76,6 +76,7 @@ public:
         uint64_t m_recvBufferPoolSizeBytes =
                 static_cast<uint64_t>(1024 * 1024 * 1024 * 2ll);
         uint32_t m_recvBufferSize = 1024 * 16;
+        uint16_t m_maxSGEs = 2;
 
         friend std::ostream& operator<<(std::ostream& os,
                 const Configuration& o)
@@ -100,7 +101,8 @@ public:
                     "m_sendBufferSize: " << o.m_sendBufferSize << std::endl <<
                     "m_recvBufferPoolSizeBytes: " << o.m_recvBufferPoolSizeBytes <<
                     std::endl <<
-                    "m_recvBufferSize: " << o.m_recvBufferSize << std::endl;
+                    "m_recvBufferSize: " << o.m_recvBufferSize << std::endl <<
+                    "m_maxSGEs: " << o.m_maxSGEs << std::endl;
         }
     };
 

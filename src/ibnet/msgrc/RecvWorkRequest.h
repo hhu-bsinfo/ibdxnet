@@ -26,21 +26,38 @@
 namespace ibnet {
 namespace msgrc {
 
+/**
+ * Wrapper with helper methods for managing receive WRQs
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 22.03.2018
+ */
 struct RecvWorkRequest
 {
     ibv_recv_wr m_recvWr;
     ScatterGatherList m_sgls;
 
+    /**
+     * Constructor
+     *
+     * @param maxSge Max number of SGEs for the SGE list for this WRQ
+     */
     RecvWorkRequest(uint32_t maxSge) :
         m_recvWr(),
         m_sgls(maxSge)
     {
     };
 
+    /**
+     * Destructor
+     */
     ~RecvWorkRequest()
     {
     }
 
+    /**
+     * Prepare a work request. This must be called before posting it and after all
+     * setting all data for it is finished.
+     */
     void Prepare()
     {
         m_recvWr.wr_id = (uint64_t) this;
@@ -49,11 +66,19 @@ struct RecvWorkRequest
         m_recvWr.next = nullptr;
     }
 
+    /**
+     * Chain this WRQ to a successor
+     *
+     * @param refOther Successor to point to for the WRQ list
+     */
     void Chain(RecvWorkRequest* refOther)
     {
         m_recvWr.next = &refOther->m_recvWr;
     }
 
+    /**
+     * Enable output to an out stream
+     */
     friend std::ostream& operator<<(std::ostream& os, const RecvWorkRequest& o)
     {
         os << "m_recvWr " << std::hex << static_cast<const void*>(&o.m_recvWr) << std::dec;

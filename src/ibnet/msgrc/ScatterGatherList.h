@@ -30,6 +30,11 @@
 namespace ibnet {
 namespace msgrc {
 
+/**
+ * Wrapper with helper methods for managing scatter gather elements
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 22.03.2018
+ */
 struct ScatterGatherList
 {
     const uint32_t m_maxSges;
@@ -38,6 +43,11 @@ struct ScatterGatherList
     core::IbMemReg** m_refsMemReg;
     ibv_sge* m_sgeList;
 
+    /**
+     * Constructor
+     *
+     * @param maxSge Max number of SGEs for a single list
+     */
     ScatterGatherList(uint32_t maxSge) :
         m_maxSges(maxSge),
         m_numUsedElems(0),
@@ -46,12 +56,20 @@ struct ScatterGatherList
     {
     };
 
+    /**
+     * Destructor
+     */
     ~ScatterGatherList()
     {
         delete [] m_refsMemReg;
         delete [] m_sgeList;
     }
 
+    /**
+     * Add a memory region to the SGE list
+     *
+     * @param refMemReg Ref to a memory region to add to the list (memory managed by caller)
+     */
     void Add(core::IbMemReg* refMemReg)
     {
         if (m_numUsedElems == m_maxSges) {
@@ -67,11 +85,17 @@ struct ScatterGatherList
         m_numUsedElems++;
     }
 
+    /**
+     * Clear the list
+     */
     void Reset()
     {
         m_numUsedElems = 0;
     }
 
+    /**
+     * Enable output to an out stream
+     */
     friend std::ostream& operator<<(std::ostream& os, const ScatterGatherList& o)
     {
         os << "m_numUsedElems " << o.m_numUsedElems;

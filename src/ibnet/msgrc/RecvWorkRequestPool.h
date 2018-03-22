@@ -24,16 +24,40 @@
 namespace ibnet {
 namespace msgrc {
 
-// single threaded, i.e. not thread save pool
+/**
+ * Pool for RecvWorkRequests, single threaded i.e. not thread save (only used by RecvDispatcher)
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 22.03.2018
+ */
 class RecvWorkRequestPool
 {
 public:
+    /**
+     * Constructor
+     *
+     * @param numWorkRequests Total number of WRQs for the pool
+     * @param numSges Num of SGEs of the SGE list for each WRQ
+     */
     RecvWorkRequestPool(uint32_t numWorkRequests, uint32_t numSges);
 
+    /**
+     * Destructor
+     */
     ~RecvWorkRequestPool();
 
+    /**
+     * Get a WRQ from the pool
+     *
+     * @return Pointer to a WRQ (or null if pool empty). Caller does not have to manage memory but must return
+     *         the WRQ later using Push.
+     */
     RecvWorkRequest* Pop();
 
+    /**
+     * Return a WRQ back to the pool
+     *
+     * @param refWorkRequest WRQ to return to the pool
+     */
     void Push(RecvWorkRequest* refWorkRequest);
 
 private:

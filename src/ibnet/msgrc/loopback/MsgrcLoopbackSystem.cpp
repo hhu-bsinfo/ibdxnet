@@ -240,6 +240,12 @@ MsgrcSystem::Configuration* MsgrcLoopbackSystem::__ProcessCmdArgs(
                     "Size of a single receive buffer (in bytes)",
                     1
             },
+            {
+                    "maxSge",
+                    {"-i", "--maxSge"},
+                    "Max number of SGEs to use for WRQs (for receiving)",
+                    1
+            },
     }};
 
     argagg::parser_results args = argparser.parse(argc, argv);
@@ -355,6 +361,10 @@ MsgrcSystem::Configuration* MsgrcLoopbackSystem::__ProcessCmdArgs(
     if (args["recvBufferSize"]) {
         config->m_recvBufferSize =
                 args["recvBufferSize"].as<uint32_t>(config->m_recvBufferSize);
+    }
+
+    if (args["maxSge"]) {
+        config->m_maxSGEs = args["maxSge"].as<uint16_t>(config->m_maxSGEs);
     }
 
     if (config->m_ownNodeId == con::NODE_ID_INVALID) {

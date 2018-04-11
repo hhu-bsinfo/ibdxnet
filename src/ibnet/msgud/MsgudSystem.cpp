@@ -71,6 +71,11 @@ void MsgudSystem::Init()
     IBNET_LOG_DEBUG("%s", *m_configuration);
 
     m_device = new ibnet::core::IbDevice();
+
+    if(m_configuration->m_recvBufferSize > m_device->getMaxMtuSize()) {
+        throw core::IbException("Receive Buffer size is bigger than max MTU-size! Max MTU-size = %s.", m_device->getMaxMtuSize());
+    }
+
     m_protDom = new ibnet::core::IbProtDom(*m_device, "MsgudLoopbackTest");
 
     IBNET_LOG_DEBUG("Protection domain:\n%s", *m_protDom);

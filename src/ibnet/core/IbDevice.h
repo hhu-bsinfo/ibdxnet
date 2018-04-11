@@ -21,6 +21,7 @@
 
 #include <iostream>
 #include <string>
+#include <cmath>
 
 #include <infiniband/verbs.h>
 
@@ -271,6 +272,10 @@ public:
     ibv_context* GetIBCtx() const
     {
         return m_ibCtx;
+    }
+
+    uint32_t getMaxMtuSize() const {
+        return static_cast<uint32_t>(pow(2, 8 + m_maxMtuSize));
     }
 
     /**

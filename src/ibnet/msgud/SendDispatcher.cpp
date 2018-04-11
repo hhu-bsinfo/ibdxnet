@@ -18,11 +18,13 @@ namespace ibnet {
 namespace msgud {
 
 SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
+    uint8_t ackFrameSize,
     ConnectionManager* refConectionManager,
     stats::StatisticsManager* refStatisticsManager,
     SendHandler* refSendHandler) :
     ExecutionUnit("MsgUDSend"),
     m_recvBufferSize(recvBufferSize),
+    m_ackFrameSize(ackFrameSize),
     m_refConnectionManager(refConectionManager),
     m_refStatisticsManager(refStatisticsManager),
     m_refSendHandler(refSendHandler),
@@ -513,7 +515,8 @@ bool SendDispatcher::__SendData(Connection* connection,
         immedData->m_sourceNodeId = connection->GetSourceNodeId();
         immedData->m_flowControlData = fcData;
         immedData->m_zeroLengthData = static_cast<uint8_t>(zeroLength ? 1 : 0);
-        immedData->m_sequenceNumber = static_cast<uint8_t>(connection->GetSendSequenceNumber()->GetValue() % 256);
+        immedData->m_sequenceNumber = static_cast<uint8_t>(connection->GetSendSequenceNumber()->GetValue() %
+                                                           m_ackFrameSize);
 
         connection->GetSendSequenceNumber()->Inc();
 

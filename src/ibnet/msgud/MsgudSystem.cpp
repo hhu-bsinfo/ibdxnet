@@ -106,12 +106,11 @@ void MsgudSystem::Init()
     
     m_connectionManager->SetListener(this);
 
-    m_recvDispatcher = new RecvDispatcher(m_connectionManager,
-        m_recvBufferPool, m_statisticsManager, this);
+    m_recvDispatcher = new RecvDispatcher(m_configuration->m_ackFrameSize,
+        m_connectionManager, m_recvBufferPool, m_statisticsManager, this);
 
-    m_sendDispatcher = new SendDispatcher(
-        m_configuration->m_recvBufferSize, m_connectionManager,
-        m_statisticsManager, this);
+    m_sendDispatcher = new SendDispatcher(m_configuration->m_recvBufferSize,
+        m_configuration->m_ackFrameSize, m_connectionManager, m_statisticsManager, this);
     
     m_executionEngine = new dx::ExecutionEngine(2, m_statisticsManager);
 

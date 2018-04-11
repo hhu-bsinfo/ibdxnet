@@ -15,11 +15,13 @@
 namespace ibnet {
 namespace msgud {
 
-RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
+RecvDispatcher::RecvDispatcher(uint8_t ackFrameSize,
+    ConnectionManager* refConnectionManager,
     dx::RecvBufferPool* refRecvBufferPool,
     stats::StatisticsManager* refStatisticsManager,
     RecvHandler* refRecvHandler) :
     ExecutionUnit("MsgUDRecv"),
+    m_ackFrameSize(ackFrameSize),
     m_refConnectionManager(refConnectionManager),
     m_refRecvBufferPool(refRecvBufferPool),
     m_refStatisticsManager(refStatisticsManager),
@@ -221,7 +223,7 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
             Connection* connection = dynamic_cast<Connection*>(m_refConnectionManager->
                     GetConnection(immedData->m_sourceNodeId));
 
-            if(immedData->m_sequenceNumber != (connection->GetRecvSequenceNumber()->GetValue() % 256)) {
+            if(immedData->m_sequenceNumber != (connection->GetRecvSequenceNumber()->GetValue() % m_ackFrameSize)) {
                 m_lostPackets->Inc();
                 connection->GetRecvSequenceNumber()->SetValue(immedData->m_sequenceNumber);
             }

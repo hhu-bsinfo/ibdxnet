@@ -50,7 +50,8 @@ public:
      * @param refStatisticsManager Pointer to the statistics manager (managed by caller)
      * @param refRecvHandler Pointer to the receive handler to dispatch the received data to (managed by caller)
      */
-    RecvDispatcher(ConnectionManager* refConnectionManager,
+    RecvDispatcher(uint8_t ackFrameSize,
+        ConnectionManager* refConnectionManager,
         dx::RecvBufferPool* refRecvBufferPool,
         stats::StatisticsManager* refStatisticsManager,
         RecvHandler* refRecvHandler);
@@ -66,6 +67,7 @@ public:
     bool Dispatch() override;
 
 private:
+    uint8_t m_ackFrameSize;
     ConnectionManager* m_refConnectionManager;
     dx::RecvBufferPool* m_refRecvBufferPool;
     stats::StatisticsManager* m_refStatisticsManager;

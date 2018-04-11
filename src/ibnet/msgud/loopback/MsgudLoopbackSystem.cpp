@@ -226,6 +226,12 @@ MsgudSystem::Configuration* MsgudLoopbackSystem::__ProcessCmdArgs(int argc, char
             "Size of a single receive buffer (in bytes)",
             1
         },
+        {
+            "ackFrameSize",
+            {"-b", "--ackFrameSize"},
+            "Amount of packets to be sent before an ACK",
+            1
+        }
     }};
 
     argagg::parser_results args = argparser.parse(argc, argv);
@@ -331,6 +337,11 @@ MsgudSystem::Configuration* MsgudLoopbackSystem::__ProcessCmdArgs(int argc, char
     if (args["recvBufferSize"]) {
         config->m_recvBufferSize =
             args["recvBufferSize"].as<uint32_t>(config->m_recvBufferSize);
+    }
+
+    if(args["ackFrameSize"]) {
+        config->m_ackFrameSize =
+            args["ackFrameSize"].as<uint8_t>(config->m_ackFrameSize);
     }
 
     if (config->m_ownNodeId == con::NODE_ID_INVALID) {

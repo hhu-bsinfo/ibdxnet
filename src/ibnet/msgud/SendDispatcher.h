@@ -55,6 +55,7 @@ public:
      * @param refSendHandler Pointer to a send handler which provides data to be sent (memory managed by caller)
      */
     SendDispatcher(uint32_t recvBufferSize,
+        uint8_t ackFrameSize,
         ConnectionManager* refConnectionManager,
         stats::StatisticsManager* refStatisticsManager,
         SendHandler* refSendHandler);
@@ -79,6 +80,7 @@ private:
 
 private:
     const uint32_t m_recvBufferSize;
+    uint8_t m_ackFrameSize;
 
     ConnectionManager* m_refConnectionManager;
     stats::StatisticsManager* m_refStatisticsManager;

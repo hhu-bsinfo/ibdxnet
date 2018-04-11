@@ -75,6 +75,7 @@ public:
         uint64_t m_recvBufferPoolSizeBytes =
             static_cast<uint64_t>(1024 * 1024 * 1024 * 2ll);
         uint32_t m_recvBufferSize = 1024 * 4;
+        uint32_t m_ackFrameSize = 255;
         
         friend std::ostream &operator<<(std::ostream& os,
                 const Configuration& o) {
@@ -95,7 +96,8 @@ public:
                 "m_CQSize: " << o.m_CQSize << std::endl <<
                 "m_sendBufferSize: " << o.m_sendBufferSize << std::endl <<
                 "m_recvBufferPoolSizeBytes: " << o.m_recvBufferPoolSizeBytes << std::endl <<
-                "m_recvBufferSize: " << o.m_recvBufferSize << " + 40 Bytes for Global Routing Header" << std::endl;
+                "m_recvBufferSize: " << o.m_recvBufferSize << " + 40 Bytes for Global Routing Header" << std::endl <<
+                "m_ackFrameSize: " << o.m_ackFrameSize << std::endl;
         }
     };
 

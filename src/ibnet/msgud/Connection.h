@@ -96,6 +96,7 @@ public:
     Counter* GetSendSequenceNumber() {
         return m_sendSequenceNumber;
     }
+
     Counter* GetRecvSequenceNumber() {
         return m_recvSequenceNumber;
     }

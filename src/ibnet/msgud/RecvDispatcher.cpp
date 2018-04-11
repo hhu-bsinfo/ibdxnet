@@ -60,6 +60,7 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
         m_refillGetBuffersTime, m_refillPostTime})),
     m_receivedData(new stats::Unit("RecvDispatcher", "Data", stats::Unit::e_Base2)),
     m_receivedFC(new stats::Unit("RecvDispatcher", "FC", stats::Unit::e_Base10)),
+    m_lostPackets(new stats::Unit("RecvDispatcher", "LostPackets", stats::Unit::e_Base10)),
     m_throughputReceivedData(new stats::Throughput("RecvDispatcher", "ThroughputData",
         m_receivedData, m_totalTime)),
     m_throughputReceivedFC(new stats::Throughput("RecvDispatcher", "ThroughputFC",
@@ -82,6 +83,7 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
     m_refStatisticsManager->Register(m_refillTimeline);
     m_refStatisticsManager->Register(m_receivedData);
     m_refStatisticsManager->Register(m_receivedFC);
+    m_refStatisticsManager->Register(m_lostPackets);
     m_refStatisticsManager->Register(m_throughputReceivedData);
     m_refStatisticsManager->Register(m_throughputReceivedFC);
 }    
@@ -220,6 +222,7 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
                     GetConnection(immedData->m_sourceNodeId));
 
             if(immedData->m_sequenceNumber != (connection->GetRecvSequenceNumber()->GetValue() % 256)) {
+                m_lostPackets->Inc();
                 connection->GetRecvSequenceNumber()->SetValue(immedData->m_sequenceNumber);
             }
 

@@ -134,6 +134,7 @@ private:
 
     stats::Unit* m_receivedData;
     stats::Unit* m_receivedFC;
+    stats::Unit* m_lostPackets;
 
     stats::Throughput* m_throughputReceivedData;
     stats::Throughput* m_throughputReceivedFC;

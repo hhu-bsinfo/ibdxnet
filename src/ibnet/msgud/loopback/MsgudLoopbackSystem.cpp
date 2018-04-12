@@ -341,7 +341,7 @@ MsgudSystem::Configuration* MsgudLoopbackSystem::__ProcessCmdArgs(int argc, char
 
     if(args["ackFrameSize"]) {
         config->m_ackFrameSize =
-            args["ackFrameSize"].as<uint8_t>(config->m_ackFrameSize);
+            args["ackFrameSize"].as<uint32_t>(config->m_ackFrameSize);
     }
 
     if (config->m_ownNodeId == con::NODE_ID_INVALID) {

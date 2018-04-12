@@ -76,6 +76,10 @@ void MsgudSystem::Init()
         throw core::IbException("Receive Buffer size is bigger than max MTU-size! Max MTU-size = %s.", m_device->getMaxMtuSize());
     }
 
+    if(m_configuration->m_ackFrameSize > 126) {
+        throw core::IbException("Ack frame size is too big. Max Frame size = 126.");
+    }
+
     m_protDom = new ibnet::core::IbProtDom(*m_device, "MsgudLoopbackTest");
 
     IBNET_LOG_DEBUG("Protection domain:\n%s", *m_protDom);

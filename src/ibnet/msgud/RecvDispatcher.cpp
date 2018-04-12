@@ -228,7 +228,11 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
                 connection->GetRecvSequenceNumber()->SetValue(immedData->m_sequenceNumber);
             }
 
-            connection->GetRecvSequenceNumber()->Inc();
+            if(immedData->m_endOfWorkPackage == 1) {
+                connection->GetRecvSequenceNumber()->Reset();
+            } else {
+                connection->GetRecvSequenceNumber()->Inc();
+            }
 
             // evaluate data
             // check for zero length package which can't be indicated by setting

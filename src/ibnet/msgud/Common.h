@@ -17,7 +17,8 @@ struct ImmediateData
     con::NodeId m_sourceNodeId;
     uint8_t m_zeroLengthData : 1;
     uint8_t m_flowControlData : 7;
-    uint8_t m_sequenceNumber;
+    uint8_t m_endOfWorkPackage : 1;
+    uint8_t m_sequenceNumber : 7;
 } __attribute__((__packed__));
 
 struct Counter

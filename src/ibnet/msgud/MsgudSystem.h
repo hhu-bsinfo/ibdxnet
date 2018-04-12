@@ -75,7 +75,7 @@ public:
         uint64_t m_recvBufferPoolSizeBytes =
             static_cast<uint64_t>(1024 * 1024 * 1024 * 2ll);
         uint32_t m_recvBufferSize = 1024 * 4;
-        uint32_t m_ackFrameSize = 255;
+        uint32_t m_ackFrameSize = 126;
         
         friend std::ostream &operator<<(std::ostream& os,
                 const Configuration& o) {

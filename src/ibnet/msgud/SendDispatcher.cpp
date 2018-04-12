@@ -517,6 +517,7 @@ bool SendDispatcher::__SendData(Connection* connection,
         immedData->m_zeroLengthData = static_cast<uint8_t>(zeroLength ? 1 : 0);
         immedData->m_sequenceNumber = static_cast<uint8_t>(connection->GetSendSequenceNumber()->GetValue() %
                                                            m_ackFrameSize);
+        immedData->m_endOfWorkPackage = 0;
 
         connection->GetSendSequenceNumber()->Inc();
 
@@ -544,6 +545,9 @@ bool SendDispatcher::__SendData(Connection* connection,
 
     if(chunks > 0) {
         activity = true;
+
+        ((ImmediateData*) (&m_sendWrs[chunks - 1].imm_data))->m_endOfWorkPackage = 1;
+        connection->GetSendSequenceNumber()->Reset();
 
         // connect all work requests
         for (uint16_t i = 0; i < chunks - 1; i++) {

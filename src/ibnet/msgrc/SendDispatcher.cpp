@@ -259,18 +259,12 @@ bool SendDispatcher::Dispatch()
     m_completionList->Reset();
 
     Connection* connection = nullptr;
-    bool ret;
+    bool ret = false;
 
     try {
         // nothing to send, poll completions
         if (workPackage->m_nodeId == con::NODE_ID_INVALID) {
             IBNET_STATS(m_emptyNextWorkPackage->Inc());
-
-            IBNET_STATS(m_pollCompletionsTotalTime->Start());
-
-            ret = __PollCompletions();
-
-            IBNET_STATS(m_pollCompletionsTotalTime->Stop());
         } else {
             IBNET_STATS(m_nonEmptyNextWorkPackage->Inc());
 
@@ -291,15 +285,14 @@ bool SendDispatcher::Dispatch()
 
             IBNET_STATS(m_sendDataTotalTime->Stop());
 
-            IBNET_STATS(m_pollCompletionsTotalTime->Start());
-
-            // after sending data, try polling for more completions
-            ret = ret || __PollCompletions();
-
-            IBNET_STATS(m_pollCompletionsTotalTime->Stop());
-
             m_refConnectionManager->ReturnConnection(connection);
         }
+
+        IBNET_STATS(m_pollCompletionsTotalTime->Start());
+
+        ret = ret || __PollCompletions();
+
+        IBNET_STATS(m_pollCompletionsTotalTime->Stop());
     } catch (sys::TimeoutException& e) {
         IBNET_LOG_WARN("Timeout: %s", e.what());
 

@@ -28,6 +28,7 @@
 
 #include "ConnectionManager.h"
 #include "RecvHandler.h"
+#include "Connection.h"
 
 namespace ibnet {
 namespace msgud {
@@ -84,12 +85,18 @@ private:
     ibv_sge* m_sgeList;
     ibv_recv_wr* m_recvWrList;
 
+    ibv_send_wr m_ackWr;
+    ibv_sge m_ackSge;
+    char m_dummyBuf[4096];
+
 private:
     uint32_t __Poll();
 
     void __ProcessReceived(uint32_t receivedCount);
 
     void __Refill();
+
+    void __SendAck(Connection* connection);
 
     template<typename ExceptionType, typename... Args>
     void __ThrowDetailedException(const std::string& reason, Args... args) {

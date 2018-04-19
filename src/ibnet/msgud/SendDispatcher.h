@@ -104,6 +104,8 @@ private:
 
     bool __SendData(Connection* connection,
         const SendHandler::NextWorkPackage* workPackage);
+
+    bool __ReceiveAck(Connection *connection);
     
     template<typename ExceptionType, typename... Args>
     void __ThrowDetailedException(const std::string& reason, Args... args) {

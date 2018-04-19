@@ -598,7 +598,19 @@ bool SendDispatcher::__SendData(Connection* connection,
 
     IBNET_STATS(m_sendDataPostingTime->Stop());
 
+    __ReceiveAck(connection);
+
     return activity;
+}
+
+bool SendDispatcher::__ReceiveAck(Connection *connection) {
+    while(!connection->m_receivedAck.load()) {}
+
+    //printf("__RECEIVEACK FINISHED");
+
+    connection->m_receivedAck.store(false);
+
+    return true;
 }
 
 }

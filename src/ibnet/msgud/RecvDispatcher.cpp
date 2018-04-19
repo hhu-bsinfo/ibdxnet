@@ -223,12 +223,23 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
             Connection* connection = dynamic_cast<Connection*>(m_refConnectionManager->
                     GetConnection(immedData->m_sourceNodeId));
 
+            if(immedData->m_sequenceNumber == 127) {
+                //printf("\n\n\nRECEIVED ACK CONNECTION %d\n\n\n", connection->GetConnectionId());
+                connection->m_receivedAck.store(true);
+                m_refRecvBufferPool->ReturnBuffer(dataMem);
+
+                IBNET_STATS(m_processRecvAvailTime->Stop());
+
+                continue;
+            }
+
             if(immedData->m_sequenceNumber != (connection->GetRecvSequenceNumber()->GetValue() % m_ackFrameSize)) {
                 m_lostPackets->Inc();
                 connection->GetRecvSequenceNumber()->SetValue(immedData->m_sequenceNumber);
             }
 
-            if(immedData->m_endOfWorkPackage == 1) {
+            if(immedData->m_endOfWorkPackage == 1 || immedData->m_sequenceNumber == m_ackFrameSize - 1) {
+                __SendAck(connection);
                 connection->GetRecvSequenceNumber()->Reset();
             } else {
                 connection->GetRecvSequenceNumber()->Inc();
@@ -338,6 +349,45 @@ void RecvDispatcher::__Refill()
         m_recvQueuePending += numBufs;
 
         IBNET_STATS(m_refillAvailTime->Stop());
+    }
+}
+
+void RecvDispatcher::__SendAck(Connection* connection) {
+    //printf("\n\n\nSENDING ACK CONNECTION %d\n\n\n", connection->GetConnectionId());
+
+    ibv_send_wr *badWr;
+
+    memset(&m_ackWr, 0, sizeof(ibv_send_wr));
+
+    auto* immedData = (ImmediateData*) &m_ackWr.imm_data;
+    immedData->m_sourceNodeId = connection->GetSourceNodeId();
+    immedData->m_flowControlData = 0;
+    immedData->m_zeroLengthData = 1;
+    immedData->m_sequenceNumber = 127;
+    immedData->m_endOfWorkPackage = 0;
+
+    m_ackWr.wr_id = 0;
+    m_ackWr.num_sge = 0;
+    m_ackWr.opcode = IBV_WR_SEND_WITH_IMM;
+    m_ackWr.send_flags = IBV_SEND_SIGNALED;
+    m_ackWr.next = nullptr;
+
+    m_ackWr.wr.ud.ah = connection->GetRefAddressHandle()->GetIbAh();
+    m_ackWr.wr.ud.remote_qpn = connection->GetRemotePhysicalQpId();
+    m_ackWr.wr.ud.remote_qkey = 0x22222222;
+
+    int ret = ibv_post_send(m_refConnectionManager->GetIbQP(), &m_ackWr, &badWr);
+
+    if(ret != 0) {
+        switch (ret) {
+            case ENOMEM:
+                __ThrowDetailedException<core::IbQueueFullException>(
+                        "ACK: Send queue full!");
+
+            default:
+                __ThrowDetailedException<core::IbException>(ret,
+                                                            "ACK: Posting work request to send to queue failed");
+        }
     }
 }
 

@@ -72,7 +72,7 @@ struct ScatterGatherList
      */
     void Add(core::IbMemReg* refMemReg)
     {
-        if (m_numUsedElems == m_maxSges) {
+        if (m_numUsedElems >= m_maxSges) {
             throw sys::IllegalStateException("List overflow: %d", m_maxSges);
         }
 

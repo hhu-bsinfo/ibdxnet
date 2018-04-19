@@ -42,7 +42,7 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
         m_recvPackage(static_cast<RecvHandler::ReceivedPackage*>(
                 aligned_alloc(static_cast<size_t>(getpagesize()),
                         RecvHandler::ReceivedPackage::Sizeof(
-                                refConnectionManager->GetIbSRQSize())))),
+                                refConnectionManager->GetIbSRQSize() * refConnectionManager->GetMaxSGEs())))),
         m_recvQueuePending(0),
         m_workComps(static_cast<ibv_wc*>(
                 aligned_alloc(static_cast<size_t>(getpagesize()),
@@ -76,7 +76,8 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
                 m_receivedFC, m_totalTime)),
         m_privateStats(new Stats(this))
 {
-    memset(m_recvPackage, 0, RecvHandler::ReceivedPackage::Sizeof(refConnectionManager->GetIbSRQSize()));
+    memset(m_recvPackage, 0, RecvHandler::ReceivedPackage::Sizeof(refConnectionManager->GetIbSRQSize() *
+            refConnectionManager->GetMaxSGEs()));
     memset(m_workComps, 0, sizeof(ibv_wc) * refConnectionManager->GetIbSRQSize());
 
     m_refStatisticsManager->Register(m_totalTime);

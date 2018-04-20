@@ -83,6 +83,7 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
         m_sendDataFullBuffers(new stats::Unit("SendDispatcher", "DataFullBuffers")),
         m_sendDataNonFullBuffers(new stats::Unit("SendDispatcher", "DataNonFullBuffers")),
         m_sendBatches(new stats::Distribution("SendDispatcher", "Batches", 10)),
+        m_sendPostedLens(new stats::Distribution("SendDispatcher", "SendPostLens", 5)),
         m_sendQueueFull(new stats::Unit("SendDispatcher", "QueueFull")),
         m_emptyCompletionPolls(new stats::Unit("SendDispatcher", "EmptyCompletionPolls")),
         m_nonEmptyCompletionPolls(new stats::Unit("SendDispatcher", "NonEmptyCompletionPolls")),
@@ -133,6 +134,7 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     m_refStatisticsManager->Register(m_sendDataFullBuffers);
     m_refStatisticsManager->Register(m_sendDataNonFullBuffers);
     m_refStatisticsManager->Register(m_sendBatches);
+    m_refStatisticsManager->Register(m_sendPostedLens);
     m_refStatisticsManager->Register(m_sendQueueFull);
 
     m_refStatisticsManager->Register(m_emptyCompletionPolls);
@@ -166,6 +168,7 @@ SendDispatcher::~SendDispatcher()
     m_refStatisticsManager->Deregister(m_sendDataFullBuffers);
     m_refStatisticsManager->Deregister(m_sendDataNonFullBuffers);
     m_refStatisticsManager->Deregister(m_sendBatches);
+    m_refStatisticsManager->Deregister(m_sendPostedLens);
     m_refStatisticsManager->Deregister(m_sendQueueFull);
 
     m_refStatisticsManager->Deregister(m_emptyCompletionPolls);
@@ -214,6 +217,7 @@ SendDispatcher::~SendDispatcher()
     delete m_sendDataFullBuffers;
     delete m_sendDataNonFullBuffers;
     delete m_sendBatches;
+    delete m_sendPostedLens;
     delete m_sendQueueFull;
 
     delete m_emptyCompletionPolls;
@@ -521,9 +525,21 @@ bool SendDispatcher::__SendData(Connection* connection,
         ctx->m_fcData = fcData;
 
         if (length == 0) {
+            IBNET_STATS(m_sendPostedLens->GetUnit((size_t) 0).Add(length));
+
             m_sendWrs[chunks].sg_list = nullptr;
             m_sendWrs[chunks].num_sge = 0;
         } else {
+            if (length < 128) {
+                IBNET_STATS(m_sendPostedLens->GetUnit((size_t) 1).Add(length));
+            } else if (length < 1024) {
+                IBNET_STATS(m_sendPostedLens->GetUnit((size_t) 2).Add(length));
+            } else if (length < 128 * 1024) {
+                IBNET_STATS(m_sendPostedLens->GetUnit((size_t) 3).Add(length));
+            } else {
+                IBNET_STATS(m_sendPostedLens->GetUnit((size_t) 4).Add(length));
+            }
+
             m_sendWrs[chunks].sg_list = &m_sgeLists[chunks];
             m_sendWrs[chunks].num_sge = 1;
         }

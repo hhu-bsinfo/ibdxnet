@@ -203,6 +203,7 @@ private:
     stats::Unit* m_sendDataFullBuffers;
     stats::Unit* m_sendDataNonFullBuffers;
     stats::Distribution* m_sendBatches;
+    stats::Distribution* m_sendPostedLens;
     stats::Unit* m_sendQueueFull;
 
     stats::Unit* m_emptyCompletionPolls;

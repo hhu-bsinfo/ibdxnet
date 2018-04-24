@@ -32,6 +32,7 @@
 #include "Connection.h"
 #include "ConnectionManager.h"
 #include "SendHandler.h"
+#include "SendWorkRequestCtxPool.h"
 
 namespace ibnet {
 namespace msgrc {
@@ -70,14 +71,6 @@ public:
     bool Dispatch() override;
 
 private:
-    struct WorkRequestIdCtx
-    {
-        con::NodeId m_targetNodeId;
-        uint32_t m_sendSize;
-        uint16_t m_fcData;
-    } __attribute__((__packed__));
-
-private:
     const uint32_t m_recvBufferSize;
 
     ConnectionManager* m_refConnectionManager;
@@ -97,11 +90,16 @@ private:
     ibv_send_wr* m_sendWrs;
     ibv_wc* m_workComp;
 
+    SendWorkRequestCtxPool* m_workRequestCtxPool;
+
 private:
     bool __PollCompletions();
 
-    bool __SendData(Connection* connection,
-            const SendHandler::NextWorkPackage* workPackage);
+    bool __SendData(Connection* connection, const SendHandler::NextWorkPackage* workPackage);
+
+    uint32_t __SendDataPrepareWorkRequests(Connection* connection, const SendHandler::NextWorkPackage* workPackage);
+
+    void __SendDataPostWorkRequests(Connection* connection, uint32_t chunks);
 
     template <typename ExceptionType, typename... Args>
     void __ThrowDetailedException(const std::string& reason, Args... args)
@@ -193,6 +191,8 @@ private:
     stats::TimelineFragmented* m_sendTimeline;
 
     stats::Unit* m_postedWRQs;
+    stats::Unit* m_postedDataChunk;
+    stats::Unit* m_postedDataRemainderChunk;
 
     stats::Unit* m_sentData;
     stats::Unit* m_sentFC;

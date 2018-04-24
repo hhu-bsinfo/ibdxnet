@@ -26,7 +26,8 @@ set(SOURCE_FILES
         ${IBNET_SRC_DIR}/ibnet/msgrc/MsgrcSystem.cpp
         ${IBNET_SRC_DIR}/ibnet/msgrc/RecvDispatcher.cpp
         ${IBNET_SRC_DIR}/ibnet/msgrc/RecvWorkRequestPool.cpp
-        ${IBNET_SRC_DIR}/ibnet/msgrc/SendDispatcher.cpp)
+        ${IBNET_SRC_DIR}/ibnet/msgrc/SendDispatcher.cpp
+        ${IBNET_SRC_DIR}/ibnet/msgrc/SendWorkRequestCtxPool.cpp)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 

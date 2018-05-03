@@ -73,8 +73,9 @@ public:
      *
      * @param recvPackage Pointer to a struct with information about any received data
      *        (memory managed by caller)
+     * @return Number of elements of recvPackage processed
      */
-    virtual void Received(ReceivedPackage* recvPackage) = 0;
+    virtual uint32_t Received(ReceivedPackage* recvPackage) = 0;
 
 protected:
     /**

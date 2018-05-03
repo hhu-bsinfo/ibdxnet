@@ -105,7 +105,7 @@ public:
     /**
      * Overriding virtual function
      */
-    void Received(ReceivedPackage* recvPackage) override;
+    uint32_t Received(ReceivedPackage* recvPackage) override;
 
     /**
      * Overriding virtual function

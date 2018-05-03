@@ -74,15 +74,17 @@ public:
         IBNET_LOG_TRACE_FUNC_EXIT;
     }
 
-    inline void Received(RecvHandler::ReceivedPackage* recvPackage)
+    inline uint32_t Received(RecvHandler::ReceivedPackage* recvPackage)
     {
         IBNET_LOG_TRACE_FUNC;
 
         JNIEnv* env = sys::JNIHelper::GetEnv(m_vm);
-        env->CallVoidMethod(m_object, m_midReceived, (jlong) recvPackage);
+        auto ret = static_cast<uint32_t>(env->CallIntMethod(m_object, m_midReceived, (jlong) recvPackage));
         sys::JNIHelper::ReturnEnv(m_vm, env);
 
         IBNET_LOG_TRACE_FUNC_EXIT;
+
+        return ret;
     }
 
     inline const SendHandler::NextWorkPackage* GetNextDataToSend(

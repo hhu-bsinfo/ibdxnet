@@ -32,7 +32,7 @@ MsgrcJNIBindingCallbackHandler::MsgrcJNIBindingCallbackHandler(JNIEnv* env,
         m_midNodeDisconnected(sys::JNIHelper::GetAndVerifyMethod(env, object,
                 "nodeDisconnected", "(S)V")),
         m_midReceived(sys::JNIHelper::GetAndVerifyMethod(env, object,
-                "received", "(J)V")),
+                "received", "(J)I")),
         m_midGetNextDataToSend(sys::JNIHelper::GetAndVerifyMethod(env, object,
                 "getNextDataToSend", "(JJJ)V")),
         m_nextWorkPackage()

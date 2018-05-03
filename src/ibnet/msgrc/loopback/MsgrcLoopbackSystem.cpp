@@ -69,12 +69,14 @@ void MsgrcLoopbackSystem::NodeDisconnected(con::NodeId nodeId)
     m_availableTargetNodes[nodeId] = false;
 }
 
-void MsgrcLoopbackSystem::Received(ReceivedPackage* recvPackage)
+uint32_t MsgrcLoopbackSystem::Received(ReceivedPackage* recvPackage)
 {
     // just return buffers back to pool
     for (uint32_t i = 0; i < recvPackage->m_count; i++) {
         m_recvBufferPool->ReturnBuffer(recvPackage->m_entries[i].m_data);
     }
+
+    return recvPackage->m_count;
 }
 
 const SendHandler::NextWorkPackage* MsgrcLoopbackSystem::GetNextDataToSend(

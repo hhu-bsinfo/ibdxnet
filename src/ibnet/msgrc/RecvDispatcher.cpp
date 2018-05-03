@@ -44,11 +44,18 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
                         RecvHandler::ReceivedPackage::Sizeof(
                                 refConnectionManager->GetIbSRQSize() * refConnectionManager->GetMaxSGEs())))),
         m_recvQueuePending(0),
-        m_workComps(static_cast<ibv_wc*>(
-                aligned_alloc(static_cast<size_t>(getpagesize()),
-                        sizeof(ibv_wc) * refConnectionManager->GetIbSRQSize()))),
+        // TODO make configurable?
+        m_totalWorkComps(refConnectionManager->GetIbSRQSize()),
+        m_workCompsProd(static_cast<ibv_wc*>(
+                aligned_alloc(static_cast<size_t>(getpagesize()), sizeof(ibv_wc) * m_totalWorkComps))),
+        m_workCompsProdPos(0),
+        m_workCompsCons(static_cast<ibv_wc*>(
+                aligned_alloc(static_cast<size_t>(getpagesize()), sizeof(ibv_wc) * m_totalWorkComps))),
+        m_workCompsConsPos(0),
         m_firstWc(true),
-        m_recvWRPool(new RecvWorkRequestPool(refConnectionManager->GetIbSRQSize(), refConnectionManager->GetMaxSGEs())),
+        // TODO correct pool size for WRS with double buffering?
+        m_recvWRPool(
+                new RecvWorkRequestPool(refConnectionManager->GetIbSRQSize() * 2, refConnectionManager->GetMaxSGEs())),
         m_totalTime(new stats::Time("RecvDispatcher", "Total")),
         m_pollTime(new stats::Time("RecvDispatcher", "Poll")),
         m_processRecvTotalTime(new stats::Time("RecvDispatcher", "ProcessRecvTotal")),
@@ -78,7 +85,8 @@ RecvDispatcher::RecvDispatcher(ConnectionManager* refConnectionManager,
 {
     memset(m_recvPackage, 0, RecvHandler::ReceivedPackage::Sizeof(refConnectionManager->GetIbSRQSize() *
             refConnectionManager->GetMaxSGEs()));
-    memset(m_workComps, 0, sizeof(ibv_wc) * refConnectionManager->GetIbSRQSize());
+    memset(m_workCompsProd, 0, sizeof(ibv_wc) * m_totalWorkComps);
+    memset(m_workCompsCons, 0, sizeof(ibv_wc) * m_totalWorkComps);
 
     m_refStatisticsManager->Register(m_totalTime);
     m_refStatisticsManager->Register(m_recvTimeline);
@@ -111,7 +119,8 @@ RecvDispatcher::~RecvDispatcher()
 
     m_refStatisticsManager->Deregister(m_privateStats);
 
-    free(m_workComps);
+    free(m_workCompsProd);
+    free(m_workCompsCons);
 
     delete m_totalTime;
 
@@ -150,187 +159,234 @@ bool RecvDispatcher::Dispatch()
         IBNET_STATS(m_totalTime->Start());
     }
 
+    bool activity;
+
     IBNET_STATS(m_pollTime->Start());
 
-    uint32_t receivedCount = __Poll();
+    activity = __Poll();
 
     IBNET_STATS(m_pollTime->Stop());
-    IBNET_STATS(m_processRecvTotalTime->Start());
-
-    __ProcessReceived(receivedCount);
-
-    IBNET_STATS(m_processRecvTotalTime->Stop());
     IBNET_STATS(m_refillTotalTime->Start());
 
-    __Refill();
+    activity = __Refill() || activity;
 
     IBNET_STATS(m_refillTotalTime->Stop());
+    IBNET_STATS(m_processRecvTotalTime->Start());
+
+    activity = __ProcessReceived() || activity;
+
+    IBNET_STATS(m_processRecvTotalTime->Stop());
     IBNET_STATS(m_eeSchedTime->Start());
 
-    return receivedCount > 0;
+    return activity;
 }
 
-uint32_t RecvDispatcher::__Poll()
+bool RecvDispatcher::__Poll()
 {
-    // poll in batches to reduce overhead and increase utilization
-    int ret = ibv_poll_cq(m_refConnectionManager->GetIbSharedRCQ(),
-            m_refConnectionManager->GetIbSRQSize(), m_workComps);
+    if (m_totalWorkComps - m_workCompsProdPos > 0) {
+        // poll in batches to reduce overhead and increase utilization
+        int ret = ibv_poll_cq(m_refConnectionManager->GetIbSharedRCQ(), m_totalWorkComps - m_workCompsProdPos,
+                &m_workCompsProd[m_workCompsProdPos]);
 
-    if (ret < 0) {
-        __ThrowDetailedException<core::IbException>(ret, "Polling completion queue failed");
-    }
-
-    auto receivedCount = static_cast<uint32_t>(ret);
-
-    IBNET_STATS(m_polledWRQs->Add(receivedCount));
-
-    // polling successful, iterate work completions and check for errors
-    for (uint32_t i = 0; i < receivedCount; i++) {
-        if (m_workComps[i].status != IBV_WC_SUCCESS) {
-            if (m_workComps[i].status) {
-                switch (m_workComps[i].status) {
-                    // a previous work request failed and put the queue into error
-                    // state
-                    //case IBV_WC_WR_FLUSH_ERR:
-                    //    throw IbException("Work completion of recv queue failed, "
-                    //        "flush err");
-
-                    case IBV_WC_RETRY_EXC_ERR:
-                        if (m_firstWc) {
-                            __ThrowDetailedException<core::IbException>(
-                                    "First work completion of queue failed, it's "
-                                            "very likely your connection attributes are "
-                                            "wrong or the remote site isn't in a state to "
-                                            "respond");
-                        } else {
-                            throw con::DisconnectedException();
-                        }
-
-                    default:
-                        __ThrowDetailedException<core::IbException>(
-                                "Found failed work completion (%d), status %s",
-                                i, core::WORK_COMPLETION_STATUS_CODE[
-                                        m_workComps[i].status]);
-
-                }
-            }
+        if (ret < 0) {
+            __ThrowDetailedException<core::IbException>(ret, "Polling completion queue failed");
         }
 
-        m_firstWc = false;
+        auto receivedCount = static_cast<uint32_t>(ret);
+
+        IBNET_STATS(m_polledWRQs->Add(receivedCount));
+
+        // polling successful, iterate work completions and check for errors
+        for (uint32_t i = 0; i < receivedCount; i++) {
+            if (m_workCompsProd[m_workCompsProdPos + i].status != IBV_WC_SUCCESS) {
+                if (m_workCompsProd[m_workCompsProdPos + i].status) {
+                    switch (m_workCompsProd[m_workCompsProdPos + i].status) {
+                        // a previous work request failed and put the queue into error
+                        // state
+                        //case IBV_WC_WR_FLUSH_ERR:
+                        //    throw IbException("Work completion of recv queue failed, "
+                        //        "flush err");
+
+                        case IBV_WC_RETRY_EXC_ERR:
+                            if (m_firstWc) {
+                                __ThrowDetailedException<core::IbException>(
+                                        "First work completion of queue failed, it's "
+                                                "very likely your connection attributes are "
+                                                "wrong or the remote site isn't in a state to "
+                                                "respond");
+                            } else {
+                                throw con::DisconnectedException();
+                            }
+
+                        default:
+                            __ThrowDetailedException<core::IbException>(
+                                    "Found failed work completion (%d), status %s", i,
+                                    core::WORK_COMPLETION_STATUS_CODE[m_workCompsProd[m_workCompsProdPos + i].status]);
+
+                    }
+                }
+            }
+
+            m_firstWc = false;
+        }
+
+        m_workCompsProdPos += receivedCount;
+        m_recvQueuePending -= receivedCount;
     }
 
-    m_recvQueuePending -= receivedCount;
-
-    return receivedCount;
+    // space in comp list and work requests pending -> activity
+    return m_totalWorkComps - m_workCompsProdPos > 0 && m_recvQueuePending > 0;
 }
 
-void RecvDispatcher::__ProcessReceived(uint32_t receivedCompsCount)
+bool RecvDispatcher::__ProcessReceived()
 {
-    if (receivedCompsCount > 0) {
-        IBNET_STATS(m_processRecvAvailTime->Start());
+    bool activity;
 
-        uint32_t posRecvEntry = 0;
+    while (true) {
+        // still work completions left to consume
+        if (m_recvPackage->m_count > 0) {
+            IBNET_STATS(m_processRecvHandleTime->Start());
 
-        // batch process all completions. one completion might contain multiple SGEs
-        for (uint32_t i = 0; i < receivedCompsCount; i++) {
-            auto* immedData = (ImmediateData*) &m_workComps[i].imm_data;
-            auto* recvWorkReq = (RecvWorkRequest*) m_workComps[i].wr_id;
-            uint32_t dataRecvLen = m_workComps[i].byte_len;
+            // buffers are returned to recv buffer pool async
+            uint32_t processed = m_refRecvHandler->Received(m_recvPackage);
 
-            // evaluate data
-            // we might receive 0 bytes which indicates that flow control only data was sent
-            // and no SGEs were used on the remote sender
-            if (dataRecvLen == 0) {
-                // SGE buffers are unused, return them to pool
-                m_refRecvBufferPool->ReturnBuffers(recvWorkReq->m_sgls.m_refsMemReg,
-                    recvWorkReq->m_sgls.m_numUsedElems);
+            IBNET_STATS(m_processRecvHandleTime->Stop());
 
-                m_recvWRPool->Push(recvWorkReq);
+            if (processed == 0) {
+                // queue full, set activity to false to allow parking
+                activity = false;
+            } else if (processed == m_recvPackage->m_count) {
+                // all processed, continue with double buffer swap and next available data
+                m_recvPackage->m_count = 0;
 
-                // sanity check
-                if (!immedData->m_flowControlData) {
-                    __ThrowDetailedException<sys::IllegalStateException>(
-                            "Zero length data received but no flow control data");
-                }
-
-                // process flow control data once and add it to a single recv package
-                m_recvPackage->m_entries[posRecvEntry].m_sourceNodeId = immedData->m_sourceNodeId;
-                m_recvPackage->m_entries[posRecvEntry].m_fcData = immedData->m_flowControlData;
-                m_recvPackage->m_entries[posRecvEntry].m_data = nullptr;
-                m_recvPackage->m_entries[posRecvEntry].m_dataRaw = nullptr;
-                m_recvPackage->m_entries[posRecvEntry].m_dataLength = 0;
-
-                immedData->m_flowControlData = 0;
-                IBNET_STATS(m_receivedFC->Inc());
-
-                posRecvEntry++;
+                activity = true;
             } else {
-                uint32_t dataRecvLenTmp = dataRecvLen;
-                uint32_t sgesUsed = 0;
+                // not all completions could be processed, shift in work package and try again later
 
-                // if multiple SGEs were provided on recv post, we have to figure out which buffer contains
-                // received data using the total size
-                for (uint32_t j = 0; j < recvWorkReq->m_sgls.m_numUsedElems; j++) {
+                // null fc data which is processed before data but data could not be processed because the IBQ
+                // was full. avoid processing already processed data again
+                m_recvPackage->m_entries[processed - 1].m_fcData = 0;
+
+                m_recvPackage->m_offset += processed;
+                m_recvPackage->m_count -= processed;
+
+                activity = true;
+            }
+
+            break;
+        } else if (m_recvPackage->m_count == 0 && m_workCompsProdPos > 0) {
+            // double buffer swap
+            m_workCompsConsPos = m_workCompsProdPos;
+            m_workCompsProdPos = 0;
+
+            ibv_wc* tmp = m_workCompsProd;
+            m_workCompsProd = m_workCompsCons;
+            m_workCompsCons = tmp;
+
+            // create receive package for procesisng
+            IBNET_STATS(m_processRecvAvailTime->Start());
+
+            uint32_t posRecvEntry = 0;
+
+            // batch process all completions. one completion might contain multiple SGEs
+            for (uint32_t i = 0; i < m_workCompsConsPos; i++) {
+                auto* immedData = (ImmediateData*) &m_workCompsCons[i].imm_data;
+                auto* recvWorkReq = (RecvWorkRequest*) m_workCompsCons[i].wr_id;
+                uint32_t dataRecvLen = m_workCompsCons[i].byte_len;
+
+                // evaluate data
+                // we might receive 0 bytes which indicates that flow control only data was sent
+                // and no SGEs were used on the remote sender
+                if (dataRecvLen == 0) {
+                    // SGE buffers are unused, return them to pool
+                    m_refRecvBufferPool->ReturnBuffers(recvWorkReq->m_sgls.m_refsMemReg,
+                            recvWorkReq->m_sgls.m_numUsedElems);
+
+                    m_recvWRPool->Push(recvWorkReq);
+
+                    // sanity check
+                    if (!immedData->m_flowControlData) {
+                        __ThrowDetailedException<sys::IllegalStateException>(
+                                "Zero length data received but no flow control data");
+                    }
+
+                    // process flow control data once and add it to a single recv package
                     m_recvPackage->m_entries[posRecvEntry].m_sourceNodeId = immedData->m_sourceNodeId;
+                    m_recvPackage->m_entries[posRecvEntry].m_fcData = immedData->m_flowControlData;
+                    m_recvPackage->m_entries[posRecvEntry].m_data = nullptr;
+                    m_recvPackage->m_entries[posRecvEntry].m_dataRaw = nullptr;
+                    m_recvPackage->m_entries[posRecvEntry].m_dataLength = 0;
 
-                    // fc data with immediate data available
-                    if (immedData->m_flowControlData) {
-                        m_recvPackage->m_entries[posRecvEntry].m_fcData = immedData->m_flowControlData;
-                        immedData->m_flowControlData = 0;
-                        IBNET_STATS(m_receivedFC->Inc());
-                    } else {
-                        m_recvPackage->m_entries[posRecvEntry].m_fcData = 0;
-                    }
-
-                    m_recvPackage->m_entries[posRecvEntry].m_data = recvWorkReq->m_sgls.m_refsMemReg[j];
-                    m_recvPackage->m_entries[posRecvEntry].m_dataRaw =
-                            recvWorkReq->m_sgls.m_refsMemReg[j]->GetAddress();
-
-                    uint32_t maxBufferSize = recvWorkReq->m_sgls.m_refsMemReg[j]->GetSizeBuffer();
-
-                    // figure out how much data is in the scattered buffers
-                    if (dataRecvLenTmp >= maxBufferSize) {
-                        m_recvPackage->m_entries[posRecvEntry].m_dataLength = maxBufferSize;
-                        dataRecvLenTmp -= maxBufferSize;
-                    } else {
-                        m_recvPackage->m_entries[posRecvEntry].m_dataLength = dataRecvLenTmp;
-                        dataRecvLenTmp = 0;
-                    }
+                    immedData->m_flowControlData = 0;
+                    IBNET_STATS(m_receivedFC->Inc());
 
                     posRecvEntry++;
-                    sgesUsed++;
+                } else {
+                    uint32_t dataRecvLenTmp = dataRecvLen;
+                    uint32_t sgesUsed = 0;
 
-                    if (dataRecvLenTmp == 0) {
-                        break;
+                    // if multiple SGEs were provided on recv post, we have to figure out which buffer contains
+                    // received data using the total size
+                    for (uint32_t j = 0; j < recvWorkReq->m_sgls.m_numUsedElems; j++) {
+                        m_recvPackage->m_entries[posRecvEntry].m_sourceNodeId = immedData->m_sourceNodeId;
+
+                        // fc data with immediate data available
+                        if (immedData->m_flowControlData) {
+                            m_recvPackage->m_entries[posRecvEntry].m_fcData = immedData->m_flowControlData;
+                            immedData->m_flowControlData = 0;
+                            IBNET_STATS(m_receivedFC->Inc());
+                        } else {
+                            m_recvPackage->m_entries[posRecvEntry].m_fcData = 0;
+                        }
+
+                        m_recvPackage->m_entries[posRecvEntry].m_data = recvWorkReq->m_sgls.m_refsMemReg[j];
+                        m_recvPackage->m_entries[posRecvEntry].m_dataRaw =
+                                recvWorkReq->m_sgls.m_refsMemReg[j]->GetAddress();
+
+                        uint32_t maxBufferSize = recvWorkReq->m_sgls.m_refsMemReg[j]->GetSizeBuffer();
+
+                        // figure out how much data is in the scattered buffers
+                        if (dataRecvLenTmp >= maxBufferSize) {
+                            m_recvPackage->m_entries[posRecvEntry].m_dataLength = maxBufferSize;
+                            dataRecvLenTmp -= maxBufferSize;
+                        } else {
+                            m_recvPackage->m_entries[posRecvEntry].m_dataLength = dataRecvLenTmp;
+                            dataRecvLenTmp = 0;
+                        }
+
+                        posRecvEntry++;
+                        sgesUsed++;
+
+                        if (dataRecvLenTmp == 0) {
+                            break;
+                        }
                     }
+
+                    // return unused SGEs
+                    m_refRecvBufferPool->ReturnBuffers(recvWorkReq->m_sgls.m_refsMemReg + sgesUsed,
+                            recvWorkReq->m_sgls.m_numUsedElems - sgesUsed);
+
+                    m_recvWRPool->Push(recvWorkReq);
+
+                    IBNET_STATS(m_receivedData->Add(dataRecvLen));
                 }
-
-                // return unused SGEs
-                m_refRecvBufferPool->ReturnBuffers(recvWorkReq->m_sgls.m_refsMemReg + sgesUsed,
-                    recvWorkReq->m_sgls.m_numUsedElems - sgesUsed);
-
-                m_recvWRPool->Push(recvWorkReq);
-
-                IBNET_STATS(m_receivedData->Add(dataRecvLen));
             }
+
+            m_recvPackage->m_count = posRecvEntry;
+            m_recvPackage->m_offset = 0;
+
+            IBNET_STATS(m_processRecvAvailTime->Stop());
+        } else {
+            // nothing to process in consumer, nothing available to swap in producer
+            activity = false;
+            break;
         }
-
-        m_recvPackage->m_count = posRecvEntry;
-
-        IBNET_STATS(m_processRecvHandleTime->Start());
-
-        // buffers are returned to recv buffer pool async
-        m_refRecvHandler->Received(m_recvPackage);
-
-        IBNET_STATS(m_processRecvHandleTime->Stop());
-
-        m_recvPackage->m_count = 0;
-
-        IBNET_STATS(m_processRecvAvailTime->Stop());
     }
+
+    return activity;
 }
 
-void RecvDispatcher::__Refill()
+bool RecvDispatcher::__Refill()
 {
     if (m_recvQueuePending < m_refConnectionManager->GetIbSRQSize()) {
         IBNET_STATS(m_refillAvailTime->Start());
@@ -424,6 +480,10 @@ void RecvDispatcher::__Refill()
         }
 
         IBNET_STATS(m_refillAvailTime->Stop());
+
+        return true;
+    } else {
+        return false;
     }
 }
 

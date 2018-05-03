@@ -74,17 +74,27 @@ private:
     RecvHandler::ReceivedPackage* m_recvPackage;
 
     uint16_t m_recvQueuePending;
-    ibv_wc* m_workComps;
+
+    // double buffering with front (producer) and back (consumer) buffers
+    // get swapped once the consumer buffer is fully processed
+    // TODO a ring buffer implementation is more complex but increases memory utilization
+    // and might increase performance further
+    uint32_t m_totalWorkComps;
+    ibv_wc* m_workCompsProd;
+    uint32_t m_workCompsProdPos;
+    ibv_wc* m_workCompsCons;
+    uint32_t m_workCompsConsPos;
+
     bool m_firstWc;
 
     RecvWorkRequestPool* m_recvWRPool;
 
 private:
-    uint32_t __Poll();
+    bool __Poll();
 
-    void __ProcessReceived(uint32_t receivedCount);
+    bool __ProcessReceived();
 
-    void __Refill();
+    bool __Refill();
 
     template <typename ExceptionType, typename... Args>
     void __ThrowDetailedException(const std::string& reason, Args... args)
@@ -118,8 +128,8 @@ private:
     {
     public:
         Stats(RecvDispatcher* refParent) :
-            Operation("RecvDispatcher", "State"),
-            m_refParent(refParent)
+                Operation("RecvDispatcher", "State"),
+                m_refParent(refParent)
         {
         }
 

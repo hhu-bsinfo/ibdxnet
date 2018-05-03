@@ -53,6 +53,7 @@ public:
         }
 
         uint32_t m_count;
+        uint32_t m_offset;
 
         /**
          * Single receive entry. If receiving data from multiple nodes,

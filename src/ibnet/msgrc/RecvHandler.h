@@ -49,7 +49,7 @@ public:
          */
         static size_t Sizeof(uint32_t maxCount)
         {
-            return sizeof(uint32_t) + maxCount * sizeof(Entry);
+            return sizeof(uint32_t) + sizeof(uint32_t) + maxCount * sizeof(Entry);
         }
 
         uint32_t m_count;

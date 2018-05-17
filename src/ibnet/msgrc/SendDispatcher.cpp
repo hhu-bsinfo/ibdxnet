@@ -78,6 +78,7 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
         m_postedWRQs(new stats::Unit("SendDispatcher", "WRQsPosted", stats::Unit::e_Base10)),
         m_postedDataChunk(new stats::Unit("SendDispatcher", "PostedDataChunk", stats::Unit::e_Base2)),
         m_postedDataRemainderChunk(new stats::Unit("SendDispatcher", "PostedDataRemainderChunk", stats::Unit::e_Base2)),
+        m_sendType(new stats::Distribution("SendDispatcher", "SendType", 8)),
         m_sentData(new stats::Unit("SendDispatcher", "Data", stats::Unit::e_Base2)),
         m_sentFC(new stats::Unit("SendDispatcher", "FC", stats::Unit::e_Base10)),
         m_sendBlock100ms(new stats::Unit("SendDispatcher", "SendBlock100ms", stats::Unit::e_Base10)),
@@ -87,8 +88,6 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
         m_nonEmptyNextWorkPackage(new stats::Unit("SendDispatcher", "NonEmptyNextWorkPackage")),
         m_sendDataFullBuffers(new stats::Unit("SendDispatcher", "DataFullBuffers")),
         m_sendDataNonFullBuffers(new stats::Unit("SendDispatcher", "DataNonFullBuffers")),
-        m_sendBatches(new stats::Distribution("SendDispatcher", "Batches", 10)),
-        m_sendPostedLens(new stats::Distribution("SendDispatcher", "SendPostLens", 5)),
         m_sendQueueFull(new stats::Unit("SendDispatcher", "QueueFull")),
         m_emptyCompletionPolls(new stats::Unit("SendDispatcher", "EmptyCompletionPolls")),
         m_nonEmptyCompletionPolls(new stats::Unit("SendDispatcher", "NonEmptyCompletionPolls")),
@@ -123,6 +122,7 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     m_refStatisticsManager->Register(m_postedWRQs);
     m_refStatisticsManager->Register(m_postedDataChunk);
     m_refStatisticsManager->Register(m_postedDataRemainderChunk);
+    m_refStatisticsManager->Register(m_sendType);
 
     m_refStatisticsManager->Register(m_sentData);
     m_refStatisticsManager->Register(m_sentFC);
@@ -136,8 +136,6 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
 
     m_refStatisticsManager->Register(m_sendDataFullBuffers);
     m_refStatisticsManager->Register(m_sendDataNonFullBuffers);
-    m_refStatisticsManager->Register(m_sendBatches);
-    m_refStatisticsManager->Register(m_sendPostedLens);
     m_refStatisticsManager->Register(m_sendQueueFull);
 
     m_refStatisticsManager->Register(m_emptyCompletionPolls);
@@ -163,6 +161,7 @@ SendDispatcher::~SendDispatcher()
     m_refStatisticsManager->Deregister(m_postedWRQs);
     m_refStatisticsManager->Deregister(m_postedDataChunk);
     m_refStatisticsManager->Deregister(m_postedDataRemainderChunk);
+    m_refStatisticsManager->Deregister(m_sendType);
 
     m_refStatisticsManager->Deregister(m_sentData);
     m_refStatisticsManager->Deregister(m_sentFC);
@@ -176,8 +175,6 @@ SendDispatcher::~SendDispatcher()
 
     m_refStatisticsManager->Deregister(m_sendDataFullBuffers);
     m_refStatisticsManager->Deregister(m_sendDataNonFullBuffers);
-    m_refStatisticsManager->Deregister(m_sendBatches);
-    m_refStatisticsManager->Deregister(m_sendPostedLens);
     m_refStatisticsManager->Deregister(m_sendQueueFull);
 
     m_refStatisticsManager->Deregister(m_emptyCompletionPolls);
@@ -220,6 +217,7 @@ SendDispatcher::~SendDispatcher()
     delete m_postedWRQs;
     delete m_postedDataChunk;
     delete m_postedDataRemainderChunk;
+    delete m_sendType;
 
     delete m_sentData;
     delete m_sentFC;
@@ -233,8 +231,6 @@ SendDispatcher::~SendDispatcher()
 
     delete m_sendDataFullBuffers;
     delete m_sendDataNonFullBuffers;
-    delete m_sendBatches;
-    delete m_sendPostedLens;
     delete m_sendQueueFull;
 
     delete m_emptyCompletionPolls;
@@ -440,8 +436,6 @@ bool SendDispatcher::__PollCompletions()
 
 bool SendDispatcher::__SendData(Connection* connection, const SendHandler::NextWorkPackage* workPackage)
 {
-    // TODO remove m_sendPostedLens
-
     IBNET_STATS(m_sendDataProcessingTime->Start());
     uint32_t chunks = __SendDataPrepareWorkRequests(connection, workPackage);
     IBNET_STATS(m_sendDataProcessingTime->Stop());
@@ -566,6 +560,8 @@ uint32_t SendDispatcher::__SendDataPrepareWorkRequests(Connection* connection,
 
                 wrapAround = false;
             }
+
+            IBNET_STATS(m_sendType->GetUnit(static_cast<size_t>(debug)).Inc());
 
             // no wrap around + fills maxRecvBuffer or partially -> 1 SGE
             if (!wrapAround) {
@@ -741,8 +737,6 @@ void SendDispatcher::__SendDataPostWorkRequests(Connection* connection, uint32_t
     m_sendQueuePending[connection->GetRemoteNodeId()] += chunks;
     // completion queue shared among all connections
     m_completionsPending += chunks;
-
-    IBNET_STATS(m_sendBatches->GetUnit((float) chunks / m_refConnectionManager->GetIbSQSize()).Inc());
 
     IBNET_STATS(m_sendDataPostingTime->Stop());
 }

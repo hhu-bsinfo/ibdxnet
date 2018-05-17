@@ -195,6 +195,7 @@ private:
     stats::Unit* m_postedWRQs;
     stats::Unit* m_postedDataChunk;
     stats::Unit* m_postedDataRemainderChunk;
+    stats::Distribution* m_sendType;
 
     stats::Unit* m_sentData;
     stats::Unit* m_sentFC;
@@ -208,8 +209,6 @@ private:
 
     stats::Unit* m_sendDataFullBuffers;
     stats::Unit* m_sendDataNonFullBuffers;
-    stats::Distribution* m_sendBatches;
-    stats::Distribution* m_sendPostedLens;
     stats::Unit* m_sendQueueFull;
 
     stats::Unit* m_emptyCompletionPolls;

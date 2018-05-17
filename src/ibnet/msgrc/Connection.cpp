@@ -197,12 +197,15 @@ void Connection::__SetReadyToSend()
     // (qp states needs to be ready to receive, first)
 
     attr.qp_state = IBV_QPS_RTS;
-    // local ack timeout
+    // the minimum time for the sender to wait for an ack/nak. 0 is infinite
     attr.timeout = 14;
-    // retry count on no answer on primary path
+    // retry count on no answer on primary path, total number of tries to resend the package
     attr.retry_cnt = 7;
     // rnr=receiver not ready, 7 = infinite
     // (always wait until receiver state is ready to receive)
+    // when receiving a nak from the receiver (e.g. because the receiver is not ready and does not have resources
+    // for receiving the package), this counter is decremented unless it is set to infinite. the counter is reset
+    // once an ack is received
     attr.rnr_retry = 7;
     // packet sequence number of sender (current instance)
     attr.sq_psn = m_ibPsn;
@@ -238,8 +241,13 @@ void Connection::__SetReadyToRecv()
     // num of responder resources for
     // incoming RDMA reads & atomic ops
     attr.max_dest_rd_atomic = 1;
-    // minimum RNR NAK timer
-    attr.min_rnr_timer = 12;
+    // minimum RNR NAK timer: (only) MINIMUM wait time when an incoming message on the receiver side cannot be
+    // processed due to an empty receive queue.
+    // this might happen if the receiver is not fast enough to refill the empty queue.
+    // The actual wait time is determined by the RC implementation and can be significantly higher
+    // (even up to a full second). Set the minimum at least low which already improves performance when
+    // encountering RNR NAKs
+    attr.min_rnr_timer = 1;
     // global routing header not used
     attr.ah_attr.is_global = 0;
     // LID of remote IB port

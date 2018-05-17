@@ -80,6 +80,9 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
         m_postedDataRemainderChunk(new stats::Unit("SendDispatcher", "PostedDataRemainderChunk", stats::Unit::e_Base2)),
         m_sentData(new stats::Unit("SendDispatcher", "Data", stats::Unit::e_Base2)),
         m_sentFC(new stats::Unit("SendDispatcher", "FC", stats::Unit::e_Base10)),
+        m_sendBlock100ms(new stats::Unit("SendDispatcher", "SendBlock100ms", stats::Unit::e_Base10)),
+        m_sendBlock250ms(new stats::Unit("SendDispatcher", "SendBlock250ms", stats::Unit::e_Base10)),
+        m_sendBlock500ms(new stats::Unit("SendDispatcher", "SendBlock500ms", stats::Unit::e_Base10)),
         m_emptyNextWorkPackage(new stats::Unit("SendDispatcher", "EmptyNextWorkPackage")),
         m_nonEmptyNextWorkPackage(new stats::Unit("SendDispatcher", "NonEmptyNextWorkPackage")),
         m_sendDataFullBuffers(new stats::Unit("SendDispatcher", "DataFullBuffers")),
@@ -124,6 +127,10 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     m_refStatisticsManager->Register(m_sentData);
     m_refStatisticsManager->Register(m_sentFC);
 
+    m_refStatisticsManager->Register(m_sendBlock100ms);
+    m_refStatisticsManager->Register(m_sendBlock250ms);
+    m_refStatisticsManager->Register(m_sendBlock500ms);
+
     m_refStatisticsManager->Register(m_emptyNextWorkPackage);
     m_refStatisticsManager->Register(m_nonEmptyNextWorkPackage);
 
@@ -159,6 +166,10 @@ SendDispatcher::~SendDispatcher()
 
     m_refStatisticsManager->Deregister(m_sentData);
     m_refStatisticsManager->Deregister(m_sentFC);
+
+    m_refStatisticsManager->Deregister(m_sendBlock100ms);
+    m_refStatisticsManager->Deregister(m_sendBlock250ms);
+    m_refStatisticsManager->Deregister(m_sendBlock500ms);
 
     m_refStatisticsManager->Deregister(m_emptyNextWorkPackage);
     m_refStatisticsManager->Deregister(m_nonEmptyNextWorkPackage);
@@ -212,6 +223,10 @@ SendDispatcher::~SendDispatcher()
 
     delete m_sentData;
     delete m_sentFC;
+
+    delete m_sendBlock100ms;
+    delete m_sendBlock250ms;
+    delete m_sendBlock500ms;
 
     delete m_emptyNextWorkPackage;
     delete m_nonEmptyNextWorkPackage;
@@ -338,6 +353,16 @@ bool SendDispatcher::__PollCompletions()
 
         if (ret < 0) {
             __ThrowDetailedException<core::IbException>(ret, "Polling completion queue failed");
+        }
+
+        // tracks RNR NAKs with long waiting times
+        m_sendBlockTimer.Stop();
+        if (m_sendBlockTimer.GetTimeMs() >= 500) {
+            IBNET_STATS(m_sendBlock500ms->Inc());
+        } else if (m_sendBlockTimer.GetTimeMs() >= 250) {
+            IBNET_STATS(m_sendBlock250ms->Inc());
+        } else if (m_sendBlockTimer.GetTimeMs() >= 100) {
+            IBNET_STATS(m_sendBlock100ms->Inc());
         }
 
         if (ret > 0) {
@@ -708,6 +733,8 @@ void SendDispatcher::__SendDataPostWorkRequests(Connection* connection, uint32_t
                         "Posting work request to send to queue failed");
         }
     }
+
+    m_sendBlockTimer.Start();
 
     IBNET_STATS(m_postedWRQs->Add(chunks));
 

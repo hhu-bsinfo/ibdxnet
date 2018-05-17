@@ -92,6 +92,8 @@ private:
 
     SendWorkRequestCtxPool* m_workRequestCtxPool;
 
+    sys::Timer m_sendBlockTimer;
+
 private:
     bool __PollCompletions();
 
@@ -196,6 +198,10 @@ private:
 
     stats::Unit* m_sentData;
     stats::Unit* m_sentFC;
+
+    stats::Unit* m_sendBlock100ms;
+    stats::Unit* m_sendBlock250ms;
+    stats::Unit* m_sendBlock500ms;
 
     stats::Unit* m_emptyNextWorkPackage;
     stats::Unit* m_nonEmptyNextWorkPackage;

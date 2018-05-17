@@ -22,11 +22,13 @@
 #include "ibnet/dx/ExecutionUnit.h"
 #include "ibnet/dx/RecvBufferPool.h"
 
+#include "ibnet/stats/Ratio.hpp"
 #include "ibnet/stats/StatisticsManager.h"
 #include "ibnet/stats/Throughput.hpp"
 #include "ibnet/stats/TimelineFragmented.hpp"
 
 #include "ConnectionManager.h"
+#include "IncomingRingBuffer.h"
 #include "RecvHandler.h"
 #include "RecvWorkRequestPool.h"
 
@@ -71,19 +73,10 @@ private:
     RecvHandler* m_refRecvHandler;
 
 private:
-    RecvHandler::ReceivedPackage* m_recvPackage;
-
-    uint16_t m_recvQueuePending;
-
-    // double buffering with front (producer) and back (consumer) buffers
-    // get swapped once the consumer buffer is fully processed
-    // TODO a ring buffer implementation is more complex but increases memory utilization
-    // and might increase performance further
-    uint32_t m_totalWorkComps;
-    ibv_wc* m_workCompsProd;
-    uint32_t m_workCompsProdPos;
-    ibv_wc* m_workCompsCons;
-    uint32_t m_workCompsConsPos;
+    IncomingRingBuffer* m_ringBuffer;
+    ibv_wc* m_workComps;
+    uint32_t m_received;
+    uint32_t m_recvQueuePending;
 
     bool m_firstWc;
 
@@ -92,9 +85,11 @@ private:
 private:
     bool __Poll();
 
-    bool __ProcessReceived();
-
     bool __Refill();
+
+    bool __ProcessCompletions();
+
+    bool __DispatchReceived();
 
     template <typename ExceptionType, typename... Args>
     void __ThrowDetailedException(const std::string& reason, Args... args)
@@ -152,20 +147,23 @@ private:
     stats::Time* m_processRecvTotalTime;
     stats::Time* m_processRecvAvailTime;
     stats::Time* m_processRecvHandleTime;
-    stats::Time* m_refillTotalTime;
     stats::Time* m_refillAvailTime;
     stats::Time* m_refillGetBuffersTime;
     stats::Time* m_refillPostTime;
     stats::Time* m_eeSchedTime;
 
-    stats::TimelineFragmented* m_recvTimeline;
-    stats::TimelineFragmented* m_processRecvTimeline;
-    stats::TimelineFragmented* m_refillTimeline;
-
     stats::Unit* m_postedWRQs;
     stats::Unit* m_polledWRQs;
+    stats::Unit* m_queueEmptied;
+    stats::Unit* m_irbFull;
     stats::Unit* m_receivedData;
     stats::Unit* m_receivedFC;
+    stats::Unit* m_handlerNoProcess;
+    stats::Unit* m_refillInsufficientBuffers;
+
+    stats::Ratio* m_bufferUtilization;
+    stats::Ratio* m_fragmentedLastBuffer;
+    stats::Ratio* m_fragmentedSGEs;
 
     stats::Throughput* m_throughputReceivedData;
     stats::Throughput* m_throughputReceivedFC;

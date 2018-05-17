@@ -23,6 +23,7 @@ include_directories(${IBNET_SRC_DIR})
 set(SOURCE_FILES
         ${IBNET_SRC_DIR}/ibnet/msgrc/Connection.cpp
         ${IBNET_SRC_DIR}/ibnet/msgrc/ConnectionManager.cpp
+        ${IBNET_SRC_DIR}/ibnet/msgrc/IncomingRingBuffer.cpp
         ${IBNET_SRC_DIR}/ibnet/msgrc/MsgrcSystem.cpp
         ${IBNET_SRC_DIR}/ibnet/msgrc/RecvDispatcher.cpp
         ${IBNET_SRC_DIR}/ibnet/msgrc/RecvWorkRequestPool.cpp

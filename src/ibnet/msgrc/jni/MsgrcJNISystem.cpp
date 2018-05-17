@@ -114,9 +114,9 @@ void MsgrcJNISystem::NodeDisconnected(con::NodeId nodeId)
     m_callbackHandler.NodeDisconnected(nodeId);
 }
 
-uint32_t MsgrcJNISystem::Received(ReceivedPackage* recvPackage)
+uint32_t MsgrcJNISystem::Received(const IncomingRingBuffer::RingBuffer* ringBuffer)
 {
-    return m_callbackHandler.Received(recvPackage);
+    return m_callbackHandler.Received(ringBuffer);
 }
 
 const SendHandler::NextWorkPackage* MsgrcJNISystem::GetNextDataToSend(

@@ -25,6 +25,8 @@
 
 #include "ibnet/con/NodeId.h"
 
+#include "IncomingRingBuffer.h"
+
 namespace ibnet {
 namespace msgrc {
 
@@ -37,46 +39,13 @@ class RecvHandler
 {
 public:
     /**
-     * Package with information about received data
-     */
-    struct ReceivedPackage
-    {
-        /**
-         * Get the size of the struct
-         *
-         * @param maxCount Max number of entry elements
-         * @return Size of the struct depending on the max num of entry elements
-         */
-        static size_t Sizeof(uint32_t maxCount)
-        {
-            return sizeof(uint32_t) + sizeof(uint32_t) + maxCount * sizeof(Entry);
-        }
-
-        uint32_t m_count;
-        uint32_t m_offset;
-
-        /**
-         * Single receive entry. If receiving data from multiple nodes,
-         * multiple entries are used in the receive package.
-         */
-        struct Entry
-        {
-            con::NodeId m_sourceNodeId;
-            uint8_t m_fcData;
-            core::IbMemReg* m_data;
-            void* m_dataRaw;
-            uint32_t m_dataLength;
-        } __attribute__((__packed__)) m_entries[];
-    } __attribute__((__packed__));
-
-    /**
      * Called when new buffer or FC data was received
      *
-     * @param recvPackage Pointer to a struct with information about any received data
+     * @param ringBuffer Pointer to a ring buffer struct with information about any received data
      *        (memory managed by caller)
-     * @return Number of elements of recvPackage processed
+     * @return Number of elements of ringBuffer processed
      */
-    virtual uint32_t Received(ReceivedPackage* recvPackage) = 0;
+    virtual uint32_t Received(const IncomingRingBuffer::RingBuffer* ringBuffer) = 0;
 
 protected:
     /**

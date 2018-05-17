@@ -105,7 +105,7 @@ public:
     /**
      * Overriding virtual function
      */
-    uint32_t Received(ReceivedPackage* recvPackage) override;
+    uint32_t Received(const IncomingRingBuffer::RingBuffer* ringBuffer) override;
 
     /**
      * Overriding virtual function

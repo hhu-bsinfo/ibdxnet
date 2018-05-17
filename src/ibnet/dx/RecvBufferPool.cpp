@@ -40,7 +40,8 @@ RecvBufferPool::RecvBufferPool(uint64_t totalPoolSize,
 
     m_memoryPool = new core::IbMemReg(
             aligned_alloc(static_cast<size_t>(getpagesize()),
-                    m_bufferPoolSize * m_bufferSize), m_bufferPoolSize * m_bufferSize,
+                static_cast<uint64_t>(m_bufferPoolSize) * m_bufferSize),
+                static_cast<uint64_t>(m_bufferPoolSize) * m_bufferSize,
             true);
 
     IBNET_LOG_INFO("Allocated memory pool region %p, size %d",
@@ -62,7 +63,7 @@ RecvBufferPool::RecvBufferPool(uint64_t totalPoolSize,
 
     for (uint32_t i = 0; i < m_bufferPoolSize; i++) {
         m_bufferPool[i] = new core::IbMemReg((void*)
-                        (((uintptr_t) m_memoryPool->GetAddress()) + i * recvBufferSize),
+                        (((uintptr_t) m_memoryPool->GetAddress()) + static_cast<uint64_t>(i) * recvBufferSize),
                 recvBufferSize, m_memoryPool);
         m_dataBuffers[i] = m_bufferPool[i];
     }

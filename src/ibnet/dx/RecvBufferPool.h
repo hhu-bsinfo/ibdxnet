@@ -52,6 +52,13 @@ public:
     ~RecvBufferPool();
 
     /**
+     * Get the size of a single buffer
+     */
+    uint32_t GetBufferSize() const {
+        return m_bufferSize;
+    }
+
+    /**
      * Get a buffer from the pool. If the pool is empty, this call is blocking with
      * no new buffers being allocated. The caller is blocked until a buffer is
      * available to be returend.

@@ -26,23 +26,17 @@ namespace msgrc {
 
 SendWorkRequestCtxPool::SendWorkRequestCtxPool(uint32_t numWorkRequests) :
         m_poolSize(numWorkRequests),
-        m_poolSizeGapped(m_poolSize + 1),
         m_nonReturnedBuffers(0),
         m_front(0),
-        m_back(m_poolSize),
+        m_back(0),
         m_pool(new SendWorkRequestCtx* [m_poolSize]),
-        m_queue(new SendWorkRequestCtx* [m_poolSizeGapped])
+        m_queue(new SendWorkRequestCtx* [m_poolSize])
 {
     // fill queue with pooled work requests
     for (uint32_t i = 0; i < m_poolSize; i++) {
         m_pool[i] = new SendWorkRequestCtx();
         m_queue[i] = m_pool[i];
     }
-
-    // gap
-    m_queue[m_poolSize] = nullptr;
-
-    // last entry of queue is used as a gap to be able to determine if a queue is empty or full
 }
 
 SendWorkRequestCtxPool::~SendWorkRequestCtxPool()
@@ -57,7 +51,7 @@ SendWorkRequestCtxPool::~SendWorkRequestCtxPool()
 
 SendWorkRequestCtx* SendWorkRequestCtxPool::Pop()
 {
-    if (m_front == m_back) {
+    if (m_nonReturnedBuffers == m_poolSize) {
         IBNET_LOG_WARN("Pool ran dry, m_front %d, m_back %d", m_front, m_back);
         // this should never happen, otherwise pool size incorrect
         throw new sys::IllegalStateException("Pool ran dry, m_front %d, m_back %d", m_front, m_back);
@@ -71,7 +65,7 @@ SendWorkRequestCtx* SendWorkRequestCtxPool::Pop()
     }
 
     m_queue[m_front] = nullptr;
-    m_front = (m_front + 1) % m_poolSizeGapped;
+    m_front = (m_front + 1) % m_poolSize;
 
     m_nonReturnedBuffers++;
 
@@ -80,7 +74,7 @@ SendWorkRequestCtx* SendWorkRequestCtxPool::Pop()
 
 void SendWorkRequestCtxPool::Push(SendWorkRequestCtx* refWorkRequest)
 {
-    if ((m_back + 1) % m_poolSizeGapped == m_front) {
+    if (m_nonReturnedBuffers == 0) {
         // should not happen, otherwise, management failure
         IBNET_LOG_WARN("Pool overflow, m_front %d, m_back %d", m_front, m_back);
         throw new sys::IllegalStateException("Pool overflow, m_front %d, m_back %d", m_front, m_back);
@@ -94,7 +88,7 @@ void SendWorkRequestCtxPool::Push(SendWorkRequestCtx* refWorkRequest)
     }
 
     m_queue[m_back] = refWorkRequest;
-    m_back = (m_back + 1) % m_poolSizeGapped;
+    m_back = (m_back + 1) % m_poolSize;
 
     m_nonReturnedBuffers--;
 }

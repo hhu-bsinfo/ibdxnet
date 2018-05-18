@@ -83,9 +83,8 @@ public:
 
 private:
     const uint32_t m_poolSize;
-    const uint32_t m_poolSizeGapped;
 
-    int64_t m_nonReturnedBuffers;
+    uint64_t m_nonReturnedBuffers;
 
     uint32_t m_front;
     uint32_t m_back;

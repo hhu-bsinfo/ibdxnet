@@ -353,6 +353,7 @@ bool SendDispatcher::__PollCompletions()
 
         // tracks RNR NAKs with long waiting times
         m_sendBlockTimer.Stop();
+
         if (m_sendBlockTimer.GetTimeMs() >= 500) {
             IBNET_STATS(m_sendBlock500ms->Inc());
         } else if (m_sendBlockTimer.GetTimeMs() >= 250) {
@@ -418,7 +419,12 @@ bool SendDispatcher::__PollCompletions()
                     m_completionsPending--;
                 }
 
-                m_workRequestCtxPool->Push(ctx);
+                try {
+                    m_workRequestCtxPool->Push(ctx);
+                } catch (...) {
+                    IBNET_LOG_ERROR(">>>> %d %d", i, ret);
+                    __ThrowDetailedException<core::IbException>("oops: %s", *ctx);
+                }
 
                 if (m_ignoreFlushErrOnPendingCompletions > 0) {
                     m_ignoreFlushErrOnPendingCompletions--;

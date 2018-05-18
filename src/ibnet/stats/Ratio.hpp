@@ -79,6 +79,20 @@ public:
     }
 
     /**
+     * Get the numerator unit
+     */
+    inline Unit& GetNumerator() const {
+        return *m_unit1;
+    }
+
+    /**
+     * Get the denominator unit
+     */
+    inline Unit& GetDenominator() const {
+        return *m_unit2;
+    }
+
+    /**
      * Get the ratio of the Units' counters
      */
     inline double GetRatioCounter() const

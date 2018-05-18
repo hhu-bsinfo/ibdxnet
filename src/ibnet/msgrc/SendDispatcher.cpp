@@ -501,6 +501,11 @@ uint32_t SendDispatcher::__SendDataPrepareWorkRequests(Connection* connection,
             immedData->m_sourceNodeId = connection->GetSourceNodeId();
             immedData->m_flowControlData = fcData;
 
+            m_sendWrs[chunksPos].opcode = IBV_WR_SEND_WITH_IMM;
+            m_sendWrs[chunksPos].send_flags = 0;
+            // list is connected further down
+            m_sendWrs[chunksPos].next = nullptr;
+
             chunksPos++;
 
             totalFcDataProcessed += fcData;

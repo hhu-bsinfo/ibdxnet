@@ -514,7 +514,7 @@ uint32_t SendDispatcher::__SendDataPrepareWorkRequests(Connection* connection,
 
             chunksPos++;
 
-            totalFcDataProcessed += fcData;
+            totalFcDataProcessed = fcData;
             fcData = 0;
 
             break;
@@ -677,7 +677,7 @@ uint32_t SendDispatcher::__SendDataPrepareWorkRequests(Connection* connection,
 
             // include fcData once
             if (fcData > 0) {
-                totalFcDataProcessed += fcData;
+                totalFcDataProcessed = fcData;
                 fcData = 0;
             }
 
@@ -693,6 +693,15 @@ uint32_t SendDispatcher::__SendDataPrepareWorkRequests(Connection* connection,
 
     m_prevWorkPackageResults->m_fcDataNotPosted = fcData;
     m_prevWorkPackageResults->m_fcDataPosted = totalFcDataProcessed;
+
+    // sanity check
+    if (workPackage->m_flowControlData !=
+            m_prevWorkPackageResults->m_fcDataNotPosted + m_prevWorkPackageResults->m_fcDataPosted) {
+        __DebugLogWorkReqList(chunksPos);
+
+        throw sys::IllegalStateException("FC data balance incorrect %d != %d + %d", workPackage->m_flowControlData,
+                m_prevWorkPackageResults->m_fcDataNotPosted, m_prevWorkPackageResults->m_fcDataPosted);
+    }
 
     m_prevWorkPackageResults->m_numBytesPosted = totalBytesProcessed;
     m_prevWorkPackageResults->m_numBytesNotPosted = totalBytesToProcess - totalBytesProcessed;
@@ -750,6 +759,16 @@ void SendDispatcher::__SendDataPostWorkRequests(Connection* connection, uint32_t
     m_completionsPending += chunks;
 
     IBNET_STATS(m_sendDataPostingTime->Stop());
+}
+
+void SendDispatcher::__DebugLogWorkReqList(uint32_t numElems)
+{
+    for (uint32_t i = 0; i < numElems; i++) {
+        auto ctx = (SendWorkRequestCtx*) m_sendWrs[i].wr_id;
+        auto immedData = (ImmediateData*) &m_sendWrs[i].imm_data;
+
+        IBNET_LOG_DEBUG("WRQ %d/%d: ctx %s, immed data %s", i + 1, numElems, *ctx, *immedData);
+    }
 }
 
 }

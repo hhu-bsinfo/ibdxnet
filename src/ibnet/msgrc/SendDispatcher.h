@@ -103,6 +103,8 @@ private:
 
     void __SendDataPostWorkRequests(Connection* connection, uint32_t chunks);
 
+    void __DebugLogWorkReqList(uint32_t numElems);
+
     template <typename ExceptionType, typename... Args>
     void __ThrowDetailedException(const std::string& reason, Args... args)
     {

@@ -421,14 +421,12 @@ bool RecvDispatcher::__ProcessCompletions()
                     IncomingRingBuffer::RingBuffer::Entry* entry = m_ringBuffer->Back();
 
                     entry->m_sourceNodeId = immedData->m_sourceNodeId;
-
+                    entry->m_fcData = immedData->m_flowControlData;
                     // fc data with immediate data available, process once on first SGE
-                    if (immedData->m_flowControlData) {
-                        entry->m_fcData = immedData->m_flowControlData;
-                        immedData->m_flowControlData = 0;
+                    immedData->m_flowControlData = 0;
+
+                    if (entry->m_fcData) {
                         IBNET_STATS(m_receivedFC->Inc());
-                    } else {
-                        entry->m_fcData = 0;
                     }
 
                     entry->m_padding = 0xFF;

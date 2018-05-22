@@ -37,6 +37,19 @@ struct ImmediateData
     con::NodeId m_sourceNodeId;
     uint8_t m_flowControlData;
     uint8_t m_dummy;
+
+    /**
+     * Overloading << operator for printing to ostreams
+     *
+     * @param os Ostream to output to
+     * @param o Operation to generate output for
+     * @return Ostream object
+     */
+    friend std::ostream& operator<<(std::ostream& os, const ImmediateData& o)
+    {
+        return os << "m_sourceNodeId " << std::hex << o.m_sourceNodeId << std::dec << ", m_flowControlData " <<
+            static_cast<uint16_t>(o.m_flowControlData) << ", m_dummy " << static_cast<uint16_t>(o.m_dummy);
+    }
 } __attribute__((__packed__));
 
 }

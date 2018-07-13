@@ -319,8 +319,12 @@ bool SendDispatcher::Dispatch()
     } catch (con::DisconnectedException& e) {
         IBNET_LOG_WARN("Disconnected: %s", e.what());
 
-        m_refConnectionManager->ReturnConnection(connection);
-        m_refConnectionManager->CloseConnection(connection->GetRemoteNodeId(), true);
+        // if disconnect is detected during polling, connection is null
+        if (connection) {
+            m_refConnectionManager->ReturnConnection(connection);
+        }
+
+        m_refConnectionManager->CloseConnection(e.getNodeId(), true);
 
         // reset due to failure
         m_prevWorkPackageResults->Reset();

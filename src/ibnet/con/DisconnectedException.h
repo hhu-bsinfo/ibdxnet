@@ -37,19 +37,10 @@ public:
      *
      * @param nodeId Node id of the remote
      */
-    DisconnectedException() :
-            Exception("Remote queue pair not available anymore")
-    {
-    }
-
-    /**
-     * Constructor
-     *
-     * @param nodeId Node id of the remote
-     */
     explicit DisconnectedException(con::NodeId nodeId) :
             Exception("Remote queue pair of node 0x%X not available anymore",
-                    nodeId)
+                    nodeId),
+            m_nodeId(nodeId)
     {
     }
 
@@ -57,6 +48,18 @@ public:
      * Destructor
      */
     ~DisconnectedException() override = default;
+
+    /**
+     * Get the node id of the node that disconnected
+     *
+     * @return node Id
+     */
+    con::NodeId getNodeId() const {
+        return m_nodeId;
+    }
+
+private:
+    con::NodeId m_nodeId;
 };
 
 }

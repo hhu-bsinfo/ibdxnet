@@ -185,7 +185,8 @@ uint32_t RecvDispatcher::__Poll()
                                 "wrong or the remote site isn't in a state to "
                                 "respond");
                         } else {
-                            throw con::DisconnectedException();
+                            throw con::DisconnectedException(
+                                ((ImmediateData*) &m_workComps[i].imm_data)->m_sourceNodeId);
                         }
                     default:
                         __ThrowDetailedException<core::IbException>(

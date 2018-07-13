@@ -282,9 +282,13 @@ bool SendDispatcher::Dispatch()
     } catch (con::DisconnectedException& e) {
         IBNET_LOG_WARN("DisconnectedException: %s", e.what());
 
-        m_refConnectionManager->ReturnConnection(connection);
+        // if disconnect is detected during polling, connection is null
+        if (connection) {
+            m_refConnectionManager->ReturnConnection(connection);
+        }
+
         m_refConnectionManager->CloseConnection(
-            connection->GetRemoteNodeId(), true);
+            e.getNodeId(), true);
 
         // reset due to failure
         m_prevWorkPackageResults->Reset();
@@ -350,7 +354,8 @@ bool SendDispatcher::__PollCompletions()
                                         "attributes are wrong or the remote"
                                         " isn't in a state to respond");
                             } else {
-                                throw con::DisconnectedException();
+                                throw con::DisconnectedException(
+                                    ((ImmediateData*) &m_workComp[i].imm_data)->m_sourceNodeId);
                             }
                     }
 

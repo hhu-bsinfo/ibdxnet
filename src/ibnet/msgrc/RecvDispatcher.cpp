@@ -362,7 +362,8 @@ bool RecvDispatcher::__ProcessCompletions()
                                         "wrong or the remote site isn't in a state to "
                                         "respond");
                             } else {
-                                throw con::DisconnectedException();
+                                throw con::DisconnectedException(
+                                    ((ImmediateData*) &m_workComps[i].imm_data)->m_sourceNodeId);
                             }
 
                         default:

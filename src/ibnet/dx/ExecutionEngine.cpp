@@ -157,7 +157,7 @@ void ExecutionEngine::Worker::_RunLoop()
         if (m_idleTimer.GetTimeMs() > 1000.0) {
             m_sleepCounter->Inc();
             std::this_thread::sleep_for(std::chrono::nanoseconds(1));
-        } else if (m_idleTimer.GetTimeMs() > 100.0) {
+        } else if (m_idleTimer.GetTimeMs() > 500.0) {
             m_yieldCounter->Inc();
             std::this_thread::yield();
         }

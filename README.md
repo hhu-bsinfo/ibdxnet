@@ -13,8 +13,7 @@ This project supports Linux, only, and uses the ibverbs library to access Infini
 to generate build scripts (e.g. makefile). Just run the *build.sh* script which will execute the steps required to
 compile everything.
 
-The output files are located in *build/cmake* in their dedicated subdirs, e.g.
-*build/cmake/JNIIbdxnet/libJNIIbdxnet.so*.
+The output files are located in *build/bin* and *build/lib*, e.g. *build/lib/libMsgrcJNIBinding.so*.
 
 # Run instructions
 
@@ -37,6 +36,5 @@ On node66:
 ```
 
 # Benchmark notes
-When running benchmarks with Ibdxnet, ensure you compile with the log trace level removed (IBNET_LOG_TRACE_STRIP) and
-statistics disabled (IBNET_DISABLE_STATISTICS). Both are heavily used for debugging and profiling. Disable both to get
-the best performance possible.
+When running benchmarks with Ibdxnet, ensure you compile with statistics removed (IBNET_DISABLE_STATISTICS) to get 
+optimal performance.

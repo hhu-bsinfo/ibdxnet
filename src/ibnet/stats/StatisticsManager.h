@@ -22,11 +22,15 @@
 #include <mutex>
 #include <unordered_map>
 #include <vector>
+#include <ibnet/core/IbDevice.h>
 
 #include "ibnet/Config.h"
 #include "ibnet/sys/ThreadLoop.h"
 
 #include "Operation.hpp"
+#include "Unit.hpp"
+#include "Throughput.hpp"
+
 
 namespace ibnet {
 namespace stats {
@@ -46,12 +50,12 @@ public:
      * @param printIntervalMs Interval in ms to print all registered
      *        statistics (0 to disable printing)
      */
-    explicit StatisticsManager(uint32_t printIntervalMs);
+    explicit StatisticsManager(uint32_t printIntervalMs, ibnet::core::IbDevice* refDevice);
 
     /**
      * Destructor
      */
-    ~StatisticsManager() = default;
+    ~StatisticsManager() override;
 
     /**
      * Register a statistic operation
@@ -82,6 +86,38 @@ private:
 
     std::mutex m_mutex;
     std::unordered_map<std::string, std::vector<const Operation*>> m_operations;
+
+    IbPerfLib::IbPerfCounter *m_perfCounter;
+
+private:
+    Time* m_totalTime;
+
+    Unit* m_rawXmitData;
+    Unit* m_rawRcvData;
+    Unit* m_rawXmitPkts;
+    Unit* m_rawRcvPkts;
+
+    Unit* m_unicastXmitPkts;
+    Unit* m_unicastRcvPkts;
+    Unit* m_multicastXmitPkts;
+    Unit* m_multicastRcvPkts;
+
+    Unit* m_symbolErrors;
+    Unit* m_linkDowned;
+    Unit* m_linkRecoveries;
+    Unit* m_rcvErrors;
+    Unit* m_rcvRemotePhysicalErrors;
+    Unit* m_rcvSwitchRelayErrors;
+    Unit* m_xmitDiscards;
+    Unit* m_xmitConstraintErrors;
+    Unit* m_rcvConstraintErrors;
+    Unit* m_localLinkIntegrityErrors;
+    Unit* m_excessiveBufferOverrunErrors;
+    Unit* m_vl15Dropped;
+    Unit* m_xmitWait;
+
+    Throughput* m_rawXmitThroughput;
+    Throughput* m_rawRcvThroughput;
 };
 
 }

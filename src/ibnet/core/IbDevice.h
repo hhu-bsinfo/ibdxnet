@@ -25,6 +25,8 @@
 
 #include <infiniband/verbs.h>
 
+#include <IbPerfLib/IbPerfCounter.h>
+
 namespace ibnet {
 namespace core {
 
@@ -278,6 +280,10 @@ public:
         return static_cast<uint32_t>(pow(2, 8 + m_maxMtuSize));
     }
 
+    IbPerfLib::IbPerfCounter *GetPerfCounter() {
+        return m_perfCounter;
+    }
+
     /**
      * Enable output to an out stream
      */
@@ -315,6 +321,8 @@ private:
     LinkState m_linkState;
 
     ibv_context* m_ibCtx;
+
+    IbPerfLib::IbPerfCounter *m_perfCounter;
 
     void __LogDeviceAttributes();
 };

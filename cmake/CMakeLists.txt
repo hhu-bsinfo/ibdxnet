@@ -54,12 +54,30 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/ar)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall")
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -I/usr/include/infiniband")
 
 # For development: Uncomment these to compile with sanitizers to debug
 # memory errors and leaks
 #set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined -fsanitize=null -fsanitize=return -fsanitize=bounds -lasan -lubsan")
 #set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize-recover=all")
+
+# ibperf-lib
+include(ExternalProject)
+
+ExternalProject_Add(IbPerfLib_git
+        GIT_REPOSITORY https://github.com/hhu-bsinfo/ibperf-lib.git
+        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/IbPerfLib
+        INSTALL_COMMAND "")
+
+ExternalProject_Get_Property(IbPerfLib_git binary_dir)
+ExternalProject_Get_Property(IbPerfLib_git source_dir)
+
+add_library(IbPerfLib STATIC IMPORTED)
+set_property(TARGET IbPerfLib PROPERTY IMPORTED_LOCATION ${binary_dir}/ar/libIbPerfLib.a)
+
+add_dependencies(IbPerfLib IbPerfLib_git)
+
+include_directories(${source_dir}/src)
 
 # sub-projects
 add_subdirectory(fmt)

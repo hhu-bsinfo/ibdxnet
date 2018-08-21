@@ -26,6 +26,6 @@ set(SOURCE_FILES
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
-target_link_libraries(${PROJECT_NAME} IbnetMsgud IbnetDx IbnetCon IbnetStats IbnetCore IbnetSys)
+target_link_libraries(${PROJECT_NAME} IbnetMsgud IbnetDx IbnetCon IbnetStats IbnetCore IbnetSys IbPerfLib)
 
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -rdynamic -g -O3 -fno-strict-aliasing")

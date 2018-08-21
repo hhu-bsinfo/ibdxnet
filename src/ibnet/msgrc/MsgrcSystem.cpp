@@ -89,7 +89,7 @@ void MsgrcSystem::Init()
             m_configuration->m_recvBufferSize, m_protDom);
 
     m_statisticsManager = new stats::StatisticsManager(
-            m_configuration->m_statisticsThreadPrintIntervalMs);
+            m_configuration->m_statisticsThreadPrintIntervalMs, m_device);
 
     m_connectionManager = new ConnectionManager(
             m_configuration->m_ownNodeId, m_configuration->m_nodeConfig,

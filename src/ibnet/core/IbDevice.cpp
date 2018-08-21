@@ -17,6 +17,7 @@
  */
 
 #include "IbDevice.h"
+#include "IbPerfLib/IbPortCompat.h"
 
 #include "ibnet/sys/Assert.h"
 #include "ibnet/sys/Logger.hpp"
@@ -70,7 +71,8 @@ IbDevice::IbDevice() :
         m_linkWidth(e_LinkWidthInvalid),
         m_linkSpeed(e_LinkSpeedInvalid),
         m_linkState(e_LinkStateInvalid),
-        m_ibCtx(nullptr)
+        m_ibCtx(nullptr),
+        m_perfCounter(nullptr)
 {
     int num_devices = 0;
     ibv_device** dev_list = nullptr;
@@ -136,6 +138,8 @@ IbDevice::~IbDevice()
     IBNET_LOG_INFO("Closing device %s", *this);
 
     ibv_close_device(m_ibCtx);
+
+    delete m_perfCounter;
 
     m_ibDevGuid = 0xFFFF;
     m_ibDevName = "INVALID";
@@ -211,6 +215,10 @@ void IbDevice::UpdateState()
 
     if (m_lid == 0) {
         throw IbException("Device lid is 0, maybe you forgot to start a subnet manager?");
+    }
+
+    if(m_perfCounter == nullptr) {
+        m_perfCounter = new IbPerfLib::IbPortCompat(m_ibDevName, attr, DEFAULT_IB_PORT);
     }
 }
 

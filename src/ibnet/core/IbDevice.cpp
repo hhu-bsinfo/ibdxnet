@@ -218,9 +218,9 @@ void IbDevice::__LogDeviceAttributes()
 {
     std::string str = "Device attributes:\n"
             "Firmware: " + std::string(m_deviceAttr.fw_ver) + "\n"
-            "GUID: " + sys::StringUtils::ToHexString(m_deviceAttr.node_guid) + "\n"
+            "GUID: " + sys::StringUtils::ToHexString((uint64_t) m_deviceAttr.node_guid) + "\n"
             "Sys image GUID: " +
-            sys::StringUtils::ToHexString(m_deviceAttr.sys_image_guid) + "\n"
+            sys::StringUtils::ToHexString((uint64_t) m_deviceAttr.sys_image_guid) + "\n"
             "Max memory region size (bytes): " +
             std::to_string(m_deviceAttr.max_mr_size) + "\n"
             "Max memory page size (bytes): " +

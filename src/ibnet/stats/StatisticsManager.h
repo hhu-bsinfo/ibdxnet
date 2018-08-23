@@ -82,16 +82,21 @@ protected:
     void _RunLoop() override;
 
 private:
+    void RefreshPerformanceCounters();
+
+private:
     const uint32_t m_printIntervalMs;
 
     std::mutex m_mutex;
     std::unordered_map<std::string, std::vector<const Operation*>> m_operations;
 
     IbPerfLib::IbPerfCounter *m_perfCounter;
+    IbPerfLib::IbDiagPerfCounter *m_diagPerfCounter;
 
 private:
     Time* m_totalTime;
 
+    /* Performance counters */
     Unit* m_rawXmitData;
     Unit* m_rawRcvData;
     Unit* m_rawXmitPkts;
@@ -118,6 +123,32 @@ private:
 
     Throughput* m_rawXmitThroughput;
     Throughput* m_rawRcvThroughput;
+
+    /* Diagnostic performance counters */
+    Unit* m_lifespan;
+
+    Unit* m_rqLocalLengthErrors;
+    Unit* m_rqLocalProtectionErrors;
+    Unit* m_rqLocalQpProtectionErrors;
+    Unit* m_rqOutOfSequenceErrors;
+    Unit* m_rqRemoteAccessErrors;
+    Unit* m_rqRemoteInvalidRequestErrors;
+    Unit* m_rqRnrNakNum;
+    Unit* m_rqCompletionQueueEntryErrors;
+
+    Unit* m_sqBadResponseErrors;
+    Unit* m_sqLocalLengthErrors;
+    Unit* m_sqLocalProtectionErrors;
+    Unit* m_sqLocalQpProtectionErrors;
+    Unit* m_sqMemoryWindowBindErrors;
+    Unit* m_sqOutOfSequenceErrors;
+    Unit* m_sqRemoteAccessErrors;
+    Unit* m_sqRemoteInvalidRequestErrors;
+    Unit* m_sqRnrNakNum;
+    Unit* m_sqRemoteOperationErrors;
+    Unit* m_sqRnrNakRetriesExceededErrors;
+    Unit* m_sqTransportRetriesExceededErrors;
+    Unit* m_sqCompletionQueueEntryErrors;
 };
 
 }

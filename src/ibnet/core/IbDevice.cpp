@@ -72,7 +72,8 @@ IbDevice::IbDevice() :
         m_linkSpeed(e_LinkSpeedInvalid),
         m_linkState(e_LinkStateInvalid),
         m_ibCtx(nullptr),
-        m_perfCounter(nullptr)
+        m_perfCounter(nullptr),
+        m_diagPerfCounter(nullptr)
 {
     int num_devices = 0;
     ibv_device** dev_list = nullptr;
@@ -219,6 +220,10 @@ void IbDevice::UpdateState()
 
     if(m_perfCounter == nullptr) {
         m_perfCounter = new IbPerfLib::IbPortCompat(m_ibDevName, attr, DEFAULT_IB_PORT);
+    }
+
+    if(m_diagPerfCounter == nullptr) {
+        m_diagPerfCounter = new IbPerfLib::IbDiagPerfCounter(m_ibDevName, DEFAULT_IB_PORT);
     }
 }
 

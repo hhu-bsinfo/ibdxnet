@@ -27,6 +27,7 @@ StatisticsManager::StatisticsManager(uint32_t printIntervalMs, ibnet::core::IbDe
         m_mutex(),
         m_operations(),
         m_perfCounter(refDevice->GetPerfCounter()),
+        m_diagPerfCounter(refDevice->GetDiagPerfCounter()),
         m_totalTime(new Time("PerformanceCounters", "TotalTime")),
         m_rawXmitData(new Unit("PerformanceCounters", "XmitData")),
         m_rawRcvData(new Unit("PerformanceCounters", "RcvData")),
@@ -50,7 +51,30 @@ StatisticsManager::StatisticsManager(uint32_t printIntervalMs, ibnet::core::IbDe
         m_vl15Dropped(new Unit("PerformanceCounters", "VL15Dropped")),
         m_xmitWait(new Unit("PerformanceCounters", "XmitWait")),
         m_rawXmitThroughput(new Throughput("PerformanceCounters", "XmitThroughput", m_rawXmitData, m_totalTime)),
-        m_rawRcvThroughput(new Throughput("PerformanceCounters", "RcvThroughput", m_rawRcvData, m_totalTime))
+        m_rawRcvThroughput(new Throughput("PerformanceCounters", "RcvThroughput", m_rawRcvData, m_totalTime)),
+        m_lifespan(new Unit("DiagnosticPerformanceCounters", "Lifespan")),
+        m_rqLocalLengthErrors(new Unit("DiagnosticPerformanceCounters", "RqLocalLengthErrors")),
+        m_rqLocalProtectionErrors(new Unit("DiagnosticPerformanceCounters", "RqLocalProtectionErrors")),
+        m_rqLocalQpProtectionErrors(new Unit("DiagnosticPerformanceCounters", "RqLocalQpProtectionErrors")),
+        m_rqOutOfSequenceErrors(new Unit("DiagnosticPerformanceCounters", "RqOutOfSequenceErrors")),
+        m_rqRemoteAccessErrors(new Unit("DiagnosticPerformanceCounters", "RqRemoteAccessErrors")),
+        m_rqRemoteInvalidRequestErrors(new Unit("DiagnosticPerformanceCounters", "RqRemoteInvalidRequestErrors")),
+        m_rqRnrNakNum(new Unit("DiagnosticPerformanceCounters", "RqRnrNakNum")),
+        m_rqCompletionQueueEntryErrors(new Unit("DiagnosticPerformanceCounters", "RqCompletionQueueEntryErrors")),
+        m_sqBadResponseErrors(new Unit("DiagnosticPerformanceCounters", "SqBadResponseErrors")),
+        m_sqLocalLengthErrors(new Unit("DiagnosticPerformanceCounters", "SqLocalLengthErrors")),
+        m_sqLocalProtectionErrors(new Unit("DiagnosticPerformanceCounters", "SqLocalProtectionErrors")),
+        m_sqLocalQpProtectionErrors(new Unit("DiagnosticPerformanceCounters", "SqLocalQpProtectionErrors")),
+        m_sqMemoryWindowBindErrors(new Unit("DiagnosticPerformanceCounters", "SqMemoryWindowBindErrors")),
+        m_sqOutOfSequenceErrors(new Unit("DiagnosticPerformanceCounters", "SqOutOfSequenceErrors")),
+        m_sqRemoteAccessErrors(new Unit("DiagnosticPerformanceCounters", "SqRemoteAccessErrors")),
+        m_sqRemoteInvalidRequestErrors(new Unit("DiagnosticPerformanceCounters", "SqRemoteInvalidRequestErrors")),
+        m_sqRnrNakNum(new Unit("DiagnosticPerformanceCounters", "SqRnrNakNum")),
+        m_sqRemoteOperationErrors(new Unit("DiagnosticPerformanceCounters", "SqRemoteOperationErrors")),
+        m_sqRnrNakRetriesExceededErrors(new Unit("DiagnosticPerformanceCounters", "SqRnrNakRetriesExceededErrors")),
+        m_sqTransportRetriesExceededErrors(
+                new Unit("DiagnosticPerformanceCounters", "SqTransportRetriesExceededErrors")),
+        m_sqCompletionQueueEntryErrors(new Unit("DiagnosticPerformanceCounters", "SqCompletionQueueEntryErrors"))
 {
 #ifdef IBNET_DISABLE_STATISTICS
     IBNET_LOG_INFO("Preprocessor flag to disable some statistics active");
@@ -83,7 +107,33 @@ StatisticsManager::StatisticsManager(uint32_t printIntervalMs, ibnet::core::IbDe
     Register(m_rawXmitThroughput);
     Register(m_rawRcvThroughput);
 
+    Register(m_lifespan);
+
+    Register(m_rqLocalLengthErrors);
+    Register(m_rqLocalProtectionErrors);
+    Register(m_rqLocalQpProtectionErrors);
+    Register(m_rqOutOfSequenceErrors);
+    Register(m_rqRemoteAccessErrors);
+    Register(m_rqRemoteInvalidRequestErrors);
+    Register(m_rqRnrNakNum);
+    Register(m_rqCompletionQueueEntryErrors);
+
+    Register(m_sqBadResponseErrors);
+    Register(m_sqLocalLengthErrors);
+    Register(m_sqLocalProtectionErrors);
+    Register(m_sqLocalQpProtectionErrors);
+    Register(m_sqMemoryWindowBindErrors);
+    Register(m_sqOutOfSequenceErrors);
+    Register(m_sqRemoteAccessErrors);
+    Register(m_sqRemoteInvalidRequestErrors);
+    Register(m_sqRnrNakNum);
+    Register(m_sqRemoteOperationErrors);
+    Register(m_sqRnrNakRetriesExceededErrors);
+    Register(m_sqTransportRetriesExceededErrors);
+    Register(m_sqCompletionQueueEntryErrors);
+
     m_perfCounter->ResetCounters();
+    m_diagPerfCounter->ResetCounters();
 
     IBNET_STATS(m_totalTime->Start());
 }
@@ -116,6 +166,31 @@ StatisticsManager::~StatisticsManager() {
     Deregister(m_rawXmitThroughput);
     Deregister(m_rawRcvThroughput);
 
+    Deregister(m_lifespan);
+
+    Deregister(m_rqLocalLengthErrors);
+    Deregister(m_rqLocalProtectionErrors);
+    Deregister(m_rqLocalQpProtectionErrors);
+    Deregister(m_rqOutOfSequenceErrors);
+    Deregister(m_rqRemoteAccessErrors);
+    Deregister(m_rqRemoteInvalidRequestErrors);
+    Deregister(m_rqRnrNakNum);
+    Deregister(m_rqCompletionQueueEntryErrors);
+
+    Deregister(m_sqBadResponseErrors);
+    Deregister(m_sqLocalLengthErrors);
+    Deregister(m_sqLocalProtectionErrors);
+    Deregister(m_sqLocalQpProtectionErrors);
+    Deregister(m_sqMemoryWindowBindErrors);
+    Deregister(m_sqOutOfSequenceErrors);
+    Deregister(m_sqRemoteAccessErrors);
+    Deregister(m_sqRemoteInvalidRequestErrors);
+    Deregister(m_sqRnrNakNum);
+    Deregister(m_sqRemoteOperationErrors);
+    Deregister(m_sqRnrNakRetriesExceededErrors);
+    Deregister(m_sqTransportRetriesExceededErrors);
+    Deregister(m_sqCompletionQueueEntryErrors);
+
     delete m_rawXmitData;
     delete m_rawRcvData;
     delete m_rawXmitPkts;
@@ -142,6 +217,31 @@ StatisticsManager::~StatisticsManager() {
 
     delete m_rawXmitThroughput;
     delete m_rawRcvThroughput;
+
+    delete m_lifespan;
+
+    delete m_rqLocalLengthErrors;
+    delete m_rqLocalProtectionErrors;
+    delete m_rqLocalQpProtectionErrors;
+    delete m_rqOutOfSequenceErrors;
+    delete m_rqRemoteAccessErrors;
+    delete m_rqRemoteInvalidRequestErrors;
+    delete m_rqRnrNakNum;
+    delete m_rqCompletionQueueEntryErrors;
+
+    delete m_sqBadResponseErrors;
+    delete m_sqLocalLengthErrors;
+    delete m_sqLocalProtectionErrors;
+    delete m_sqLocalQpProtectionErrors;
+    delete m_sqMemoryWindowBindErrors;
+    delete m_sqOutOfSequenceErrors;
+    delete m_sqRemoteAccessErrors;
+    delete m_sqRemoteInvalidRequestErrors;
+    delete m_sqRnrNakNum;
+    delete m_sqRemoteOperationErrors;
+    delete m_sqRnrNakRetriesExceededErrors;
+    delete m_sqTransportRetriesExceededErrors;
+    delete m_sqCompletionQueueEntryErrors;
 }
 
 
@@ -187,10 +287,33 @@ void StatisticsManager::PrintStatistics()
 
     m_mutex.lock();
 
+    RefreshPerformanceCounters();
+
+    for (auto& it : m_operations) {
+        sstr << ">>> " << it.first << std::endl;
+
+        for (auto& it2 : it.second) {
+            sstr << *it2 << std::endl;
+        }
+    }
+
+    m_mutex.unlock();
+
+    std::cout << sstr.str();
+}
+
+void StatisticsManager::_RunLoop()
+{
+    _Sleep(m_printIntervalMs);
+    PrintStatistics();
+}
+
+void StatisticsManager::RefreshPerformanceCounters() {
     try {
         m_perfCounter->RefreshCounters();
-    } catch(IbPerfLib::IbPerfException e) {
-        IBNET_LOG_WARN("Failed to query performance counters! Error: %s", e.what());
+        m_diagPerfCounter->RefreshCounters();
+    } catch(IbPerfLib::IbPerfException &exception) {
+        IBNET_LOG_WARN("Failed to query performance counters! Error: %s", exception.what());
     }
 
     IBNET_STATS(m_rawXmitData->Add(m_perfCounter->GetXmitDataBytes() - m_rawXmitData->GetTotalValue()));
@@ -223,27 +346,52 @@ void StatisticsManager::PrintStatistics()
     IBNET_STATS(m_vl15Dropped->Add(m_perfCounter->GetVL15Dropped() - m_vl15Dropped->GetTotalValue()));
     IBNET_STATS(m_xmitWait->Add(m_perfCounter->GetXmitWait() - m_xmitWait->GetTotalValue()));
 
+    IBNET_STATS(m_lifespan->Add(m_diagPerfCounter->GetLifespan() - m_lifespan->GetTotalValue()));
+
+    IBNET_STATS(m_rqLocalLengthErrors->Add(
+            m_diagPerfCounter->GetRqLocalLengthErrors() - m_rqLocalLengthErrors->GetTotalValue()));
+    IBNET_STATS(m_rqLocalQpProtectionErrors->Add(
+            m_diagPerfCounter->GetRqLocalQpProtectionErrors() - m_rqLocalQpProtectionErrors->GetTotalValue()));
+    IBNET_STATS(m_rqOutOfSequenceErrors->Add(
+            m_diagPerfCounter->GetRqOutOfSequenceErrors() - m_rqOutOfSequenceErrors->GetTotalValue()));
+    IBNET_STATS(m_rqRemoteAccessErrors->Add(
+            m_diagPerfCounter->GetRqRemoteAccessErrors() - m_rqRemoteAccessErrors->GetTotalValue()));
+    IBNET_STATS(m_rqRemoteInvalidRequestErrors->Add(
+            m_diagPerfCounter->GetRqRemoteInvalidRequestErrors() - m_rqRemoteInvalidRequestErrors->GetTotalValue()));
+    IBNET_STATS(m_rqRnrNakNum->Add(
+            m_diagPerfCounter->GetRqRnrNakNum() - m_rqRnrNakNum->GetTotalValue()));
+    IBNET_STATS(m_rqCompletionQueueEntryErrors->Add(
+            m_diagPerfCounter->GetRqCompletionQueueEntryErrors() - m_rqCompletionQueueEntryErrors->GetTotalValue()));
+
+    IBNET_STATS(m_sqBadResponseErrors->Add(
+            m_diagPerfCounter->GetSqBadResponseErrors() - m_sqBadResponseErrors->GetTotalValue()));
+    IBNET_STATS(m_sqLocalLengthErrors->Add(
+            m_diagPerfCounter->GetSqLocalLengthErrors() - m_sqLocalLengthErrors->GetTotalValue()));
+    IBNET_STATS(m_sqLocalProtectionErrors->Add(
+            m_diagPerfCounter->GetSqLocalProtectionErrors() - m_sqLocalProtectionErrors->GetTotalValue()));
+    IBNET_STATS(m_sqLocalQpProtectionErrors->Add(
+            m_diagPerfCounter->GetSqLocalQpProtectionErrors() - m_sqLocalQpProtectionErrors->GetTotalValue()));
+    IBNET_STATS(m_sqMemoryWindowBindErrors->Add(
+            m_diagPerfCounter->GetSqMemoryWindowBindErrors() - m_sqMemoryWindowBindErrors->GetTotalValue()));
+    IBNET_STATS(m_sqOutOfSequenceErrors->Add(
+            m_diagPerfCounter->GetSqOutOfSequenceErrors() - m_sqOutOfSequenceErrors->GetTotalValue()));
+    IBNET_STATS(m_sqRemoteAccessErrors->Add(
+            m_diagPerfCounter->GetSqRemoteAccessErrors() - m_sqRemoteAccessErrors->GetTotalValue()));
+    IBNET_STATS(m_sqRemoteInvalidRequestErrors->Add(
+            m_diagPerfCounter->GetSqRemoteInvalidRequestErrors() - m_sqRemoteInvalidRequestErrors->GetTotalValue()));
+    IBNET_STATS(m_sqRnrNakNum->Add(m_diagPerfCounter->GetSqRnrNakNum() - m_sqRnrNakNum->GetTotalValue()));
+    IBNET_STATS(m_sqRemoteOperationErrors->Add(
+            m_diagPerfCounter->GetSqRemoteOperationErrors() - m_sqRemoteOperationErrors->GetTotalValue()));
+    IBNET_STATS(m_sqRnrNakRetriesExceededErrors->Add(
+            m_diagPerfCounter->GetSqRnrNakRetriesExceededErrors() - m_sqRnrNakRetriesExceededErrors->GetTotalValue()));
+    IBNET_STATS(m_sqTransportRetriesExceededErrors->Add(
+            m_diagPerfCounter->GetSqTransportRetriesExceededErrors() -
+            m_sqTransportRetriesExceededErrors->GetTotalValue()));
+    IBNET_STATS(m_sqCompletionQueueEntryErrors->Add(
+            m_diagPerfCounter->GetSqCompletionQueueEntryErrors() - m_sqCompletionQueueEntryErrors->GetTotalValue()));
+
     IBNET_STATS(m_totalTime->Stop());
     IBNET_STATS(m_totalTime->Start());
-
-
-    for (auto& it : m_operations) {
-        sstr << ">>> " << it.first << std::endl;
-
-        for (auto& it2 : it.second) {
-            sstr << *it2 << std::endl;
-        }
-    }
-
-    m_mutex.unlock();
-
-    std::cout << sstr.str();
-}
-
-void StatisticsManager::_RunLoop()
-{
-    _Sleep(m_printIntervalMs);
-    PrintStatistics();
 }
 
 }

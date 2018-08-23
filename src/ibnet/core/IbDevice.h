@@ -26,6 +26,7 @@
 #include <infiniband/verbs.h>
 
 #include <IbPerfLib/IbPerfCounter.h>
+#include <IbPerfLib/IbDiagPerfCounter.h>
 
 namespace ibnet {
 namespace core {
@@ -276,12 +277,25 @@ public:
         return m_ibCtx;
     }
 
+    /**
+     * Get the maximum MTU size
+     */
     uint32_t getMaxMtuSize() const {
         return static_cast<uint32_t>(pow(2, 8 + m_maxMtuSize));
     }
 
+    /**
+     * Get the performance counters for this device
+     */
     IbPerfLib::IbPerfCounter *GetPerfCounter() {
         return m_perfCounter;
+    }
+
+    /**
+     * Get the diagnostic performance counters for this device
+     */
+    IbPerfLib::IbDiagPerfCounter *GetDiagPerfCounter() {
+        return m_diagPerfCounter;
     }
 
     /**
@@ -323,6 +337,7 @@ private:
     ibv_context* m_ibCtx;
 
     IbPerfLib::IbPerfCounter *m_perfCounter;
+    IbPerfLib::IbDiagPerfCounter *m_diagPerfCounter;
 
     void __LogDeviceAttributes();
 };

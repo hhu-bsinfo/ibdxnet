@@ -13,6 +13,10 @@
 #include <exception>
 #include<functional>
 
+#ifdef debug
+#undef debug
+#endif
+
 #if defined(_WIN32) && defined(SPDLOG_WCHAR_FILENAMES)
 #include <codecvt>
 #include <locale>

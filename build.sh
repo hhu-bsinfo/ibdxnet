@@ -24,7 +24,7 @@ echo "Build type: $build_type"
 mkdir -p build
 cd build
 
-for flag in "$FLAGS"; do
+for flag in $FLAGS; do
     COMPILER_FLAGS="$COMPILER_FLAGS -D$flag"
 done
 

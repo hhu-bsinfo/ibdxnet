@@ -172,6 +172,10 @@ IbDevice::~IbDevice()
     if (m_perfCounter) {
         delete m_perfCounter;
     }
+    
+    if (m_diagPerfCounter) {
+        delete m_diagPerfCounter;
+    }
 
     m_ibDevGuid = 0xFFFF;
     m_ibDevName = "INVALID";

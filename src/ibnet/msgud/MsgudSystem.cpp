@@ -43,11 +43,6 @@ MsgudSystem::MsgudSystem() :
 
 }
 
-MsgudSystem::~MsgudSystem()
-{
-    delete m_configuration;
-}
-
 void MsgudSystem::Init()
 {
     if (!m_configuration) {

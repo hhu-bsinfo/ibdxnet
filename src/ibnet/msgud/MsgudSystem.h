@@ -110,7 +110,7 @@ public:
     /**
      * Destructor
      */
-    virtual ~MsgudSystem();
+    ~MsgudSystem() override = default;
 
     /**
      * Init the subsystem

@@ -17,7 +17,6 @@ Connection::Connection(uint16_t ownNodeId, uint16_t connectionId,
         uint32_t sendBufferSize, uint32_t physicalQPId,
         core::IbProtDom *refProtDom) :
     con::Connection(ownNodeId, connectionId),
-    m_receivedAck(false),
     m_sendBufferSize(sendBufferSize),
     m_refProtDom(refProtDom),
     m_sendBuffer(nullptr),

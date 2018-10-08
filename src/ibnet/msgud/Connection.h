@@ -101,9 +101,6 @@ public:
         return m_recvSequenceNumber;
     }
 
-public:
-    std::atomic<bool> m_receivedAck;
-
 private:
     struct RemoteConnectionData
     {

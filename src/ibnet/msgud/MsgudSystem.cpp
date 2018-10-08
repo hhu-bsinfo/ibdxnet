@@ -118,8 +118,8 @@ void MsgudSystem::Init()
     
     m_executionEngine = new dx::ExecutionEngine(2, m_statisticsManager);
 
-    m_executionEngine->AddExecutionUnit(0, m_recvDispatcher);
-    m_executionEngine->AddExecutionUnit(1, m_sendDispatcher);
+    m_executionEngine->AddExecutionUnit(0, m_sendDispatcher);
+    m_executionEngine->AddExecutionUnit(1, m_recvDispatcher);
 
     if (m_configuration->m_pinSendRecvThreads) {
         m_executionEngine->PinWorker(0, 0);

@@ -39,9 +39,13 @@ Connection::Connection(uint16_t ownNodeId, uint16_t connectionId,
 
 Connection::~Connection()
 {
-    if(m_ibAddressHandle != nullptr) {
-        delete m_ibAddressHandle;
-    }
+    m_refProtDom->Deregister(m_sendBuffer);
+    delete m_sendBuffer;
+
+    delete m_ibAddressHandle;
+
+    delete m_sendSequenceNumber;
+    delete m_recvSequenceNumber;
 }
 
 void Connection::CreateConnectionExchangeData(void* connectionDataBuffer,

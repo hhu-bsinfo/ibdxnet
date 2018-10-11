@@ -85,10 +85,11 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
         m_totalTime)),
     m_privateStats(new Stats(this))
 {
-    memset(m_prevWorkPackageResults, 0, sizeof(SendHandler::PrevWorkPackageResults));
-    memset(m_completionList, 0, SendHandler::CompletedWorkList::Sizeof(refConectionManager->GetMaxNumConnections()));
+    memset(static_cast<void*>(m_prevWorkPackageResults), 0, sizeof(SendHandler::PrevWorkPackageResults));
+    memset(static_cast<void*>(m_completionList), 0,
+            SendHandler::CompletedWorkList::Sizeof(refConectionManager->GetMaxNumConnections()));
 
-    memset(m_sendQueuePending, 0, sizeof(uint16_t) * con::NODE_ID_MAX_NUM_NODES);
+    memset(static_cast<void*>(m_sendQueuePending), 0, sizeof(uint16_t) * con::NODE_ID_MAX_NUM_NODES);
 
     memset(m_sgeLists, 0, sizeof(ibv_sge) * m_refConnectionManager->GetIbQPSize());
     memset(m_sendWrs, 0, sizeof(ibv_send_wr) * m_refConnectionManager->GetIbQPSize());

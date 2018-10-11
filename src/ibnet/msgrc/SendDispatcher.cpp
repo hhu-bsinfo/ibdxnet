@@ -102,8 +102,9 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
         m_throughputSentFC(new stats::Throughput("SendDispatcher", "ThroughputFC", m_sentFC, m_totalTime)),
         m_privateStats(new Stats(this))
 {
-    memset(m_prevWorkPackageResults, 0, sizeof(SendHandler::PrevWorkPackageResults));
-    memset(m_completionList, 0, SendHandler::CompletedWorkList::Sizeof(refConectionManager->GetMaxNumConnections()));
+    memset(static_cast<void*>(m_prevWorkPackageResults), 0, sizeof(SendHandler::PrevWorkPackageResults));
+    memset(static_cast<void*>(m_completionList), 0,
+            SendHandler::CompletedWorkList::Sizeof(refConectionManager->GetMaxNumConnections()));
 
     // set correct initial state
     m_prevWorkPackageResults->Reset();

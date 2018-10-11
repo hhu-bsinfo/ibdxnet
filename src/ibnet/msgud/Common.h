@@ -1,9 +1,5 @@
-//
-// Created by nothaas on 1/30/18.
-//
-
-#ifndef IBNET_MSGRC_CCOMMON_H
-#define IBNET_MSGRC_CCOMMON_H
+#ifndef IBNET_MSGUD_CCOMMON_H
+#define IBNET_MSGUD_CCOMMON_H
 
 #include <cstdint>
 
@@ -12,13 +8,33 @@
 namespace ibnet {
 namespace msgud {
 
+/**
+ * Structure for accessing data stored in the immediate data field.
+ *
+ * @author Stefan Nothaas, stefan.nothaas@hhu.de, 29.01.2018
+ * @author Fabian Ruhland, fabian.ruhland@hhu.de, 10.10.2018
+ */
 struct ImmediateData
 {
     con::NodeId m_sourceNodeId;
-    uint8_t m_zeroLengthData : 1;
-    uint8_t m_flowControlData : 7;
+    uint8_t m_flowControlData;
     uint8_t m_endOfWorkPackage : 1;
     uint8_t m_sequenceNumber : 7;
+
+    /**
+     * Overloading << operator for printing to ostreams
+     *
+     * @param os Ostream to output to
+     * @param o Operation to generate output for
+     * @return Ostream object
+     */
+    friend std::ostream& operator<<(std::ostream& os, const ImmediateData& o)
+    {
+        return os << "m_sourceNodeId " << std::hex << o.m_sourceNodeId << std::dec << ", m_flowControlData " <<
+                  static_cast<uint16_t>(o.m_flowControlData) << ", m_endOfWorkPackage " <<
+                  static_cast<uint16_t>(o.m_endOfWorkPackage) << ", m_sequenceNumber " <<
+                  static_cast<uint16_t>(o.m_sequenceNumber);
+    }
 } __attribute__((__packed__));
 
 struct Counter
@@ -51,4 +67,4 @@ private:
 }
 }
 
-#endif //IBNET_MSGRC_CCOMMON_H
+#endif //IBNET_MSGUD_CCOMMON_H

@@ -235,11 +235,8 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
             }
 
             // evaluate data
-            // check for zero length package which can't be indicated by setting
-            // the size to 0 on send (which gets translated to 2^31 instead)
-            if (immedData->m_zeroLengthData) {
-                dataRecvLen = 0;
-
+            // check for zero length package
+            if (dataRecvLen == 0) {
                 // return buffer to pool, don't care about any dummy data
                 // otherwise, the pool runs dry after a while
                 m_refRecvBufferPool->ReturnBuffer(dataMem);
@@ -255,12 +252,10 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
                 IBNET_STATS(m_receivedFC->Inc());
             }
 
-            m_recvPackage->m_entries[i].m_sourceNodeId =
-                immedData->m_sourceNodeId;
+            m_recvPackage->m_entries[i].m_sourceNodeId = immedData->m_sourceNodeId;
             m_recvPackage->m_entries[i].m_fcData = immedData->m_flowControlData;
             m_recvPackage->m_entries[i].m_data = dataMem;
-            m_recvPackage->m_entries[i].m_dataRaw =
-                dataMem ? dataMem->GetAddress() : nullptr;
+            m_recvPackage->m_entries[i].m_dataRaw = dataMem ? dataMem->GetAddress() : nullptr;
             m_recvPackage->m_entries[i].m_dataLength = dataRecvLen;
 
             IBNET_STATS(m_receivedData->Add(dataRecvLen));

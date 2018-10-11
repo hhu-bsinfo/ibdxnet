@@ -85,20 +85,14 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
         m_totalTime)),
     m_privateStats(new Stats(this))
 {
-    memset(m_prevWorkPackageResults, 0,
-        sizeof(SendHandler::PrevWorkPackageResults));
-    memset(m_completionList, 0, SendHandler::CompletedWorkList::Sizeof(
-        refConectionManager->GetMaxNumConnections()));
+    memset(m_prevWorkPackageResults, 0, sizeof(SendHandler::PrevWorkPackageResults));
+    memset(m_completionList, 0, SendHandler::CompletedWorkList::Sizeof(refConectionManager->GetMaxNumConnections()));
 
-    memset(m_sendQueuePending, 0,
-        sizeof(uint16_t) * con::NODE_ID_MAX_NUM_NODES);
+    memset(m_sendQueuePending, 0, sizeof(uint16_t) * con::NODE_ID_MAX_NUM_NODES);
 
-    memset(m_sgeLists, 0,
-        sizeof(ibv_sge) * m_refConnectionManager->GetIbQPSize());
-    memset(m_sendWrs, 0,
-        sizeof(ibv_send_wr) * m_refConnectionManager->GetIbQPSize());
-    memset(m_workComp, 0,
-        sizeof(ibv_wc) * m_refConnectionManager->GetIbCQSize());
+    memset(m_sgeLists, 0, sizeof(ibv_sge) * m_refConnectionManager->GetIbQPSize());
+    memset(m_sendWrs, 0, sizeof(ibv_send_wr) * m_refConnectionManager->GetIbQPSize());
+    memset(m_workComp, 0, sizeof(ibv_wc) * m_refConnectionManager->GetIbCQSize());
     
     m_refStatisticsManager->Register(m_totalTimeline);
     m_refStatisticsManager->Register(m_pollTimeline);
@@ -216,8 +210,7 @@ bool SendDispatcher::Dispatch()
 
     IBNET_STATS(m_getNextDataToSendTime->Start());
 
-    const SendHandler::NextWorkPackage* workPackage =
-        m_refSendHandler->GetNextDataToSend(m_prevWorkPackageResults,
+    const SendHandler::NextWorkPackage* workPackage = m_refSendHandler->GetNextDataToSend(m_prevWorkPackageResults,
             m_completionList);
 
     if (workPackage == nullptr) {
@@ -230,25 +223,18 @@ bool SendDispatcher::Dispatch()
     m_completionList->Reset();
 
     Connection* connection = nullptr;
-    bool ret;
+    bool ret = false;
 
     try {
         // nothing to send, poll completions
         if (workPackage->m_nodeId == con::NODE_ID_INVALID) {
             IBNET_STATS(m_emptyNextWorkPackage->Inc());
-
-            IBNET_STATS(m_pollCompletionsTotalTime->Start());
-
-            ret = __PollCompletions();
-
-            IBNET_STATS(m_pollCompletionsTotalTime->Stop());
         } else {
             IBNET_STATS(m_nonEmptyNextWorkPackage->Inc());
 
             IBNET_STATS(m_getConnectionTime->Start());
 
-            connection = (Connection*)
-                m_refConnectionManager->GetConnection(workPackage->m_nodeId);
+            connection = (Connection*) m_refConnectionManager->GetConnection(workPackage->m_nodeId);
 
             IBNET_STATS(m_getConnectionTime->Stop());
             IBNET_STATS(m_sendDataTotalTime->Start());
@@ -262,15 +248,14 @@ bool SendDispatcher::Dispatch()
 
             IBNET_STATS(m_sendDataTotalTime->Stop());
 
-            IBNET_STATS(m_pollCompletionsTotalTime->Start());
-
-            // after sending data, try polling for more completions
-            ret = ret || __PollCompletions();
-
-            IBNET_STATS(m_pollCompletionsTotalTime->Stop());
-
             m_refConnectionManager->ReturnConnection(connection);
         }
+
+        IBNET_STATS(m_pollCompletionsTotalTime->Start());
+
+        ret = ret || __PollCompletions();
+
+        IBNET_STATS(m_pollCompletionsTotalTime->Stop());
     } catch (sys::TimeoutException& e) {
         IBNET_LOG_WARN("TimeoutException: %s", e.what());
 
@@ -402,8 +387,7 @@ bool SendDispatcher::__PollCompletions()
     return m_completionsPending > 0;
 }
 
-bool SendDispatcher::__SendData(Connection* connection,
-        const SendHandler::NextWorkPackage* workPackage)
+bool SendDispatcher::__SendData(Connection* connection, const SendHandler::NextWorkPackage* workPackage)
 {
     IBNET_STATS(m_sendDataProcessingTime->Start());
 
@@ -454,7 +438,6 @@ bool SendDispatcher::__SendData(Connection* connection,
         }
 
         uint32_t length;
-        bool zeroLength;
 
         // set this before moving posBack pointer
         m_sgeLists[chunks].addr =
@@ -464,7 +447,6 @@ bool SendDispatcher::__SendData(Connection* connection,
         if (posBack + m_recvBufferSize <= posEnd) {
             // fits a full receive buffer
             length = m_recvBufferSize;
-            zeroLength = false;
 
             posBack += length;
             totalBytesProcessed += length;
@@ -476,17 +458,12 @@ bool SendDispatcher::__SendData(Connection* connection,
 
             // zero length buffer, i.e. flow control data only
             if (length == 0) {
-                zeroLength = true;
-                length = 1;
-
                 // sanity check
                 if (!fcData) {
                     __ThrowDetailedException<sys::IllegalStateException>(
                         "Sending zero length data but no flow control");
                 }
             } else {
-                zeroLength = false;
-
                 posBack += length;
                 totalBytesProcessed += length;
             }
@@ -503,7 +480,7 @@ bool SendDispatcher::__SendData(Connection* connection,
         // context used on completion to identify completed work request
         auto* ctx = (WorkRequestIdCtx*) &m_sendWrs[chunks].wr_id;
         ctx->m_targetNodeId = nodeId;
-        ctx->m_sendSize = zeroLength ? 0 : length;
+        ctx->m_sendSize = length;
         ctx->m_fcData = fcData;
 
         m_sendWrs[chunks].sg_list = &m_sgeLists[chunks];
@@ -514,7 +491,6 @@ bool SendDispatcher::__SendData(Connection* connection,
         auto* immedData = (ImmediateData*) &m_sendWrs[chunks].imm_data;
         immedData->m_sourceNodeId = connection->GetSourceNodeId();
         immedData->m_flowControlData = fcData;
-        immedData->m_zeroLengthData = static_cast<uint8_t>(zeroLength ? 1 : 0);
         immedData->m_sequenceNumber = static_cast<uint8_t>(connection->GetSendSequenceNumber()->GetValue() %
                                                            m_ackFrameSize);
         immedData->m_endOfWorkPackage = 0;

@@ -129,6 +129,35 @@ IbDevice::IbDevice() :
 
     __LogDeviceAttributes();
 
+    try {
+        ibv_port_attr attr = {};
+        int result;
+
+        memset(&attr, 0, sizeof(struct ibv_port_attr));
+
+        result = ibv_query_port(m_ibCtx, DEFAULT_IB_PORT, &attr);
+
+        if (result != 0) {
+            throw IbException("Querying port for device information failed: %s",
+                strerror(result));
+        }
+
+        m_perfCounter = new IbPerfLib::IbPortCompat(m_ibDevName, attr, DEFAULT_IB_PORT);
+        m_diagPerfCounter = new IbPerfLib::IbDiagPerfCounter(m_ibDevName, DEFAULT_IB_PORT);
+    } catch (std::exception& e) {
+        if (m_perfCounter) {
+            delete m_perfCounter;
+            m_perfCounter = nullptr;
+        }
+
+        if (m_diagPerfCounter) {
+            delete m_diagPerfCounter;
+            m_diagPerfCounter = nullptr;
+        }
+
+        IBNET_LOG_WARN("Initializing IbPerfLib failed: %s", e.what());
+    }
+
     IBNET_LOG_INFO("Opened device %s", *this);
 }
 
@@ -140,7 +169,9 @@ IbDevice::~IbDevice()
 
     ibv_close_device(m_ibCtx);
 
-    delete m_perfCounter;
+    if (m_perfCounter) {
+        delete m_perfCounter;
+    }
 
     m_ibDevGuid = 0xFFFF;
     m_ibDevName = "INVALID";
@@ -216,14 +247,6 @@ void IbDevice::UpdateState()
 
     if (m_lid == 0) {
         throw IbException("Device lid is 0, maybe you forgot to start a subnet manager?");
-    }
-
-    if(m_perfCounter == nullptr) {
-        m_perfCounter = new IbPerfLib::IbPortCompat(m_ibDevName, attr, DEFAULT_IB_PORT);
-    }
-
-    if(m_diagPerfCounter == nullptr) {
-        m_diagPerfCounter = new IbPerfLib::IbDiagPerfCounter(m_ibDevName, DEFAULT_IB_PORT);
     }
 }
 

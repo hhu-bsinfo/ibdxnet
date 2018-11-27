@@ -132,8 +132,13 @@ StatisticsManager::StatisticsManager(uint32_t printIntervalMs, ibnet::core::IbDe
     Register(m_sqTransportRetriesExceededErrors);
     Register(m_sqCompletionQueueEntryErrors);
 
-    m_perfCounter->ResetCounters();
-    m_diagPerfCounter->ResetCounters();
+    if (m_perfCounter) {
+        m_perfCounter->ResetCounters();
+    }
+
+    if (m_diagPerfCounter) {
+        m_diagPerfCounter->ResetCounters();
+    }
 
     IBNET_STATS(m_totalTime->Start());
 }
@@ -310,85 +315,94 @@ void StatisticsManager::_RunLoop()
 
 void StatisticsManager::RefreshPerformanceCounters() {
     try {
-        m_perfCounter->RefreshCounters();
-        m_diagPerfCounter->RefreshCounters();
+        if (m_perfCounter) {
+            m_perfCounter->RefreshCounters();
+        }
+
+        if (m_diagPerfCounter) {
+            m_diagPerfCounter->RefreshCounters();
+        }
     } catch(IbPerfLib::IbPerfException &exception) {
         IBNET_LOG_WARN("Failed to query performance counters! Error: %s", exception.what());
     }
 
-    IBNET_STATS(m_rawXmitData->Add(m_perfCounter->GetXmitDataBytes() - m_rawXmitData->GetTotalValue()));
-    IBNET_STATS(m_rawRcvData->Add(m_perfCounter->GetRcvDataBytes() - m_rawRcvData->GetTotalValue()));
-    IBNET_STATS(m_rawXmitPkts->Add(m_perfCounter->GetXmitPkts() - m_rawXmitPkts->GetTotalValue()));
-    IBNET_STATS(m_rawRcvPkts->Add(m_perfCounter->GetRcvPkts() - m_rawRcvPkts->GetTotalValue()));
+    if (m_perfCounter) {
+        IBNET_STATS(m_rawXmitData->Add(m_perfCounter->GetXmitDataBytes() - m_rawXmitData->GetTotalValue()));
+        IBNET_STATS(m_rawRcvData->Add(m_perfCounter->GetRcvDataBytes() - m_rawRcvData->GetTotalValue()));
+        IBNET_STATS(m_rawXmitPkts->Add(m_perfCounter->GetXmitPkts() - m_rawXmitPkts->GetTotalValue()));
+        IBNET_STATS(m_rawRcvPkts->Add(m_perfCounter->GetRcvPkts() - m_rawRcvPkts->GetTotalValue()));
 
-    IBNET_STATS(m_unicastXmitPkts->Add(m_perfCounter->GetUnicastXmitPkts() - m_unicastXmitPkts->GetTotalValue()));
-    IBNET_STATS(m_unicastRcvPkts->Add(m_perfCounter->GetUnicastRcvPkts() - m_unicastRcvPkts->GetTotalValue()));
-    IBNET_STATS(m_multicastXmitPkts->Add(m_perfCounter->GetMulticastXmitPkts() - m_multicastXmitPkts->GetTotalValue()));
-    IBNET_STATS(m_multicastRcvPkts->Add(m_perfCounter->GetMulticastRcvPkts() - m_multicastRcvPkts->GetTotalValue()));
+        IBNET_STATS(m_unicastXmitPkts->Add(m_perfCounter->GetUnicastXmitPkts() - m_unicastXmitPkts->GetTotalValue()));
+        IBNET_STATS(m_unicastRcvPkts->Add(m_perfCounter->GetUnicastRcvPkts() - m_unicastRcvPkts->GetTotalValue()));
+        IBNET_STATS(m_multicastXmitPkts->Add(m_perfCounter->GetMulticastXmitPkts() - m_multicastXmitPkts->GetTotalValue()));
+        IBNET_STATS(m_multicastRcvPkts->Add(m_perfCounter->GetMulticastRcvPkts() - m_multicastRcvPkts->GetTotalValue()));
 
-    IBNET_STATS(m_symbolErrors->Add(m_perfCounter->GetSymbolErrors() - m_symbolErrors->GetTotalValue()));
-    IBNET_STATS(m_linkDowned->Add(m_perfCounter->GetLinkDownedCounter() - m_linkDowned->GetTotalValue()));
-    IBNET_STATS(m_linkRecoveries->Add(m_perfCounter->GetLinkRecoveryCounter() - m_linkRecoveries->GetTotalValue()));
-    IBNET_STATS(m_rcvErrors->Add(m_perfCounter->GetRcvErrors() - m_rcvErrors->GetTotalValue()));
-    IBNET_STATS(m_rcvRemotePhysicalErrors->Add(
-            m_perfCounter->GetRcvRemotePhysicalErrors() -m_rcvRemotePhysicalErrors->GetTotalValue()));
-    IBNET_STATS(m_rcvSwitchRelayErrors->Add(
-            m_perfCounter->GetRcvSwitchRelayErrors() - m_rcvSwitchRelayErrors->GetTotalValue()));
-    IBNET_STATS(m_xmitDiscards->Add(m_perfCounter->GetXmitDiscards() - m_xmitDiscards->GetTotalValue()));
-    IBNET_STATS(m_xmitConstraintErrors->Add(
-            m_perfCounter->GetXmitConstraintErrors() - m_xmitConstraintErrors->GetTotalValue()));
-    IBNET_STATS(m_rcvConstraintErrors->Add(
-            m_perfCounter->GetRcvConstraintErrors() - m_rcvConstraintErrors->GetTotalValue()));
-    IBNET_STATS(m_localLinkIntegrityErrors->Add(
-            m_perfCounter->GetLocalLinkIntegrityErrors() - m_localLinkIntegrityErrors->GetTotalValue()));
-    IBNET_STATS(m_excessiveBufferOverrunErrors->Add(
-            m_perfCounter->GetExcessiveBufferOverrunErrors() - m_excessiveBufferOverrunErrors->GetTotalValue()));
-    IBNET_STATS(m_vl15Dropped->Add(m_perfCounter->GetVL15Dropped() - m_vl15Dropped->GetTotalValue()));
-    IBNET_STATS(m_xmitWait->Add(m_perfCounter->GetXmitWait() - m_xmitWait->GetTotalValue()));
+        IBNET_STATS(m_symbolErrors->Add(m_perfCounter->GetSymbolErrors() - m_symbolErrors->GetTotalValue()));
+        IBNET_STATS(m_linkDowned->Add(m_perfCounter->GetLinkDownedCounter() - m_linkDowned->GetTotalValue()));
+        IBNET_STATS(m_linkRecoveries->Add(m_perfCounter->GetLinkRecoveryCounter() - m_linkRecoveries->GetTotalValue()));
+        IBNET_STATS(m_rcvErrors->Add(m_perfCounter->GetRcvErrors() - m_rcvErrors->GetTotalValue()));
+        IBNET_STATS(m_rcvRemotePhysicalErrors->Add(
+                m_perfCounter->GetRcvRemotePhysicalErrors() -m_rcvRemotePhysicalErrors->GetTotalValue()));
+        IBNET_STATS(m_rcvSwitchRelayErrors->Add(
+                m_perfCounter->GetRcvSwitchRelayErrors() - m_rcvSwitchRelayErrors->GetTotalValue()));
+        IBNET_STATS(m_xmitDiscards->Add(m_perfCounter->GetXmitDiscards() - m_xmitDiscards->GetTotalValue()));
+        IBNET_STATS(m_xmitConstraintErrors->Add(
+                m_perfCounter->GetXmitConstraintErrors() - m_xmitConstraintErrors->GetTotalValue()));
+        IBNET_STATS(m_rcvConstraintErrors->Add(
+                m_perfCounter->GetRcvConstraintErrors() - m_rcvConstraintErrors->GetTotalValue()));
+        IBNET_STATS(m_localLinkIntegrityErrors->Add(
+                m_perfCounter->GetLocalLinkIntegrityErrors() - m_localLinkIntegrityErrors->GetTotalValue()));
+        IBNET_STATS(m_excessiveBufferOverrunErrors->Add(
+                m_perfCounter->GetExcessiveBufferOverrunErrors() - m_excessiveBufferOverrunErrors->GetTotalValue()));
+        IBNET_STATS(m_vl15Dropped->Add(m_perfCounter->GetVL15Dropped() - m_vl15Dropped->GetTotalValue()));
+        IBNET_STATS(m_xmitWait->Add(m_perfCounter->GetXmitWait() - m_xmitWait->GetTotalValue()));
+    }
 
-    IBNET_STATS(m_lifespan->Add(m_diagPerfCounter->GetLifespan() - m_lifespan->GetTotalValue()));
+    if (m_diagPerfCounter) {
+        IBNET_STATS(m_lifespan->Add(m_diagPerfCounter->GetLifespan() - m_lifespan->GetTotalValue()));
 
-    IBNET_STATS(m_rqLocalLengthErrors->Add(
-            m_diagPerfCounter->GetRqLocalLengthErrors() - m_rqLocalLengthErrors->GetTotalValue()));
-    IBNET_STATS(m_rqLocalQpProtectionErrors->Add(
-            m_diagPerfCounter->GetRqLocalQpProtectionErrors() - m_rqLocalQpProtectionErrors->GetTotalValue()));
-    IBNET_STATS(m_rqOutOfSequenceErrors->Add(
-            m_diagPerfCounter->GetRqOutOfSequenceErrors() - m_rqOutOfSequenceErrors->GetTotalValue()));
-    IBNET_STATS(m_rqRemoteAccessErrors->Add(
-            m_diagPerfCounter->GetRqRemoteAccessErrors() - m_rqRemoteAccessErrors->GetTotalValue()));
-    IBNET_STATS(m_rqRemoteInvalidRequestErrors->Add(
-            m_diagPerfCounter->GetRqRemoteInvalidRequestErrors() - m_rqRemoteInvalidRequestErrors->GetTotalValue()));
-    IBNET_STATS(m_rqRnrNakNum->Add(
-            m_diagPerfCounter->GetRqRnrNakNum() - m_rqRnrNakNum->GetTotalValue()));
-    IBNET_STATS(m_rqCompletionQueueEntryErrors->Add(
-            m_diagPerfCounter->GetRqCompletionQueueEntryErrors() - m_rqCompletionQueueEntryErrors->GetTotalValue()));
+        IBNET_STATS(m_rqLocalLengthErrors->Add(
+                m_diagPerfCounter->GetRqLocalLengthErrors() - m_rqLocalLengthErrors->GetTotalValue()));
+        IBNET_STATS(m_rqLocalQpProtectionErrors->Add(
+                m_diagPerfCounter->GetRqLocalQpProtectionErrors() - m_rqLocalQpProtectionErrors->GetTotalValue()));
+        IBNET_STATS(m_rqOutOfSequenceErrors->Add(
+                m_diagPerfCounter->GetRqOutOfSequenceErrors() - m_rqOutOfSequenceErrors->GetTotalValue()));
+        IBNET_STATS(m_rqRemoteAccessErrors->Add(
+                m_diagPerfCounter->GetRqRemoteAccessErrors() - m_rqRemoteAccessErrors->GetTotalValue()));
+        IBNET_STATS(m_rqRemoteInvalidRequestErrors->Add(
+                m_diagPerfCounter->GetRqRemoteInvalidRequestErrors() - m_rqRemoteInvalidRequestErrors->GetTotalValue()));
+        IBNET_STATS(m_rqRnrNakNum->Add(
+                m_diagPerfCounter->GetRqRnrNakNum() - m_rqRnrNakNum->GetTotalValue()));
+        IBNET_STATS(m_rqCompletionQueueEntryErrors->Add(
+                m_diagPerfCounter->GetRqCompletionQueueEntryErrors() - m_rqCompletionQueueEntryErrors->GetTotalValue()));
 
-    IBNET_STATS(m_sqBadResponseErrors->Add(
-            m_diagPerfCounter->GetSqBadResponseErrors() - m_sqBadResponseErrors->GetTotalValue()));
-    IBNET_STATS(m_sqLocalLengthErrors->Add(
-            m_diagPerfCounter->GetSqLocalLengthErrors() - m_sqLocalLengthErrors->GetTotalValue()));
-    IBNET_STATS(m_sqLocalProtectionErrors->Add(
-            m_diagPerfCounter->GetSqLocalProtectionErrors() - m_sqLocalProtectionErrors->GetTotalValue()));
-    IBNET_STATS(m_sqLocalQpProtectionErrors->Add(
-            m_diagPerfCounter->GetSqLocalQpProtectionErrors() - m_sqLocalQpProtectionErrors->GetTotalValue()));
-    IBNET_STATS(m_sqMemoryWindowBindErrors->Add(
-            m_diagPerfCounter->GetSqMemoryWindowBindErrors() - m_sqMemoryWindowBindErrors->GetTotalValue()));
-    IBNET_STATS(m_sqOutOfSequenceErrors->Add(
-            m_diagPerfCounter->GetSqOutOfSequenceErrors() - m_sqOutOfSequenceErrors->GetTotalValue()));
-    IBNET_STATS(m_sqRemoteAccessErrors->Add(
-            m_diagPerfCounter->GetSqRemoteAccessErrors() - m_sqRemoteAccessErrors->GetTotalValue()));
-    IBNET_STATS(m_sqRemoteInvalidRequestErrors->Add(
-            m_diagPerfCounter->GetSqRemoteInvalidRequestErrors() - m_sqRemoteInvalidRequestErrors->GetTotalValue()));
-    IBNET_STATS(m_sqRnrNakNum->Add(m_diagPerfCounter->GetSqRnrNakNum() - m_sqRnrNakNum->GetTotalValue()));
-    IBNET_STATS(m_sqRemoteOperationErrors->Add(
-            m_diagPerfCounter->GetSqRemoteOperationErrors() - m_sqRemoteOperationErrors->GetTotalValue()));
-    IBNET_STATS(m_sqRnrNakRetriesExceededErrors->Add(
-            m_diagPerfCounter->GetSqRnrNakRetriesExceededErrors() - m_sqRnrNakRetriesExceededErrors->GetTotalValue()));
-    IBNET_STATS(m_sqTransportRetriesExceededErrors->Add(
-            m_diagPerfCounter->GetSqTransportRetriesExceededErrors() -
-            m_sqTransportRetriesExceededErrors->GetTotalValue()));
-    IBNET_STATS(m_sqCompletionQueueEntryErrors->Add(
-            m_diagPerfCounter->GetSqCompletionQueueEntryErrors() - m_sqCompletionQueueEntryErrors->GetTotalValue()));
+        IBNET_STATS(m_sqBadResponseErrors->Add(
+                m_diagPerfCounter->GetSqBadResponseErrors() - m_sqBadResponseErrors->GetTotalValue()));
+        IBNET_STATS(m_sqLocalLengthErrors->Add(
+                m_diagPerfCounter->GetSqLocalLengthErrors() - m_sqLocalLengthErrors->GetTotalValue()));
+        IBNET_STATS(m_sqLocalProtectionErrors->Add(
+                m_diagPerfCounter->GetSqLocalProtectionErrors() - m_sqLocalProtectionErrors->GetTotalValue()));
+        IBNET_STATS(m_sqLocalQpProtectionErrors->Add(
+                m_diagPerfCounter->GetSqLocalQpProtectionErrors() - m_sqLocalQpProtectionErrors->GetTotalValue()));
+        IBNET_STATS(m_sqMemoryWindowBindErrors->Add(
+                m_diagPerfCounter->GetSqMemoryWindowBindErrors() - m_sqMemoryWindowBindErrors->GetTotalValue()));
+        IBNET_STATS(m_sqOutOfSequenceErrors->Add(
+                m_diagPerfCounter->GetSqOutOfSequenceErrors() - m_sqOutOfSequenceErrors->GetTotalValue()));
+        IBNET_STATS(m_sqRemoteAccessErrors->Add(
+                m_diagPerfCounter->GetSqRemoteAccessErrors() - m_sqRemoteAccessErrors->GetTotalValue()));
+        IBNET_STATS(m_sqRemoteInvalidRequestErrors->Add(
+                m_diagPerfCounter->GetSqRemoteInvalidRequestErrors() - m_sqRemoteInvalidRequestErrors->GetTotalValue()));
+        IBNET_STATS(m_sqRnrNakNum->Add(m_diagPerfCounter->GetSqRnrNakNum() - m_sqRnrNakNum->GetTotalValue()));
+        IBNET_STATS(m_sqRemoteOperationErrors->Add(
+                m_diagPerfCounter->GetSqRemoteOperationErrors() - m_sqRemoteOperationErrors->GetTotalValue()));
+        IBNET_STATS(m_sqRnrNakRetriesExceededErrors->Add(
+                m_diagPerfCounter->GetSqRnrNakRetriesExceededErrors() - m_sqRnrNakRetriesExceededErrors->GetTotalValue()));
+        IBNET_STATS(m_sqTransportRetriesExceededErrors->Add(
+                m_diagPerfCounter->GetSqTransportRetriesExceededErrors() -
+                m_sqTransportRetriesExceededErrors->GetTotalValue()));
+        IBNET_STATS(m_sqCompletionQueueEntryErrors->Add(
+                m_diagPerfCounter->GetSqCompletionQueueEntryErrors() - m_sqCompletionQueueEntryErrors->GetTotalValue()));
+    }
 
     IBNET_STATS(m_totalTime->Stop());
     IBNET_STATS(m_totalTime->Start());

@@ -220,7 +220,7 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
             auto* dataMem = (core::IbMemReg*) m_workComps[i].wr_id;
             uint32_t dataRecvLen = m_workComps[i].byte_len;
 
-            Connection* connection = dynamic_cast<Connection*>(m_refConnectionManager->
+            auto* connection = dynamic_cast<Connection*>(m_refConnectionManager->
                     GetConnection(immedData->m_sourceNodeId));
 
             if(immedData->m_sequenceNumber != (connection->GetRecvSequenceNumber()->GetValue() % m_ackFrameSize)) {
@@ -295,7 +295,7 @@ void RecvDispatcher::__Refill()
         for (uint32_t i = 0; i < numBufs; i++) {
             // hook memory to write the received data to
             m_sgeList[i].addr = (uintptr_t) m_memRegRefillBuffer[i]->GetAddress();
-            m_sgeList[i].length = m_memRegRefillBuffer[i]->GetSize();
+            m_sgeList[i].length = m_memRegRefillBuffer[i]->GetSizeBuffer();
             m_sgeList[i].lkey = m_memRegRefillBuffer[i]->GetLKey();
 
             // Use the pointer as the work req id

@@ -408,7 +408,7 @@ bool SendDispatcher::__SendData(Connection* connection, const SendHandler::NextW
 
     // wrap around
     if (posBack > posFront) {
-        totalBytesToProcess = refSendBuffer->GetSize() - posBack + posFront;
+        totalBytesToProcess = refSendBuffer->GetSizeBuffer() - posBack + posFront;
     } else {
         totalBytesToProcess = posFront - posBack;
     }
@@ -428,7 +428,7 @@ bool SendDispatcher::__SendData(Connection* connection, const SendHandler::NextW
         // up to the end of the buffer (size)
         if (posBack > posFront) {
             // go to end of buffer, first
-            posEnd = refSendBuffer->GetSize();
+            posEnd = refSendBuffer->GetSizeBuffer();
         }
 
         // end of buffer reached, wrap around to beginning of buffer

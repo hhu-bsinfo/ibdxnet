@@ -36,7 +36,7 @@ ConnectionManager::ConnectionManager(
 
     m_physicalQPId = m_ibQP->qp_num;
 
-    m_numConnections = nodeConf.GetEntries().size();
+    m_numConnections = static_cast<uint16_t>(nodeConf.GetEntries().size());
 }
 
 ConnectionManager::~ConnectionManager()
@@ -57,7 +57,7 @@ ibv_qp* ConnectionManager::__CreateQP(uint16_t size)
 {
     IBNET_LOG_TRACE_FUNC;
 
-    ibv_qp_init_attr attr;
+    ibv_qp_init_attr attr{};
     memset(&attr, 0, sizeof(ibv_qp_init_attr));
 
     attr.send_cq = m_ibSendCQ;
@@ -102,7 +102,7 @@ void ConnectionManager::__SetInitStateQP() {
     IBNET_LOG_TRACE_FUNC;
 
     int result;
-    ibv_qp_attr attr;
+    ibv_qp_attr attr{};
     memset(&attr, 0, sizeof(struct ibv_qp_attr));
 
     attr.qp_state        = IBV_QPS_INIT;
@@ -125,7 +125,7 @@ void ConnectionManager::__SetReadyToRecvQP() {
     IBNET_LOG_TRACE_FUNC;
 
     int result;
-    ibv_qp_attr attr;
+    ibv_qp_attr attr{};
     memset(&attr, 0, sizeof(struct ibv_qp_attr));
 
     attr.qp_state        = IBV_QPS_RTR;
@@ -144,7 +144,7 @@ void ConnectionManager::__SetReadyToSendQP() {
     IBNET_LOG_TRACE_FUNC;
 
     int result;
-    ibv_qp_attr attr;
+    ibv_qp_attr attr{};
     memset(&attr, 0, sizeof(struct ibv_qp_attr));
 
     attr.qp_state        = IBV_QPS_RTS;

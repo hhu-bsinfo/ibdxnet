@@ -8,6 +8,8 @@
 namespace ibnet {
 namespace msgud {
 
+static const constexpr uint8_t SEQUENCE_NUMBER_ACK = 127;
+
 /**
  * Structure for accessing data stored in the immediate data field.
  *

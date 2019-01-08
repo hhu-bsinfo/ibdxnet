@@ -94,6 +94,20 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     memset(m_sgeLists, 0, sizeof(ibv_sge) * m_refConnectionManager->GetIbQPSize());
     memset(m_sendWrs, 0, sizeof(ibv_send_wr) * m_refConnectionManager->GetIbQPSize());
     memset(m_workComp, 0, sizeof(ibv_wc) * m_refConnectionManager->GetIbCQSize());
+
+    memset(&m_ackWr, 0, sizeof(ibv_send_wr));
+
+    auto *immedData = (ImmediateData*) &m_ackWr.imm_data;
+    immedData->m_flowControlData = 0;
+    immedData->m_endOfWorkPackage = 0;
+    immedData->m_sequenceNumber = 127;
+
+    m_ackWr.wr_id = 0;
+    m_ackWr.num_sge = 0;
+    m_ackWr.opcode = IBV_WR_SEND_WITH_IMM;
+    m_ackWr.send_flags = IBV_SEND_SIGNALED;
+    m_ackWr.next = nullptr;
+    m_ackWr.wr.ud.remote_qkey = 0x22222222;
     
     m_refStatisticsManager->Register(m_totalTimeline);
     m_refStatisticsManager->Register(m_pollTimeline);
@@ -575,7 +589,41 @@ bool SendDispatcher::__SendData(Connection* connection, const SendHandler::NextW
 
     IBNET_STATS(m_sendDataPostingTime->Stop());
 
+    if(activity) {
+        __WaitForAck(connection);
+    }
+
     return activity;
+}
+
+void SendDispatcher::SendAck(Connection *connection) {
+    ibv_send_wr *badWr;
+
+    auto *immedData = (ImmediateData*) &m_ackWr.imm_data;
+    immedData->m_sourceNodeId = connection->GetSourceNodeId();
+
+    m_ackWr.wr.ud.ah = connection->GetRefAddressHandle()->GetIbAh();
+    m_ackWr.wr.ud.remote_qpn = connection->GetRemotePhysicalQpId();
+
+    int ret = ibv_post_send(m_refConnectionManager->GetIbQP(), &m_ackWr, &badWr);
+
+    if(ret != 0) {
+        switch (ret) {
+            case ENOMEM:
+                __ThrowDetailedException<core::IbQueueFullException>("ACK: Send queue full!");
+
+            default:
+                __ThrowDetailedException<core::IbException>(ret, "ACK: Posting work request to send to queue failed");
+        }
+    }
+
+    m_completionsPending++;
+}
+
+void SendDispatcher::__WaitForAck(Connection *connection) {
+    while(!connection->GetReceivedAck());
+
+    connection->SetReceivedAck(false);
 }
 
 }

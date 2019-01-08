@@ -70,6 +70,8 @@ public:
      */
     bool Dispatch() override;
 
+    void SendAck(ibnet::msgud::Connection *connection);
+
 private:
     struct WorkRequestIdCtx
     {
@@ -99,11 +101,15 @@ private:
     ibv_send_wr* m_sendWrs;
     ibv_wc* m_workComp;
 
+    ibv_send_wr m_ackWr;
+
 private:
     bool __PollCompletions();
 
     bool __SendData(Connection* connection,
         const SendHandler::NextWorkPackage* workPackage);
+
+    void __WaitForAck(Connection *connection);
     
     template<typename ExceptionType, typename... Args>
     void __ThrowDetailedException(const std::string& reason, Args... args) {

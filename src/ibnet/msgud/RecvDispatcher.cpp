@@ -2,6 +2,7 @@
 // Created by ruhland on 2/9/18.
 //
 
+#include <verbs.h>
 #include "RecvDispatcher.h"
 
 #include "ibnet/core/IbCommon.h"
@@ -11,18 +12,21 @@
 
 #include "Common.h"
 #include "Connection.h"
+#include "SendDispatcher.h"
 
 namespace ibnet {
 namespace msgud {
 
 RecvDispatcher::RecvDispatcher(uint8_t ackFrameSize,
     ConnectionManager* refConnectionManager,
+    SendDispatcher* refSendDispatcher,
     dx::RecvBufferPool* refRecvBufferPool,
     stats::StatisticsManager* refStatisticsManager,
     RecvHandler* refRecvHandler) :
     ExecutionUnit("MsgUDRecv"),
     m_ackFrameSize(ackFrameSize),
     m_refConnectionManager(refConnectionManager),
+    m_refSendDispatcher(refSendDispatcher),
     m_refRecvBufferPool(refRecvBufferPool),
     m_refStatisticsManager(refStatisticsManager),
     m_refRecvHandler(refRecvHandler),
@@ -223,12 +227,15 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
             auto* connection = dynamic_cast<Connection*>(m_refConnectionManager->
                     GetConnection(immedData->m_sourceNodeId));
 
-            if(immedData->m_sequenceNumber != (connection->GetRecvSequenceNumber()->GetValue() % m_ackFrameSize)) {
+            if(immedData->m_sequenceNumber == SEQUENCE_NUMBER_ACK) {
+                connection->SetReceivedAck(true);
+            } else if(immedData->m_sequenceNumber != (connection->GetRecvSequenceNumber()->GetValue() % m_ackFrameSize)) {
                 m_lostPackets->Inc();
                 connection->GetRecvSequenceNumber()->SetValue(immedData->m_sequenceNumber);
             }
 
-            if(immedData->m_endOfWorkPackage == 1) {
+            if(immedData->m_endOfWorkPackage == 1 || immedData->m_sequenceNumber == m_ackFrameSize) {
+                m_refSendDispatcher->SendAck(connection);
                 connection->GetRecvSequenceNumber()->Reset();
             } else {
                 connection->GetRecvSequenceNumber()->Inc();
@@ -242,7 +249,7 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
                 m_refRecvBufferPool->ReturnBuffer(dataMem);
                 dataMem = nullptr;
 
-                if (!immedData->m_flowControlData) {
+                if (!immedData->m_flowControlData && immedData->m_sequenceNumber != SEQUENCE_NUMBER_ACK) {
                     __ThrowDetailedException<sys::IllegalStateException>(
                         "Zero length data received but no flow control data");
                 }

@@ -101,6 +101,14 @@ public:
         return m_recvSequenceNumber;
     }
 
+    bool GetReceivedAck() {
+        return m_receivedAck;
+    }
+
+    void SetReceivedAck(bool receivedAck) {
+        m_receivedAck = receivedAck;
+    }
+
 private:
     struct RemoteConnectionData
     {
@@ -120,6 +128,8 @@ private:
     Counter* m_recvSequenceNumber;
 
     RemoteConnectionData m_remoteConnectionData;
+
+    volatile bool m_receivedAck;
 };
 
 }

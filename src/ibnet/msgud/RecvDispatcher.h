@@ -28,6 +28,8 @@
 
 #include "ConnectionManager.h"
 #include "RecvHandler.h"
+#include "Connection.h"
+#include "SendDispatcher.h"
 
 namespace ibnet {
 namespace msgud {
@@ -46,12 +48,14 @@ public:
      * Constructor
      *
      * @param refConnectionManager Pointer to the connection manager (managed by caller)
+     * @param refSendDispatcher Pointer to the send dispatcher (managed by caller)
      * @param refRecvBufferPool Pointer to the receive buffer pool used for incoming data (managed by caller)
      * @param refStatisticsManager Pointer to the statistics manager (managed by caller)
      * @param refRecvHandler Pointer to the receive handler to dispatch the received data to (managed by caller)
      */
     RecvDispatcher(uint8_t ackFrameSize,
         ConnectionManager* refConnectionManager,
+        SendDispatcher* refSendDispatcher,
         dx::RecvBufferPool* refRecvBufferPool,
         stats::StatisticsManager* refStatisticsManager,
         RecvHandler* refRecvHandler);
@@ -69,6 +73,7 @@ public:
 private:
     uint8_t m_ackFrameSize;
     ConnectionManager* m_refConnectionManager;
+    SendDispatcher* m_refSendDispatcher;
     dx::RecvBufferPool* m_refRecvBufferPool;
     stats::StatisticsManager* m_refStatisticsManager;
     RecvHandler* m_refRecvHandler;

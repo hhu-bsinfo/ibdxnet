@@ -76,6 +76,7 @@ public:
             static_cast<uint64_t>(1024 * 1024 * 1024 * 2ll);
         uint32_t m_recvBufferSize = 1024 * 4;
         uint8_t m_ackFrameSize = 126;
+        uint32_t m_ackTimeoutMicros = 1000;
         
         friend std::ostream &operator<<(std::ostream& os,
                 const Configuration& o) {
@@ -97,7 +98,8 @@ public:
                 "m_sendBufferSize: " << o.m_sendBufferSize << std::endl <<
                 "m_recvBufferPoolSizeBytes: " << o.m_recvBufferPoolSizeBytes << std::endl <<
                 "m_recvBufferSize: " << o.m_recvBufferSize << " + 40 Bytes for Global Routing Header" << std::endl <<
-                "m_ackFrameSize: " << o.m_ackFrameSize << std::endl;
+                "m_ackFrameSize: " << o.m_ackFrameSize << std::endl <<
+                "m_ackTimeoutMicros" << o.m_ackTimeoutMicros << std::endl;
         }
     };
 

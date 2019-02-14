@@ -231,6 +231,12 @@ MsgudSystem::Configuration* MsgudLoopbackSystem::__ProcessCmdArgs(int argc, char
             {"-b", "--ackFrameSize"},
             "Amount of packets to be sent before an ACK",
             1
+        },
+        {
+            "ackTimeoutMicros",
+            {"-i", "--ackTimeoutMicros"},
+            "Amount of time to wait for an ACK before initializing a retransmit",
+            1
         }
     }};
 
@@ -340,8 +346,11 @@ MsgudSystem::Configuration* MsgudLoopbackSystem::__ProcessCmdArgs(int argc, char
     }
 
     if(args["ackFrameSize"]) {
-        config->m_ackFrameSize =
-            args["ackFrameSize"].as<uint32_t>(config->m_ackFrameSize);
+        config->m_ackFrameSize = static_cast<uint8_t>(args["ackFrameSize"].as<uint32_t>(config->m_ackFrameSize));
+    }
+
+    if(args["ackTimeoutMicros"]) {
+        config->m_ackTimeoutMicros = args["ackTimeoutMicros"].as<uint32_t>(config->m_ackFrameSize);
     }
 
     if (config->m_ownNodeId == con::NODE_ID_INVALID) {

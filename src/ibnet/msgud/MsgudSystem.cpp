@@ -106,7 +106,7 @@ void MsgudSystem::Init()
     m_connectionManager->SetListener(this);
 
     m_sendDispatcher = new SendDispatcher(m_configuration->m_recvBufferSize,
-        m_configuration->m_ackFrameSize, m_connectionManager, m_statisticsManager, this);
+        m_configuration->m_ackFrameSize, m_configuration->m_ackTimeoutMicros, m_connectionManager, m_statisticsManager, this);
 
     m_recvDispatcher = new RecvDispatcher(m_configuration->m_ackFrameSize,
         m_connectionManager, m_sendDispatcher, m_recvBufferPool, m_statisticsManager, this);

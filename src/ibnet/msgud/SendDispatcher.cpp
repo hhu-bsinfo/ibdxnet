@@ -19,12 +19,14 @@ namespace msgud {
 
 SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     uint8_t ackFrameSize,
+    uint32_t ackTimeoutMicros,
     ConnectionManager* refConectionManager,
     stats::StatisticsManager* refStatisticsManager,
     SendHandler* refSendHandler) :
     ExecutionUnit("MsgUDSend"),
     m_recvBufferSize(recvBufferSize),
     m_ackFrameSize(ackFrameSize),
+    m_ackTimeoutMicros(ackTimeoutMicros),
     m_refConnectionManager(refConectionManager),
     m_refStatisticsManager(refStatisticsManager),
     m_refSendHandler(refSendHandler),
@@ -613,7 +615,7 @@ void SendDispatcher::SendAck(Connection *connection) {
                 __ThrowDetailedException<core::IbQueueFullException>("ACK: Send queue full!");
 
             default:
-                __ThrowDetailedException<core::IbException>(ret, "ACK: Posting work request to send to queue failed");
+                __ThrowDetailedException<core::IbException>(ret, "ACK: Posting work request to send to queue failed!");
         }
     }
 
@@ -621,7 +623,28 @@ void SendDispatcher::SendAck(Connection *connection) {
 }
 
 void SendDispatcher::__WaitForAck(Connection *connection) {
-    while(!connection->GetReceivedAck());
+    if(connection->GetReceivedAck()) {
+        connection->SetReceivedAck(false);
+
+        return;
+    }
+
+    timespec start{}, current{};
+    uint64_t timeoutNanos = m_ackTimeoutMicros * 1000;
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+
+    while(!connection->GetReceivedAck()) {
+        clock_gettime(CLOCK_MONOTONIC_RAW, &current);
+
+        auto time = static_cast<uint64_t>(
+                (current.tv_sec * 1000000000 + current.tv_nsec) - (start.tv_sec * 1000000000 + start.tv_nsec));
+
+        if(time > timeoutNanos) {
+            // TODO: Implement retransmit
+            __ThrowDetailedException<core::IbException>("ACK timeout occurred: Waited for %.03f us!", time / 1000.0);
+        }
+    }
 
     connection->SetReceivedAck(false);
 }

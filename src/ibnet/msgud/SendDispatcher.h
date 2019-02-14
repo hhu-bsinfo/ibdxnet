@@ -56,6 +56,7 @@ public:
      */
     SendDispatcher(uint32_t recvBufferSize,
         uint8_t ackFrameSize,
+        uint32_t ackTimeoutMicros,
         ConnectionManager* refConnectionManager,
         stats::StatisticsManager* refStatisticsManager,
         SendHandler* refSendHandler);
@@ -83,6 +84,7 @@ private:
 private:
     const uint32_t m_recvBufferSize;
     uint8_t m_ackFrameSize;
+    uint32_t m_ackTimeoutMicros;
 
     ConnectionManager* m_refConnectionManager;
     stats::StatisticsManager* m_refStatisticsManager;

@@ -209,12 +209,6 @@ MsgudSystem::Configuration* MsgudLoopbackSystem::__ProcessCmdArgs(int argc, char
             1
         },
         {
-            "sendBufferSize",
-            {"-e", "--sendBufferSize"},
-            "Max size of the send (ring) buffer per connection (in bytes)",
-            1
-        },
-        {
             "recvBufferPoolSize",
             {"-f", "--recvBufferPoolSize"},
             "Total size of the receive buffer pool (in bytes)",
@@ -329,11 +323,6 @@ MsgudSystem::Configuration* MsgudLoopbackSystem::__ProcessCmdArgs(int argc, char
             args["cqSize"].as<uint16_t>(config->m_CQSize);
     }
 
-    if (args["sendBufferSize"]) {
-        config->m_sendBufferSize =
-            args["sendBufferSize"].as<uint32_t>(config->m_sendBufferSize);
-    }
-
     if (args["recvBufferPoolSize"]) {
         config->m_recvBufferPoolSizeBytes =
             args["recvBufferPoolSize"].as<uint64_t>(
@@ -357,6 +346,8 @@ MsgudSystem::Configuration* MsgudLoopbackSystem::__ProcessCmdArgs(int argc, char
         throw con::InvalidNodeIdException(config->m_ownNodeId,
             "Provide a valid one via cmd args");
     }
+
+    config->m_sendBufferSize = config->m_recvBufferSize * config->m_ackFrameSize;
 
     return config;
 }

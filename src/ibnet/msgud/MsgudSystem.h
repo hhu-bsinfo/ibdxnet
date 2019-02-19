@@ -77,6 +77,7 @@ public:
         uint8_t m_ackFrameSize = 126;
         uint32_t m_sendBufferSize = m_recvBufferSize * m_ackFrameSize;
         uint32_t m_ackTimeoutMicros = 1000;
+        uint16_t m_ackRetries = 10;
         
         friend std::ostream &operator<<(std::ostream& os,
                 const Configuration& o) {
@@ -99,7 +100,8 @@ public:
                 "m_recvBufferPoolSizeBytes: " << o.m_recvBufferPoolSizeBytes << std::endl <<
                 "m_recvBufferSize: " << o.m_recvBufferSize << " + 40 Bytes for Global Routing Header" << std::endl <<
                 "m_ackFrameSize: " << o.m_ackFrameSize << std::endl <<
-                "m_ackTimeoutMicros" << o.m_ackTimeoutMicros << std::endl;
+                "m_ackTimeoutMicros" << o.m_ackTimeoutMicros << std::endl <<
+                "m_ackRetries" << o.m_ackRetries << std::endl;
         }
     };
 

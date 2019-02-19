@@ -231,6 +231,12 @@ MsgudSystem::Configuration* MsgudLoopbackSystem::__ProcessCmdArgs(int argc, char
             {"-i", "--ackTimeoutMicros"},
             "Amount of time to wait for an ACK before initializing a retransmit",
             1
+        },
+        {
+            "ackRetries",
+            {"-r", "--ackRetries"},
+            "Amount of tries to retransmit data before throwing an exception",
+            1
         }
     }};
 
@@ -340,6 +346,10 @@ MsgudSystem::Configuration* MsgudLoopbackSystem::__ProcessCmdArgs(int argc, char
 
     if(args["ackTimeoutMicros"]) {
         config->m_ackTimeoutMicros = args["ackTimeoutMicros"].as<uint32_t>(config->m_ackFrameSize);
+    }
+
+    if(args["ackRetries"]) {
+        config->m_ackRetries = args["ackRetries"].as<uint32_t>(config->m_ackRetries);
     }
 
     if (config->m_ownNodeId == con::NODE_ID_INVALID) {

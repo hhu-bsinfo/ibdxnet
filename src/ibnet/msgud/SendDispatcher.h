@@ -57,6 +57,7 @@ public:
     SendDispatcher(uint32_t recvBufferSize,
         uint8_t ackFrameSize,
         uint32_t ackTimeoutMicros,
+        uint16_t ackRetries,
         ConnectionManager* refConnectionManager,
         stats::StatisticsManager* refStatisticsManager,
         SendHandler* refSendHandler);
@@ -84,7 +85,9 @@ private:
 private:
     const uint32_t m_recvBufferSize;
     uint8_t m_ackFrameSize;
+
     uint32_t m_ackTimeoutMicros;
+    uint16_t m_ackRetries;
 
     ConnectionManager* m_refConnectionManager;
     stats::StatisticsManager* m_refStatisticsManager;
@@ -111,7 +114,7 @@ private:
     bool __SendData(Connection* connection,
         const SendHandler::NextWorkPackage* workPackage);
 
-    void __WaitForAck(Connection *connection);
+    bool __WaitForAck(Connection *connection);
     
     template<typename ExceptionType, typename... Args>
     void __ThrowDetailedException(const std::string& reason, Args... args) {
@@ -203,6 +206,8 @@ private:
 
     stats::Unit* m_sentData;
     stats::Unit* m_sentFC;
+
+    stats::Unit* m_retransmits;
 
     stats::Unit* m_emptyNextWorkPackage;
     stats::Unit* m_nonEmptyNextWorkPackage;

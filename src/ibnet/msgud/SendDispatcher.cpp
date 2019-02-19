@@ -20,6 +20,7 @@ namespace msgud {
 SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     uint8_t ackFrameSize,
     uint32_t ackTimeoutMicros,
+    uint16_t ackRetries,
     ConnectionManager* refConectionManager,
     stats::StatisticsManager* refStatisticsManager,
     SendHandler* refSendHandler) :
@@ -27,6 +28,7 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     m_recvBufferSize(recvBufferSize),
     m_ackFrameSize(ackFrameSize),
     m_ackTimeoutMicros(ackTimeoutMicros),
+    m_ackRetries(ackRetries),
     m_refConnectionManager(refConectionManager),
     m_refStatisticsManager(refStatisticsManager),
     m_refSendHandler(refSendHandler),
@@ -67,6 +69,7 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
         {m_sendDataProcessingTime, m_sendDataPostingTime})),
     m_sentData(new stats::Unit("SendDispatcher", "Data", stats::Unit::e_Base2)),
     m_sentFC(new stats::Unit("SendDispatcher", "FC", stats::Unit::e_Base10)),
+    m_retransmits(new stats::Unit("SendDispatcher", "Retransmits", stats::Unit::e_Base10)),
     m_emptyNextWorkPackage(new stats::Unit("SendDispatcher", "EmptyNextWorkPackage")),
     m_nonEmptyNextWorkPackage(new stats::Unit("SendDispatcher", "NonEmptyNextWorkPackage")),
     m_sendDataFullBuffers(new stats::Unit("SendDispatcher", "DataFullBuffers")),
@@ -118,6 +121,8 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     m_refStatisticsManager->Register(m_sentData);
     m_refStatisticsManager->Register(m_sentFC);
 
+    m_refStatisticsManager->Register(m_retransmits);
+
     m_refStatisticsManager->Register(m_emptyNextWorkPackage);
     m_refStatisticsManager->Register(m_nonEmptyNextWorkPackage);
 
@@ -147,6 +152,8 @@ SendDispatcher::~SendDispatcher()
 
     m_refStatisticsManager->Deregister(m_sentData);
     m_refStatisticsManager->Deregister(m_sentFC);
+
+    m_refStatisticsManager->Deregister(m_retransmits);
 
     m_refStatisticsManager->Deregister(m_emptyNextWorkPackage);
     m_refStatisticsManager->Deregister(m_nonEmptyNextWorkPackage);
@@ -557,8 +564,10 @@ bool SendDispatcher::__SendData(Connection* connection, const SendHandler::NextW
             m_sendWrs[i].send_flags = IBV_SEND_SIGNALED;
         }
 
+        uint16_t retries = 0;
         ibv_send_wr* firstBadWr;
 
+        POST_SEND_REQUESTS:
         // batch post
         int ret = ibv_post_send(m_refConnectionManager->GetIbQP(), &m_sendWrs[0], &firstBadWr);
 
@@ -574,11 +583,23 @@ bool SendDispatcher::__SendData(Connection* connection, const SendHandler::NextW
             }
         }
 
-        IBNET_STATS(m_sendBatches->Add(chunks));
-
         m_sendQueuePending[nodeId] += chunks;
         // completion queue shared among all connections
         m_completionsPending += chunks;
+
+        if(!__WaitForAck(connection)) {
+            __PollCompletions();
+
+            if(retries > m_ackRetries) {
+                __ThrowDetailedException<core::IbException>("Exceeded maximum amount of retries (%u)!", m_ackRetries);
+            }
+
+            retries++;
+
+            goto POST_SEND_REQUESTS;
+        }
+
+        IBNET_STATS(m_sendBatches->Add(chunks));
     }
 
     if (fcData > 0) {
@@ -590,10 +611,6 @@ bool SendDispatcher::__SendData(Connection* connection, const SendHandler::NextW
         totalBytesToProcess - totalBytesProcessed;
 
     IBNET_STATS(m_sendDataPostingTime->Stop());
-
-    if(activity) {
-        __WaitForAck(connection);
-    }
 
     return activity;
 }
@@ -622,11 +639,11 @@ void SendDispatcher::SendAck(Connection *connection) {
     m_completionsPending++;
 }
 
-void SendDispatcher::__WaitForAck(Connection *connection) {
+bool SendDispatcher::__WaitForAck(Connection *connection) {
     if(connection->GetReceivedAck()) {
         connection->SetReceivedAck(false);
 
-        return;
+        return true;
     }
 
     timespec start{}, current{};
@@ -641,12 +658,15 @@ void SendDispatcher::__WaitForAck(Connection *connection) {
                 (current.tv_sec * 1000000000 + current.tv_nsec) - (start.tv_sec * 1000000000 + start.tv_nsec));
 
         if(time > timeoutNanos) {
-            // TODO: Implement retransmit
-            __ThrowDetailedException<core::IbException>("ACK timeout occurred: Waited for %.03f us!", time / 1000.0);
+            m_retransmits->Inc();
+
+            return false;
         }
     }
 
     connection->SetReceivedAck(false);
+
+    return true;
 }
 
 }

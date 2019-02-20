@@ -8,13 +8,11 @@
 namespace ibnet {
 namespace msgud {
 
-static const constexpr uint8_t SEQUENCE_NUMBER_ACK = 127;
-
 /**
  * Structure for accessing data stored in the immediate data field.
  *
  * @author Stefan Nothaas, stefan.nothaas@hhu.de, 29.01.2018
- * @author Fabian Ruhland, fabian.ruhland@hhu.de, 10.10.2018
+ * @author Fabian Ruhland, fabian.ruhland@hhu.de, 12.04.2018
  */
 struct ImmediateData
 {
@@ -39,6 +37,12 @@ struct ImmediateData
     }
 } __attribute__((__packed__));
 
+/**
+ * Structure wrapping a simple counter.
+ * Used for sequence numbers.
+ *
+ * @author Fabian Ruhland, fabian.ruhland@hhu.de 18.03.2018
+ */
 struct Counter
 {
 public:
@@ -64,6 +68,30 @@ public:
 
 private:
     uint16_t m_value = 0;
+};
+
+/**
+ * Enum for holding special sequence number values.
+ *
+ * @author Fabian Ruhland, 20.02.2019
+ */
+enum AckSequenceNumber : uint8_t
+{
+    SEQUENCE_NUMBER_ACK = 126,
+    SEQUENCE_NUMBER_NACK = 127
+};
+
+/**
+ * Enum for signalizing the status of an ACK.
+ *
+ * @author Fabian Ruhland, 20.02.2019
+ */
+enum AckStatus
+{
+    IDLE, /** Signalizing, that the connection is currently not waiting for an ACK */
+    WAITING, /** Signalizing, that the connection is waiting for the next ACK */
+    ACK_RECEIVED, /**< Signalizing successful transfer of the last work package */
+    NACK_RECEIVED /**< Signalizing an error (e.g. lost packets) during the transfer of the last work package */
 };
 
 }

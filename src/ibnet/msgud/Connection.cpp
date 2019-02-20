@@ -24,7 +24,7 @@ Connection::Connection(uint16_t ownNodeId, uint16_t connectionId,
     m_ownPhysicalQPId(physicalQPId),
     m_sendSequenceNumber(new Counter()),
     m_recvSequenceNumber(new Counter()),
-    m_receivedAck(false)
+    m_ackStatus(AckStatus::IDLE)
 {
     IBNET_LOG_TRACE_FUNC;
 

@@ -101,12 +101,12 @@ public:
         return m_recvSequenceNumber;
     }
 
-    bool GetReceivedAck() {
-        return m_receivedAck;
+    AckStatus GetAckStatus() {
+        return m_ackStatus;
     }
 
-    void SetReceivedAck(bool receivedAck) {
-        m_receivedAck = receivedAck;
+    void SetAckSatus(AckStatus ack) {
+        m_ackStatus = ack;
     }
 
 private:
@@ -129,7 +129,7 @@ private:
 
     RemoteConnectionData m_remoteConnectionData;
 
-    volatile bool m_receivedAck;
+    volatile AckStatus m_ackStatus;
 };
 
 }

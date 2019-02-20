@@ -72,7 +72,7 @@ public:
      */
     bool Dispatch() override;
 
-    void SendAck(ibnet::msgud::Connection *connection);
+    void SendAck(Connection *connection, AckSequenceNumber sequenceNumber);
 
 private:
     struct WorkRequestIdCtx

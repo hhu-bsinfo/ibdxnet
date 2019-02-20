@@ -105,7 +105,7 @@ SendDispatcher::SendDispatcher(uint32_t recvBufferSize,
     auto *immedData = (ImmediateData*) &m_ackWr.imm_data;
     immedData->m_flowControlData = 0;
     immedData->m_endOfWorkPackage = 0;
-    immedData->m_sequenceNumber = 127;
+    immedData->m_sequenceNumber = 0;
 
     m_ackWr.wr_id = 0;
     m_ackWr.num_sge = 0;
@@ -568,6 +568,9 @@ bool SendDispatcher::__SendData(Connection* connection, const SendHandler::NextW
         ibv_send_wr* firstBadWr;
 
         POST_SEND_REQUESTS:
+
+        connection->SetAckSatus(AckStatus::WAITING);
+
         // batch post
         int ret = ibv_post_send(m_refConnectionManager->GetIbQP(), &m_sendWrs[0], &firstBadWr);
 
@@ -595,9 +598,12 @@ bool SendDispatcher::__SendData(Connection* connection, const SendHandler::NextW
             }
 
             retries++;
+            m_retransmits->Inc();
 
             goto POST_SEND_REQUESTS;
         }
+
+        connection->SetAckSatus(AckStatus::IDLE);
 
         IBNET_STATS(m_sendBatches->Add(chunks));
     }
@@ -615,11 +621,12 @@ bool SendDispatcher::__SendData(Connection* connection, const SendHandler::NextW
     return activity;
 }
 
-void SendDispatcher::SendAck(Connection *connection) {
+void SendDispatcher::SendAck(Connection *connection, AckSequenceNumber sequenceNumber) {
     ibv_send_wr *badWr;
 
     auto *immedData = (ImmediateData*) &m_ackWr.imm_data;
     immedData->m_sourceNodeId = connection->GetSourceNodeId();
+    immedData->m_sequenceNumber = sequenceNumber;
 
     m_ackWr.wr.ud.ah = connection->GetRefAddressHandle()->GetIbAh();
     m_ackWr.wr.ud.remote_qpn = connection->GetRemotePhysicalQpId();
@@ -640,31 +647,32 @@ void SendDispatcher::SendAck(Connection *connection) {
 }
 
 bool SendDispatcher::__WaitForAck(Connection *connection) {
-    if(connection->GetReceivedAck()) {
-        connection->SetReceivedAck(false);
-
+    // ACK/NACK has already been received
+    if(connection->GetAckStatus() == AckStatus::ACK_RECEIVED) {
         return true;
+    } else if(connection->GetAckStatus() == AckStatus::NACK_RECEIVED) {
+        return false;
+    } else if(connection->GetAckStatus() == AckStatus::IDLE) {
+        __ThrowDetailedException<core::IbException>("AckStatus of the connection is IDLE while waiting for an ACK."
+                                                    "This should not happen!");
     }
 
+    // Waiting for ACK/NACK
     timespec start{}, current{};
     uint64_t timeoutNanos = m_ackTimeoutMicros * 1000;
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 
-    while(!connection->GetReceivedAck()) {
+    while(connection->GetAckStatus() != AckStatus::ACK_RECEIVED) {
         clock_gettime(CLOCK_MONOTONIC_RAW, &current);
 
         auto time = static_cast<uint64_t>(
                 (current.tv_sec * 1000000000 + current.tv_nsec) - (start.tv_sec * 1000000000 + start.tv_nsec));
 
-        if(time > timeoutNanos) {
-            m_retransmits->Inc();
-
+        if(time > timeoutNanos || connection->GetAckStatus() == AckStatus::NACK_RECEIVED) {
             return false;
         }
     }
-
-    connection->SetReceivedAck(false);
 
     return true;
 }

@@ -74,7 +74,7 @@ public:
         uint64_t m_recvBufferPoolSizeBytes =
             static_cast<uint64_t>(1024 * 1024 * 1024 * 2ll);
         uint32_t m_recvBufferSize = 1024 * 4;
-        uint8_t m_ackFrameSize = 126;
+        uint8_t m_ackFrameSize = 125;
         uint32_t m_sendBufferSize = m_recvBufferSize * m_ackFrameSize;
         uint32_t m_ackTimeoutMicros = 1000;
         uint16_t m_ackRetries = 10;

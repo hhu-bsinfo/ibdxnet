@@ -228,14 +228,15 @@ void RecvDispatcher::__ProcessReceived(uint32_t receivedCount)
                     GetConnection(immedData->m_sourceNodeId));
 
             if(immedData->m_sequenceNumber == SEQUENCE_NUMBER_ACK) {
-                connection->SetReceivedAck(true);
+                connection->SetAckSatus(AckStatus::ACK_RECEIVED);
             } else if(immedData->m_sequenceNumber != (connection->GetRecvSequenceNumber()->GetValue() % m_ackFrameSize)) {
                 m_lostPackets->Inc();
-                connection->GetRecvSequenceNumber()->SetValue(immedData->m_sequenceNumber);
+                connection->GetRecvSequenceNumber()->SetValue(0);
+                m_refSendDispatcher->SendAck(connection, SEQUENCE_NUMBER_NACK);
             }
 
             if(immedData->m_endOfWorkPackage == 1 || immedData->m_sequenceNumber == m_ackFrameSize) {
-                m_refSendDispatcher->SendAck(connection);
+                m_refSendDispatcher->SendAck(connection, SEQUENCE_NUMBER_ACK);
                 connection->GetRecvSequenceNumber()->Reset();
             } else {
                 connection->GetRecvSequenceNumber()->Inc();

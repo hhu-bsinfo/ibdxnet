@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 # set version
-set(IBNET_VERSION "0.3")
+set(IBNET_VERSION "0.4")
 
 # set git revision
 execute_process(COMMAND git log -1 --format=%h --date=short HEAD WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_VARIABLE IBNET_GIT_REV ERROR_QUIET)
